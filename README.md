@@ -41,3 +41,7 @@ inputs.theme-studio = {
 
 Your palettes, font presets and themes aren't part of the project: they're
 read from `$THEME_STUDIO_DATA`, by default `~/.config/theme-studio/`.
+
+## Licence
+
+MIT (`LICENSE`).
