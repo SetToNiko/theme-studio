@@ -1,7 +1,6 @@
 # Theme Studio's Nix package: the studio (studio/, a Rust crate) and the
 # switch scripts as commands (theme-switch, themes-switch, font-switch).
-# Used by the project's flake.nix and, until the project is its own repo,
-# by the dotfiles directly (docs/migration.md).
+# Used by flake.nix and by the home-manager module (its default `package`).
 #
 # $out/share/theme-studio mirrors the project (scripts/, share/, docs/), so
 # the scripts find share/ beside them and the studio finds the guide; the

@@ -72,7 +72,7 @@ Environment:
   THEME_STUDIO_TIMING   set: log font preview render times to
                         ~/.local/state/theme-studio/timing.log
 
-More: theme-studio/docs/theme-studio.md in the dotfiles";
+More: docs/theme-studio.md (also the Settings page's README tab)";
 
 fn main() -> Result<()> {
     // every write the studio makes keeps the old file in the history

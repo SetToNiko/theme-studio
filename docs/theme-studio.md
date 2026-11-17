@@ -2,11 +2,11 @@
 
 A terminal tool for making themes: colour palettes and fonts, edited with a
 live preview of the desktop (i3 borders and bar, your real nvim, a shell or
-yazi, a rofi menu), all drawn in the palette before it's saved. It's a
-project of its own in `~/dotfiles-nixos/theme-studio/`: the studio in
-`studio/` (Rust, ratatui), packaging in `packaging/`, these docs in
-`docs/`. How it came about is in `plan.md`; how it's being moved into its
-own folder, in `migration.md`.
+yazi, a rofi menu), all drawn in the palette before it's saved. The
+studio is in `studio/` (Rust, ratatui), the switch scripts in `scripts/`,
+packaging in `packaging/`, these docs in `docs/`
+(github.com/SetToNiko/theme-studio). How it came about is in `plan.md`; how
+it became a project of its own, in `migration.md`.
 
 ## Themes, palettes and font presets
 
@@ -33,8 +33,8 @@ them.
   theme (`themes.json`: `"sizes": {"monospace": 14, "proportional": 9,
   "icons": 9}`); `h` / `l` on a role in the studio change them, saved and
   applied a moment after the last key press. `$mod+Shift+t` applies a
-  preset at the active theme's sizes. Each machine adds its offset from
-  `configs/hosts/<host>/fonts.json` (`{"monospace": 0, "proportional": 3,
+  preset at the active theme's sizes. Each machine can add an offset from
+  `~/.config/host/fonts.json` (`{"monospace": 0, "proportional": 3,
   "icons": 3}`).
 
 ## Switching
@@ -100,12 +100,12 @@ Three pages, on `F1`–`F3`:
 
 | Where                                   | What                                                   |
 | --------------------------------------- | ------------------------------------------------------ |
-| `configs/theme-studio/themes.json`      | themes                                                 |
-| `configs/theme-studio/palettes.json`    | palettes                                               |
-| `configs/theme-studio/fonts.json`       | font presets                                           |
-| `theme-studio/share/terminal-colors.json` | which palette key is each terminal colour            |
-| `configs/theme-studio/`                 | the studio's `keymaps.json` and `settings.json`, linked to `~/.config/theme-studio` |
-| `home/fonts-installed.json`             | fonts the studio downloaded, installed by the home-manager module on the next rebuild |
+| `~/.config/theme-studio/themes.json`    | themes                                                 |
+| `~/.config/theme-studio/palettes.json`  | palettes                                               |
+| `~/.config/theme-studio/fonts.json`     | font presets                                           |
+| `~/.config/theme-studio/keymaps.json`, `settings.json` | the studio's keys and settings (the module's `dataDir` can link the folder to your dotfiles) |
+| `share/terminal-colors.json`            | which palette key is each terminal colour              |
+| the `fonts.installed-list` setting      | fonts the studio downloaded, installed by the home-manager module (`fontsList`) on the next rebuild |
 | `~/.local/share/fonts/theme-studio/`    | downloaded fonts until that rebuild                    |
 | `~/.local/share/theme-studio/previews/` | preview files of fonts that aren't installed           |
 | `~/.local/state/theme-studio/`          | config history and tournaments                         |
@@ -117,11 +117,9 @@ files when it starts, keeping the old one in the history.
 
 ## Building and testing
 
-The studio is built by `packaging/nix/package.nix`: by the dotfiles' flake
-(`nix run ~/dotfiles-nixos#theme-studio`; installed by `programs.theme-studio` in `home/base.nix`), or
-on its own (`nix build ~/dotfiles-nixos/theme-studio`).
-
-Two modules set it up (the project's flake exports both):
+The package is `packaging/nix/package.nix` (`nix build` in the checkout);
+a NixOS flake takes it as an input (see the README) and sets it up with two
+modules, which the project's flake exports:
 
 - **home-manager**, `packaging/nix/home-module.nix`, `programs.theme-studio`:
   the studio and the three commands; `live` (a checkout: the commands run
@@ -136,15 +134,17 @@ Two modules set it up (the project's flake exports both):
 To work on it:
 
 ```sh
-cd ~/dotfiles-nixos/theme-studio/studio
-nix develop ~/dotfiles-nixos/theme-studio --command cargo test
+cd studio
+nix develop .. --command cargo test     # the tests
+nix develop .. --command cargo run      # the studio, from the checkout
+bash ../scripts/theme-switch.sh         # a script, from the checkout
 ```
 
 Tests that need the real data or a tool that isn't there skip themselves.
 Environment variables:
 
 - `THEME_STUDIO_DATA`: your palettes, font presets and themes (default
-  `~/.config/theme-studio`, here linked to `configs/theme-studio/`).
+  `~/.config/theme-studio`).
 - `THEME_STUDIO_SHARE`: the files the studio and scripts need (set by the
   package, or to the checkout's `share/` in live mode; a `cargo run` in the
   checkout finds it by itself).

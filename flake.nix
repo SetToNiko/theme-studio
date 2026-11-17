@@ -1,8 +1,7 @@
 {
-  # Theme Studio on its own: `nix build ./theme-studio`, `nix develop
-  # ./theme-studio`. The dotfiles don't use this flake yet; they call
-  # packaging/nix/ directly until the project is split into its own repo
-  # (docs/migration.md).
+  # Theme Studio: `nix build` (the package), `nix develop` (cargo and the
+  # crate's dependencies, for studio/). Other flakes take its modules:
+  # homeManagerModules.default, nixosModules.default.
   description = "Theme Studio: colour palettes and fonts with a live preview of the desktop";
 
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";

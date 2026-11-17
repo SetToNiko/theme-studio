@@ -309,7 +309,7 @@ pub enum Mode {
 
 pub struct Preview {
     configs: PathBuf,
-    /// Where the shell and yazi start: the dotfiles folder.
+    /// Where the shell and yazi start: a git checkout (for `git log`), else home.
     workdir: PathBuf,
     draft_dir: PathBuf,
     draft: PathBuf,
@@ -356,7 +356,7 @@ impl Preview {
         }
         Preview {
             configs: configs.to_path_buf(),
-            // the demo shell's `git log`: the dotfiles repo, else home
+            // the demo shell's `git log`: the checkout, else home
             workdir: crate::paths::demo_dir(),
             draft: draft_dir.join("colors.sh"),
             draft_dir,
