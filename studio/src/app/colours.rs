@@ -142,7 +142,7 @@ impl App {
     }
 
     /// Colour-list keys: open/close groups, move, start editing.
-    // Long function: one match over every (action, row kind) pair of the colour list.
+    // Long function (reason verified, phase 3): one match over every (action, row kind) pair of the colour list.
     pub(super) fn list_action(&mut self, a: Action) {
         let rows = self.colour_rows();
         let last = rows.len() as i32 - 1;
@@ -192,7 +192,7 @@ impl App {
     }
 
     /// Keys while the hex field has the focus: type, Enter applies, Esc restores.
-    // Long function: one match over the 6 key kinds of the hex field (about 39 lines).
+    // Long function (reason verified, phase 3): one match over the 6 key kinds of the hex field (about 39 lines).
     pub(super) fn on_hex_key(&mut self, k: KeyEvent) {
         match k.code {
             KeyCode::Enter => match Rgb::parse(&self.editor.hex_input) {

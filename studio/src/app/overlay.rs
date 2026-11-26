@@ -294,7 +294,7 @@ impl App {
     }
 
     /// Keys in the "open" list: filter by typing, move, Enter opens, Esc closes.
-    // Long function: one match over the keys of the list; Enter hands over to `open_enter`.
+    // Long function (reason verified, phase 3): one match over the keys of the list; Enter hands over to `open_enter`.
     fn open_key(
         &mut self,
         mut filter: String,

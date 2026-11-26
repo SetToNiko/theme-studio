@@ -53,7 +53,6 @@ impl App {
     /// list, ³ font sample, ⁴ colour list, ⁵ colour picker, ⁶ nvim, ⁷ shell
     /// (or yazi). 6 and 7 give that preview window the keyboard; F12 hands it
     /// back. A hidden picker or sample is shown.
-    // Long function: one match over the pane numbers; each arm is the few lines that pane needs.
     pub fn focus_pane(&mut self, n: u8) {
         use crate::fonts::FontFocus;
         self.page = Page::Main;
@@ -82,33 +81,39 @@ impl App {
                 self.preview.focus = None;
                 self.open_picker();
             }
-            6 | 7 => {
-                // jumping to a hidden preview shows it again
-                if !self.layout.main_preview_visible {
-                    self.layout.main_preview_visible = true;
-                    self.preview.rects.clear();
-                }
-                self.preview.mode = PreviewMode::Desktop;
-                let id = match (n, self.preview.show_yazi) {
-                    (6, _) => PaneId::Nvim,
-                    (_, true) => PaneId::Yazi,
-                    _ => PaneId::Shell,
-                };
-                // the lower slot counts whether it last showed the shell or yazi
-                let shown = self
-                    .preview
-                    .rects
-                    .iter()
-                    .any(|(p, _)| *p == id || (n == 7 && *p != PaneId::Nvim));
-                if !shown && !self.preview.rects.is_empty() {
-                    self.messages
-                        .info("That preview window isn't shown at this window size");
-                    return;
-                }
-                self.preview.focus = Some(id);
-            }
+            6 | 7 => self.focus_preview_pane(n),
             _ => {}
         }
+    }
+
+    /// Gives a preview window the keyboard: 6 is nvim, 7 is the shell (or yazi).
+    ///
+    /// A hidden preview is shown again. If that window is not shown at this
+    /// window size, the keyboard stays where it is and a message says so.
+    fn focus_preview_pane(&mut self, n: u8) {
+        // jumping to a hidden preview shows it again
+        if !self.layout.main_preview_visible {
+            self.layout.main_preview_visible = true;
+            self.preview.rects.clear();
+        }
+        self.preview.mode = PreviewMode::Desktop;
+        let id = match (n, self.preview.show_yazi) {
+            (6, _) => PaneId::Nvim,
+            (_, true) => PaneId::Yazi,
+            _ => PaneId::Shell,
+        };
+        // the lower slot counts whether it last showed the shell or yazi
+        let shown = self
+            .preview
+            .rects
+            .iter()
+            .any(|(p, _)| *p == id || (n == 7 && *p != PaneId::Nvim));
+        if !shown && !self.preview.rects.is_empty() {
+            self.messages
+                .info("That preview window isn't shown at this window size");
+            return;
+        }
+        self.preview.focus = Some(id);
     }
 
     /// The number of the pane with the keyboard.
@@ -164,8 +169,7 @@ impl App {
 
     /// Back to the colour list from the picker: Esc (`discard`) puts back what
     /// the colours were when you started changing them, Enter keeps them. The
-    /// picker hides again
-    /// unless Settings says it stays open.
+    /// picker hides again unless Settings says it stays open.
     pub(super) fn leave_picker(&mut self, discard: bool) {
         if self.editor.end_session(self.key(), discard) {
             self.messages
@@ -207,7 +211,7 @@ impl App {
 
     /// Resize-mode keys: h/l move the focused pane's side edge, j/k its lower
     /// edge, by one cell (capitals: five); = resets; Esc / Enter leave.
-    // Long function: one match from the action to a step size, then the border move.
+    // Long function (reason verified, phase 3): one match from the action to a step size, then the border move.
     pub(super) fn run_resize(&mut self, a: Action) {
         let (dx, dy, n): (i32, i32, i32) = match a {
             Action::Left => (-1, 0, 1),

@@ -110,7 +110,7 @@ impl App {
     /// The checks that come first (resize mode, the copy-from pop-up, undo of
     /// a config change, the page tabs) can end the call. Then one `match`
     /// sends the action to the method of its group.
-    // Long function: four early returns, then one match that lists every action group.
+    // Long function (reason verified, phase 3): four early returns, then one match that lists every action group.
     pub fn run_action(&mut self, a: Action) {
         if self.layout.resize_mode {
             return self.run_resize(a);
@@ -357,7 +357,7 @@ impl App {
     }
 
     /// Colour-tab actions: the list, the picker and the preview toggles.
-    // Long function: one match with one arm per colour-column action.
+    // Long function (reason verified, phase 3): one match with one arm per colour-column action.
     fn run_colours(&mut self, a: Action) {
         match a {
             Action::Undo => self.undo(),

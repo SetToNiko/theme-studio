@@ -1,6 +1,6 @@
 //! Where the user is: page, side, focus, the open overlay, and what is pending.
 //!
-//! Plain data types with no behaviour of their own. The `App` struct in
+//! Plain data types. The only method is `Pending::is_fonts`. The `App` struct in
 //! the parent module holds one value of most of them.
 
 use ratatui::layout::Rect;
@@ -32,18 +32,19 @@ pub enum Pending {
     OpenTheme(String),
 }
 
+impl Pending {
+    /// True for the two font-preset variants: they check the fonts, not the palette.
+    pub(super) fn is_fonts(&self) -> bool {
+        matches!(self, Pending::NewFonts | Pending::OpenFonts(_))
+    }
+}
+
 /// What the Open / Save as pop-up is for.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum For {
     Palette,
     Fonts,
     Theme,
-}
-
-impl Pending {
-    pub(super) fn is_fonts(&self) -> bool {
-        matches!(self, Pending::NewFonts | Pending::OpenFonts(_))
-    }
 }
 
 /// Which column has the keyboard (both are always on screen).

@@ -1,4 +1,24 @@
-//! Editor state and input handling.
+//! Editor state and input handling: the `App` struct and its methods.
+//!
+//! `App` is one struct. Its methods are split by topic over several files
+//! (Rust allows more than one `impl App` block, in any file of the crate).
+//! Where to look:
+//! - this file: the `App` struct and its core methods
+//! - `nav.rs`: plain enums for where the user is (`Page`, `Focus`, `Side`, `Overlay`, `Pending`, `For`, `ColourRow`)
+//! - `persist.rs`: save, save as, apply, open, new, the unsaved-changes prompt (`guard`, `run_pending`)
+//! - `focus.rs`: which pane has the keyboard (`focus_pane`, `move_pane`), keymap contexts, resize mode keys
+//! - `colours.rs`: colour list rows, hex input, paste, Tab order through the picker
+//! - `actions.rs`: `run_action`, which sends a keymap action to the right method
+//! - `overlay.rs`: pop-ups (open, save as, confirm, help, menus) and their keys
+//! - `mouse.rs`: mouse events and clicks (uses `hit.rs` for what is where)
+//! - `palette_editor.rs`: the palette being edited, undo history, picker numbers (its own struct, not an `impl App`)
+//! - `layout.rs`: pane sizes, borders, resize and drag state (its own struct, not an `impl App`)
+//! - `messages.rs`: status-line message, save box, hover note (its own struct, not an `impl App`)
+//! - `tests.rs`: tests of the above
+//!
+//! Other `impl App` blocks live next to the feature they serve, outside this
+//! folder: `settings.rs`, `behaviour.rs`, `draft.rs`, `theme.rs`, `fonts_dl.rs`,
+//! `fonts_preview.rs`, `tour_page.rs`, `prefetch.rs`, `presets.rs`.
 
 mod actions;
 mod colours;
