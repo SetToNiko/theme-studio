@@ -36,7 +36,7 @@ fn test_app(store: Store, start: Start) -> App {
     let config = crate::config::Loaded {
         keymap: Keymap::vim(),
         presets: Keymap::builtin(),
-        settings: crate::config::Settings::default(),
+        settings: crate::config::settings::Settings::default(),
         warnings: Vec::new(),
         // a folder inside the test's own temp store
         dir: store.dir.join("studio-config"),
@@ -719,7 +719,7 @@ fn borders_drag_and_resize_mode_moves_edges() {
     press(&mut app, "j");
     press(&mut app, "=");
     render(&mut app, 200, 50);
-    assert_eq!(app.layout.sizes, crate::config::Sizes::default());
+    assert_eq!(app.layout.sizes, crate::config::settings::Sizes::default());
     press(&mut app, "\x1b");
     assert!(!app.layout.resize_mode);
     // keys work normally again
@@ -732,7 +732,7 @@ fn extreme_sizes_render_at_every_window_size() {
     let mut app = test_app(temp_store("extreme"), Start::Named("One".into()));
     app.layout.picker_visible = true;
     for share in [0.0, 0.02, 0.5, 0.98, 1.0] {
-        app.layout.sizes = crate::config::Sizes {
+        app.layout.sizes = crate::config::settings::Sizes {
             fonts_width: share,
             colours_width: share,
             sample_height: share,
@@ -760,7 +760,7 @@ fn layout_three_columns_then_preview_row_then_too_small() {
         false,
         true,
         true,
-        &crate::config::Sizes::default(),
+        &crate::config::settings::Sizes::default(),
     ) else {
         panic!()
     };
@@ -784,7 +784,7 @@ fn layout_three_columns_then_preview_row_then_too_small() {
         true,
         true,
         true,
-        &crate::config::Sizes::default(),
+        &crate::config::settings::Sizes::default(),
     ) else {
         panic!()
     };
@@ -798,7 +798,7 @@ fn layout_three_columns_then_preview_row_then_too_small() {
         true,
         true,
         true,
-        &crate::config::Sizes::default(),
+        &crate::config::settings::Sizes::default(),
     ) else {
         panic!()
     };
@@ -814,7 +814,7 @@ fn layout_three_columns_then_preview_row_then_too_small() {
             false,
             false,
             true,
-            &crate::config::Sizes::default()
+            &crate::config::settings::Sizes::default()
         ),
         Arrangement::TooSmall {
             need_w: 98,
@@ -828,7 +828,7 @@ fn layout_three_columns_then_preview_row_then_too_small() {
             true,
             true,
             true,
-            &crate::config::Sizes::default()
+            &crate::config::settings::Sizes::default()
         ),
         Arrangement::TooSmall {
             need_w: 98,
@@ -842,7 +842,7 @@ fn layout_three_columns_then_preview_row_then_too_small() {
             true,
             true,
             true,
-            &crate::config::Sizes::default()
+            &crate::config::settings::Sizes::default()
         ),
         Arrangement::TooSmall {
             need_w: 148,
@@ -857,7 +857,7 @@ fn layout_three_columns_then_preview_row_then_too_small() {
             true,
             true,
             true,
-            &crate::config::Sizes::default()
+            &crate::config::settings::Sizes::default()
         ),
         Arrangement::Page { .. }
     ));
@@ -2169,7 +2169,7 @@ fn hints_and_previews_toggle_per_page() {
     app.messages.info("Hello");
     assert!(screen(&mut app).contains("Hello"));
     // the settings say how a run starts
-    let mut config = crate::config::Settings::default();
+    let mut config = crate::config::settings::Settings::default();
     config.layout.key_hints = "hidden".into();
     config.layout.main_preview = "hidden".into();
     let loaded = crate::config::Loaded {

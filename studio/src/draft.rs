@@ -7,7 +7,7 @@
 
 use serde_json::{Map, Value};
 
-use crate::config::Settings;
+use crate::config::settings::Settings;
 use crate::keymap::Keymap;
 
 /// The Settings page's edited copy of what keymaps.json and settings.json
