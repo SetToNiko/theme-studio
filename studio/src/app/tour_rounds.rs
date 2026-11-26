@@ -1,0 +1,297 @@
+//! App's methods for the Tournament tab's rounds and results: drawing the
+//! two fonts, the keys while playing and on the results, installing or using
+//! a result, and clicks.
+//!
+//! This is another `impl App { ... }` block (see `fonts_preview_actions.rs`
+//! for the same style). The set-up and fetching are in `tour_actions.rs`;
+//! `tour_page.rs` keeps the tab's own data and the bracket is in `tournament.rs`.
+
+use super::App;
+use crate::download;
+use crate::keymap::Action;
+use crate::samples::{self, Kind};
+use crate::tour_page::Stage;
+use crate::tournament::{self, Tournament};
+
+impl App {
+    /// Asks pane `i` to show entrant `who`, and picks up a finished image.
+    pub(super) fn tour_draw_pane(&mut self, i: usize, who: Option<usize>) -> bool {
+        let Some(who) = who else {
+            let p = &mut self.tour().panes[i];
+            let had = p.image.is_some();
+            p.image = None;
+            p.shows = None;
+            return had;
+        };
+        let Some(e) = self.tour().t.as_ref().map(|t| t.entrants[who].clone()) else {
+            return false;
+        };
+        let family = match self.pv().families.get(&e.id) {
+            Some(Ok(f)) => f.clone(),
+            _ => return false,
+        };
+        let (cell_w, cell_h) = self.picker.as_ref().map_or((8, 16), |p| {
+            let s = p.font_size();
+            (s.width as u32, s.height as u32)
+        });
+        let dpi = self.fonts.dpi;
+        let palette = self.editor.palette.clone();
+        let bg = palette.get("bg0");
+        let t = self.tour();
+        if t.panes[i].shows != Some(who) {
+            t.panes[i].shows = Some(who);
+            t.panes[i].image = None;
+        }
+        let (cols, rows) = (t.panes[i].area.0 as u32, t.panes[i].area.1 as u32);
+        let width = (cols * cell_w).saturating_sub(24).max(100);
+        let st = samples::Style {
+            family: &family,
+            size: t.pt,
+            palette: &palette,
+        };
+        let px = (t.pt * dpi / 72).max(6);
+        let lines = ((rows * cell_h) / (px * 12 / 10).max(1)) as usize;
+        let markup = match t.kind {
+            Kind::Prose => {
+                let per_line = width / (px * 55 / 100).max(1);
+                samples::prose_page(&st, 0, (per_line as usize * lines * 85 / 100).max(200)).0
+            }
+            _ => samples::code(&st, t.lang, 0, lines + 1),
+        };
+        let fontconfig = (!e.installed).then(|| download::preview_fontconfig_for(&e.id));
+        let wrap = (t.kind == Kind::Prose).then_some(width);
+        let p = &mut t.panes[i];
+        p.renderer.request_with(markup, bg, dpi, fontconfig, wrap);
+        match p.renderer.take() {
+            Some(Ok(img)) => {
+                let proto = self.picker.as_ref().map(|pk| pk.new_resize_protocol(img));
+                let p = &mut self.tour().panes[i];
+                p.image = proto;
+                p.error = None;
+                true
+            }
+            Some(Err(err)) => {
+                self.tour().panes[i].error = Some(err);
+                true
+            }
+            None => false,
+        }
+    }
+
+    pub(super) fn tour_save(&mut self) {
+        let dir = tournament::dir();
+        if let Some(t) = &self.tour().t
+            && let Err(e) = t.save(&dir)
+        {
+            let msg = format!("{e:#}");
+            self.messages.error(msg);
+        }
+    }
+
+    /// Keys on the Tournament tab. True if handled.
+    pub fn run_tournament(&mut self, a: Action) -> bool {
+        if self.tour().bracket {
+            let t = self.tour();
+            match a {
+                Action::Down => t.bracket_scroll += 1,
+                Action::Up => t.bracket_scroll = t.bracket_scroll.saturating_sub(1),
+                Action::PageDown => t.bracket_scroll += 10,
+                Action::PageUp => t.bracket_scroll = t.bracket_scroll.saturating_sub(10),
+                Action::Back | Action::TourBracket | Action::Confirm => t.bracket = false,
+                _ => {}
+            }
+            return true;
+        }
+        match self.tour().stage {
+            Stage::Setup => self.run_tour_setup(a),
+            Stage::Fetching => match a {
+                Action::Back => {
+                    let t = self.tour();
+                    t.stage = Stage::Setup;
+                    t.pending.clear();
+                    self.prefetch.urgent.clear();
+                    true
+                }
+                _ => false,
+            },
+            Stage::Playing => self.run_tour_playing(a),
+            Stage::Results => self.run_tour_results(a),
+        }
+    }
+
+    fn run_tour_playing(&mut self, a: Action) -> bool {
+        let t = self.tour();
+        if t.t.is_none() {
+            return false;
+        }
+        match a {
+            Action::Left | Action::Right => {
+                if t.pick(a == Action::Left) {
+                    t.stage = Stage::Results;
+                    t.sel = 0;
+                    t.names = true;
+                }
+                t.past = None;
+                self.tour_save();
+                if self.tour().stage == Stage::Results {
+                    self.messages.info("The tournament is over: the top 10");
+                }
+            }
+            Action::TourUndo => {
+                if t.t.as_mut().is_some_and(Tournament::undo) {
+                    self.tour_save();
+                } else {
+                    self.messages.info("No pick to take back");
+                }
+            }
+            Action::TourNames => t.names = !t.names,
+            Action::TourBracket => {
+                t.bracket = true;
+                t.bracket_scroll = 0;
+            }
+            Action::PreviewText => {
+                t.kind = if t.kind == Kind::Prose {
+                    Kind::Code
+                } else {
+                    Kind::Prose
+                }
+            }
+            Action::PreviewLang => t.lang = (t.lang + 1) % samples::LANGS.len(),
+            Action::SizeUp => t.pt = (t.pt + 1).min(48),
+            Action::SizeDown => t.pt = t.pt.saturating_sub(1).max(6),
+            Action::Back => {
+                t.stage = Stage::Setup;
+                t.past = None;
+                self.messages.info("Saved: pick it up again from the list");
+            }
+            _ => return false,
+        }
+        true
+    }
+
+    fn run_tour_results(&mut self, a: Action) -> bool {
+        let t = self.tour();
+        let Some(x) = t.t.as_ref() else {
+            return false;
+        };
+        let top: Vec<usize> = x.top().into_iter().flat_map(|(_, v)| v).collect();
+        let last = top.len().saturating_sub(1);
+        let who = top.get(t.sel).copied();
+        match a {
+            Action::Up => t.sel = t.sel.saturating_sub(1),
+            Action::Down => t.sel = (t.sel + 1).min(last),
+            Action::TourBracket => {
+                t.bracket = true;
+                t.bracket_scroll = 0;
+            }
+            Action::TourUndo => {
+                // back into the final
+                if let Some(x) = t.t.as_mut()
+                    && x.undo()
+                {
+                    t.stage = Stage::Playing;
+                    self.tour_save();
+                }
+            }
+            Action::PreviewText => {
+                t.kind = if t.kind == Kind::Prose {
+                    Kind::Code
+                } else {
+                    Kind::Prose
+                }
+            }
+            Action::PreviewLang => t.lang = (t.lang + 1) % samples::LANGS.len(),
+            Action::SizeUp => t.pt = (t.pt + 1).min(48),
+            Action::SizeDown => t.pt = t.pt.saturating_sub(1).max(6),
+            Action::Back => {
+                t.stage = Stage::Setup;
+                t.past = None;
+            }
+            Action::Confirm => {
+                if let Some(w) = who {
+                    self.tour_install(w);
+                }
+            }
+            Action::UseFor(r) => {
+                if let Some(w) = who {
+                    self.tour_use(w, &[r as usize]);
+                }
+            }
+            Action::FillFamily => {
+                if let Some(w) = who {
+                    self.tour_use(w, &[0, 1, 2]);
+                }
+            }
+            _ => return false,
+        }
+        true
+    }
+
+    /// Whether a results font is installed (by its name, or the family its
+    /// preview was drawn with).
+    fn tour_installed(&mut self, who: usize) -> Option<String> {
+        let e = self.tour().t.as_ref()?.entrants[who].clone();
+        let family = match self.pv().families.get(&e.id) {
+            Some(Ok(f)) => f.clone(),
+            _ => e.name.clone(),
+        };
+        let norm = |s: &str| s.to_lowercase().replace(' ', "");
+        self.fonts
+            .installed
+            .iter()
+            .find(|f| {
+                norm(&f.family).starts_with(&norm(&family)) || norm(&f.family) == norm(&e.name)
+            })
+            .map(|_| family)
+    }
+
+    /// Enter on a result: installs it (catalogue fonts).
+    fn tour_install(&mut self, who: usize) {
+        if self.tour_installed(who).is_some() {
+            return self
+                .messages
+                .info("Installed already: 1, 2 or 3 use it, F fills every role");
+        }
+        let Some(id) = self.tour().t.as_ref().map(|t| t.entrants[who].id.clone()) else {
+            return;
+        };
+        let entry = self
+            .dl
+            .catalogue
+            .iter()
+            .flat_map(|c| c.google.iter().chain(c.nerd.iter()))
+            .find(|e| e.id == id)
+            .cloned();
+        match entry {
+            Some(e) => self.dl_install_entry(e),
+            None => self.messages.info("The catalogue is still loading"),
+        }
+    }
+
+    /// 1 / 2 / 3 or F on a result: uses it for roles (applied at once).
+    fn tour_use(&mut self, who: usize, roles: &[usize]) {
+        let Some(family) = self.tour_installed(who) else {
+            return self.messages.info("Install it first (Enter)");
+        };
+        let fill = self.fonts.fill_roles(&family, roles);
+        self.after_fill(fill);
+    }
+
+    /// A click on a pane while playing: picks that font.
+    pub fn tour_click_pane(&mut self, i: u8) {
+        if self.tour().stage == Stage::Playing {
+            self.run_tour_playing(if i == 0 { Action::Left } else { Action::Right });
+        }
+    }
+
+    /// A click on a row: setup rows and results move the cursor; a second
+    /// click acts like Enter.
+    pub fn tour_click_row(&mut self, row: usize) {
+        let t = self.tour();
+        if t.sel == row {
+            self.run_tournament(Action::Confirm);
+        } else {
+            t.sel = row;
+        }
+    }
+}
