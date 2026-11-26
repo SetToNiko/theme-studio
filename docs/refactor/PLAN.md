@@ -188,7 +188,7 @@ Completes: none (prepares criterion 5)
 - [x] P4.7 draft: `impl App` block into app/ | Files: `draft.rs`, new `app/draft_actions.rs`, `app/mod.rs` | Target: T5 | Check: draft no longer imports App
 - [x] P4.8 theme: theme data stays in theme.rs, the `impl App` block (theme actions) moves into app/ | Files: `studio/src/theme.rs`, `studio/src/app/theme_actions.rs`, `studio/src/app/mod.rs` | Target: T1, T5 | Check: theme no longer imports App
 - [x] P4.9 behaviour: `impl App` block into app/ | Files: `studio/src/behaviour.rs`, `studio/src/app/behaviour_actions.rs`, `studio/src/app/mod.rs` | Target: T5
-- [ ] P4.10 fonts_dl: `impl App` block into app/ | Target: T5
+- [x] P4.10 fonts_dl: `impl App` block into app/ | Files: `studio/src/fonts_dl.rs`, `studio/src/app/fonts_dl_actions.rs`, `studio/src/app/mod.rs` | Target: T5 | Check: fonts_dl no longer imports App
 - [ ] P4.11 fonts_preview: `impl App` block into app/ | Target: T5
 - [ ] P4.12 tour_page: `impl App` block into app/ | Target: T5
 - [ ] P4.13 settings: `impl App` block into app/ | Target: T5 | Check: no feature module imports App; the big group is gone

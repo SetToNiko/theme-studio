@@ -11,6 +11,7 @@
 //! - `draft_actions.rs`: the Settings page's unsaved changes (`with_draft`, `show_draft`, `settings_save`, `settings_discard`); the `Draft` type and its tests stay in `draft.rs`
 //! - `theme_actions.rs`: themes (open, save, apply, the open list, font sizes); the `Theme` and `ThemeStore` types, themes.json and their tests stay in `theme.rs`
 //! - `behaviour_actions.rs`: the Settings page's Behaviour tab (looks, colour rows, row values, the key list, `run_behaviour_tab`); the row list and `theme_keys` stay in `behaviour.rs`
+//! - `fonts_dl_actions.rs`: the Download fonts page (rows, status, polling downloads, install, remove, keys, clicks, the Nerd Font offer); `DlPage` and its types stay in `fonts_dl.rs`
 //! - `focus.rs`: which pane has the keyboard (`focus_pane`, `move_pane`), keymap contexts, resize mode keys
 //! - `colours.rs`: colour list rows, hex input, paste, Tab order through the picker
 //! - `actions.rs`: `run_action`, which sends a keymap action to the right method
@@ -24,13 +25,14 @@
 //! The run loop (`App::run`) does not draw by itself: `main.rs` passes in `ui::draw`.
 //!
 //! Other `impl App` blocks live next to the feature they serve, outside this
-//! folder: `settings.rs`, `fonts_dl.rs`, `fonts_preview.rs`, `tour_page.rs`.
+//! folder: `settings.rs`, `fonts_preview.rs`, `tour_page.rs`.
 
 mod actions;
 mod behaviour_actions;
 mod colours;
 mod draft_actions;
 mod focus;
+mod fonts_dl_actions;
 mod layout;
 mod messages;
 mod mouse;
