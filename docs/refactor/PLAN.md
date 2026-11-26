@@ -164,7 +164,7 @@ Completes: criteria 1, 2, project rule 2
 
 ### Phase 3: Divide App by concern
 - [x] P3.1 Safety net: characterization tests for behaviour and draft | Files: `behaviour.rs`, `draft.rs` | Target: correctness | Check: tests pass on unchanged code
-- [ ] P3.2 App folder: `app.rs` → `app/mod.rs`, tests → `app/tests.rs` | Files: `app/mod.rs`, `app/tests.rs` | Target: T4 | Check: tests
+- [x] P3.2 App folder: `app.rs` → `app/mod.rs`, tests → `app/tests.rs` | Files: `app/mod.rs`, `app/tests.rs` | Target: T4 | Check: tests
 - [ ] P3.3 PaletteEditor: palette, saved, undo, redo, HSV, hex, edit session, and their methods | Files: `app/mod.rs`, `app/palette_editor.rs`, `ui.rs`, `fonts_ui.rs` | Target: T1, T4 | Check: tests
 - [ ] P3.4 Layout: sizes, borders, dragging, resize, visibility flags, pane focus and move | Files: `app/mod.rs`, `app/layout.rs`, `ui.rs`, `fonts_ui.rs`, `fonts_dl_ui.rs` | Target: T1 | Check: tests
 - [ ] P3.5 Messages: message, notice, hover note, timing | Files: `app/mod.rs`, `app/messages.rs`, `ui.rs`, `fonts_ui.rs` | Target: T1 | Check: tests

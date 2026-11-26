@@ -3,8 +3,10 @@
 
 Usage: python3 scripts/dev/module-cycles.py [studio/src]
 
-A module depends on another module when its code names `crate::<other>`.
-The test module (everything after `#[cfg(test)]`) does not count.
+Each .rs file under the folder (also in subfolders) is a module, named by its
+file name (mod.rs: its folder's name). A module depends on another module when
+its code names `crate::...::<other>`. The test module (everything after
+`#[cfg(test)]`) and files named tests.rs do not count.
 A cycle group is a set of modules that all depend on each other, directly
 or through other modules in the group. The refactor wants zero groups.
 
@@ -20,17 +22,45 @@ import re
 import sys
 
 
+def module_name(path, src_dir):
+    """The module name of a .rs file: its file name, or the folder name for mod.rs.
+
+    Example: app/mod.rs -> app, app/layout.rs -> layout, core/color.rs -> color.
+    Folders do not count, so the names stay the same when files move into
+    folders (and `crate::color` through a re-export still finds `color`).
+    """
+    relative = os.path.relpath(path, src_dir)
+    folder, file_name = os.path.split(relative)
+    if file_name == "mod.rs":
+        return os.path.basename(folder)
+    return file_name[: -len(".rs")]
+
+
 def read_dependencies(src_dir):
-    """Return {module: set of modules that it names}, for each .rs file."""
+    """Return {module: set of modules that it names}, for each .rs file.
+
+    Files named tests.rs hold only tests and do not count.
+    A path such as `crate::app::layout::Layout` counts for the deepest module
+    in it (here: layout).
+    """
+    production_code = {}
+    for folder, _subfolders, file_names in os.walk(src_dir):
+        for file_name in sorted(file_names):
+            if not file_name.endswith(".rs") or file_name == "tests.rs":
+                continue
+            path = os.path.join(folder, file_name)
+            with open(path, encoding="utf-8") as f:
+                text = f.read()
+            production_code[module_name(path, src_dir)] = text.split("#[cfg(test)]")[0]
+
     dependencies = {}
-    for file_name in sorted(os.listdir(src_dir)):
-        if not file_name.endswith(".rs"):
-            continue
-        module = file_name[: -len(".rs")]
-        with open(os.path.join(src_dir, file_name), encoding="utf-8") as f:
-            text = f.read()
-        production_code = text.split("#[cfg(test)]")[0]
-        named = set(re.findall(r"crate::(\w+)", production_code))
+    for module, text in production_code.items():
+        named = set()
+        for path in re.findall(r"crate((?:::\w+)+)", text):
+            segments = path.strip(":").split("::")
+            known = [segment for segment in segments if segment in production_code]
+            if known:
+                named.add(known[-1])
         named.discard(module)
         dependencies[module] = named
     return dependencies
