@@ -170,16 +170,16 @@ impl App {
             }
             BhRow::SavedAs => s.messages.saved = cycle(&s.messages.saved, &["bar", "popup"], d),
             BhRow::KeyHints => {
-                s.layout.key_hints = cycle(&s.layout.key_hints, &["shown", "hidden"], d)
+                s.layout.key_hints = cycle(&s.layout.key_hints, &["shown", "hidden"], d);
             }
             BhRow::MainPreview => {
-                s.layout.main_preview = cycle(&s.layout.main_preview, &["shown", "hidden"], d)
+                s.layout.main_preview = cycle(&s.layout.main_preview, &["shown", "hidden"], d);
             }
             BhRow::FontsPreview => {
-                s.layout.fonts_preview = cycle(&s.layout.fonts_preview, &["shown", "hidden"], d)
+                s.layout.fonts_preview = cycle(&s.layout.fonts_preview, &["shown", "hidden"], d);
             }
             BhRow::InnerTabs => {
-                s.layout.inner_tabs = cycle(&s.layout.inner_tabs, &["top", "bottom"], d)
+                s.layout.inner_tabs = cycle(&s.layout.inner_tabs, &["top", "bottom"], d);
             }
             _ => {}
         }
@@ -205,14 +205,14 @@ impl App {
             }
             BhRow::PickerAtStart => {
                 s.colours.picker_at_start =
-                    cycle(&s.colours.picker_at_start, &["hidden", "shown"], d)
+                    cycle(&s.colours.picker_at_start, &["hidden", "shown"], d);
             }
             BhRow::PickerAfterEditing => {
                 s.colours.picker_after_editing = cycle(
                     &s.colours.picker_after_editing,
                     &["hide-on-esc", "stay-open"],
                     d,
-                )
+                );
             }
             _ => {}
         }
@@ -224,10 +224,10 @@ impl App {
         let s = &mut self.settings;
         match row {
             BhRow::SampleAtStart => {
-                s.fonts.sample_at_start = cycle(&s.fonts.sample_at_start, &["shown", "hidden"], d)
+                s.fonts.sample_at_start = cycle(&s.fonts.sample_at_start, &["shown", "hidden"], d);
             }
             BhRow::ListOpensToCurrent => {
-                s.fonts.list_opens_to_current_font = !s.fonts.list_opens_to_current_font
+                s.fonts.list_opens_to_current_font = !s.fonts.list_opens_to_current_font;
             }
             BhRow::Prefetch => s.fonts_page.prefetch = !s.fonts_page.prefetch,
             BhRow::PrefetchCategory(i) => {
@@ -242,10 +242,10 @@ impl App {
             }
             BhRow::HideBitmap => s.font_list.hide_bitmap = !s.font_list.hide_bitmap,
             BhRow::HideSpecial => {
-                s.font_list.hide_cjk_emoji_math = !s.font_list.hide_cjk_emoji_math
+                s.font_list.hide_cjk_emoji_math = !s.font_list.hide_cjk_emoji_math;
             }
             BhRow::Spacing => {
-                s.font_list.spacing = cycle(&s.font_list.spacing, &["any", "mono", "propo"], d)
+                s.font_list.spacing = cycle(&s.font_list.spacing, &["any", "mono", "propo"], d);
             }
             BhRow::NerdFont => {
                 s.font_list.nerd_font = cycle(
@@ -258,7 +258,7 @@ impl App {
                         "no-nerd-font",
                     ],
                     d,
-                )
+                );
             }
             _ => {}
         }

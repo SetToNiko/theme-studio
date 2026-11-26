@@ -12,6 +12,7 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
 use crate::app::App;
 use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
+use crate::app::state::steps::{offset, to_i32, wrapped};
 use crate::keymap::action::Action;
 use crate::model::color::Rgb;
 use crate::model::palette::GROUPS;
@@ -41,7 +42,7 @@ impl App {
     pub(in crate::app) fn select(&mut self, i: usize) {
         if i < self.keys.len() {
             self.select_key(i);
-            let g = self.group_of(i);
+            let g = group_of(i);
             self.expanded_groups.insert(g);
             self.sync_row();
         }
@@ -54,7 +55,7 @@ impl App {
         for (index, (_, keys)) in GROUPS.iter().enumerate() {
             let expanded = self.expanded_groups.contains(&index);
             out.push(ColourRow::Group { index, expanded });
-            for _ in keys.iter() {
+            for _ in *keys {
                 if expanded {
                     out.push(ColourRow::Key(key));
                 }
@@ -64,22 +65,10 @@ impl App {
         out
     }
 
-    /// The index of the group that holds colour `key`.
-    pub(in crate::app) fn group_of(&self, key: usize) -> usize {
-        let mut start = 0;
-        for (gi, (_, keys)) in GROUPS.iter().enumerate() {
-            if key < start + keys.len() {
-                return gi;
-            }
-            start += keys.len();
-        }
-        0
-    }
-
     /// Moves the list cursor; landing on a colour selects it.
     pub(in crate::app) fn move_row(&mut self, d: i32) {
         let rows = self.colour_rows();
-        self.row_sel = (self.row_sel as i32 + d).clamp(0, rows.len() as i32 - 1) as usize;
+        self.row_sel = offset(self.row_sel, d).min(rows.len() - 1);
         if let ColourRow::Key(k) = rows[self.row_sel] {
             self.select_key(k);
         }
@@ -89,7 +78,7 @@ impl App {
     /// on its group.
     pub(in crate::app) fn sync_row(&mut self) {
         let rows = self.colour_rows();
-        let g = self.group_of(self.sel);
+        let g = group_of(self.sel);
         self.row_sel = rows
             .iter()
             .position(|r| *r == ColourRow::Key(self.sel))
@@ -131,7 +120,7 @@ impl App {
                 true
             }
             Action::Down
-                if self.row_sel as i32 >= last
+                if to_i32(self.row_sel) >= last
                     && !self.layout.picker_visible
                     && self.focus_page_tabs(false) =>
             {
@@ -142,10 +131,10 @@ impl App {
     }
 
     /// Colour-list keys: open/close groups, move, start editing.
-    // Long function (reason verified, phase 3): one match over every (action, row kind) pair of the colour list.
+    // Long function: one match over every (action, row kind) pair of the colour list.
     pub(in crate::app) fn list_action(&mut self, a: Action) {
         let rows = self.colour_rows();
-        let last = rows.len() as i32 - 1;
+        let last = to_i32(rows.len()) - 1;
         let copying = matches!(self.overlay, Overlay::CopyFrom { .. });
         if self.layout.palette_menu_focused && !copying {
             self.palette_menu_action(a);
@@ -156,13 +145,12 @@ impl App {
         }
         match (a, rows.get(self.row_sel).copied()) {
             (Action::Up, _) => self.move_row(-1),
-            (Action::Down, _) => self.move_row(1),
-            (Action::Top, _) => self.move_row(-(self.row_sel as i32)),
-            (Action::Bottom, _) => self.move_row(last - self.row_sel as i32),
+            (Action::Top, _) => self.move_row(-to_i32(self.row_sel)),
+            (Action::Bottom, _) => self.move_row(last - to_i32(self.row_sel)),
             (Action::PageDown, _) => self.move_row(10),
             (Action::PageUp, _) => self.move_row(-10),
             (Action::Confirm, Some(ColourRow::Group { index, expanded })) => {
-                self.set_group_open(index, !expanded)
+                self.set_group_open(index, !expanded);
             }
             (
                 Action::Right,
@@ -171,7 +159,9 @@ impl App {
                     expanded: false,
                 }),
             ) => self.set_group_open(index, true),
-            (Action::Right, Some(ColourRow::Group { expanded: true, .. })) => self.move_row(1),
+            (Action::Down, _) | (Action::Right, Some(ColourRow::Group { expanded: true, .. })) => {
+                self.move_row(1);
+            }
             (
                 Action::Left,
                 Some(ColourRow::Group {
@@ -180,7 +170,7 @@ impl App {
                 }),
             ) => self.set_group_open(index, false),
             (Action::Left, Some(ColourRow::Key(k))) => {
-                let g = self.group_of(k);
+                let g = group_of(k);
                 self.row_sel = rows
                     .iter()
                     .position(|r| matches!(r, ColourRow::Group { index, .. } if *index == g))
@@ -263,12 +253,11 @@ impl App {
 
     /// Moves the focus `d` steps through the picker controls (wraps around).
     pub(in crate::app) fn cycle_focus(&mut self, d: i32) {
-        let i = FOCUS_ORDER
+        let current = FOCUS_ORDER
             .iter()
             .position(|f| *f == self.focus)
-            .unwrap_or(0) as i32;
-        let n = FOCUS_ORDER.len() as i32;
-        self.focus = FOCUS_ORDER[(i + d).rem_euclid(n) as usize];
+            .unwrap_or(0);
+        self.focus = FOCUS_ORDER[wrapped(current, d, FOCUS_ORDER.len())];
         if self.focus != Focus::List {
             self.layout.picker_visible = true;
         }
@@ -276,4 +265,16 @@ impl App {
             self.editor.hex_input = "#".into(); // typing replaces the colour; Esc restores it
         }
     }
+}
+
+/// The index of the group that holds colour `key`.
+fn group_of(key: usize) -> usize {
+    let mut start = 0;
+    for (index, (_, keys)) in GROUPS.iter().enumerate() {
+        if key < start + keys.len() {
+            return index;
+        }
+        start += keys.len();
+    }
+    0
 }

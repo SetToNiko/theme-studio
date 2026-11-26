@@ -138,7 +138,7 @@ impl App {
             KeyCode::Esc => return Some(Overlay::None),
             KeyCode::Enter => {
                 // finish_prompt may open something else
-                self.with_draft(|app| app.finish_prompt(purpose, input));
+                self.with_draft(|app| app.finish_prompt(purpose, &input));
                 return None;
             }
             KeyCode::Backspace => {

@@ -258,14 +258,14 @@ impl App {
     /// Saves and applies a fill if a role changed; otherwise says why not.
     fn apply_fill(&mut self, fill: crate::fonts::pick::Fill) {
         if fill.changed {
-            self.apply_picked_fonts(fill.msg);
+            self.apply_picked_fonts(&fill.msg);
         } else {
             self.messages.info(fill.msg);
         }
     }
 
-    /// The Nerd Fonts release's archive for a family ("JetBrains Mono" →
-    /// JetBrainsMono.tar.xz). Starts loading the catalogue if it isn't yet
+    /// The Nerd Fonts release's archive for a family (`JetBrains Mono` →
+    /// `JetBrainsMono.tar.xz`). Starts loading the catalogue if it isn't yet
     /// (asking again later finds it).
     fn nerd_entry_for(&mut self, group: &str) -> Option<Entry> {
         if self.dl.catalogue.is_none() && !self.dl.loading {
@@ -348,7 +348,7 @@ impl App {
             .to_string();
         let result =
             download::install::remove_files(&crate::model::paths::installed_fonts_dir(), &id)
-                .and_then(|_| download::list::write_list(&path, list));
+                .and_then(|()| download::list::write_list(&path, list));
         self.dl.listed = None;
         match result {
             Ok(()) => self

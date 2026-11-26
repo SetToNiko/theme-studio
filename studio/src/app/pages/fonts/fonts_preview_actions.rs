@@ -47,8 +47,10 @@ impl App {
             .catalogue
             .as_ref()
             .and_then(|c| c.google.iter().chain(c.nerd.iter()).find(|e| e.id == id))
-            .map(|e| e.category.clone())
-            .unwrap_or_else(|| if nerd { "nerd font" } else { "monospace" }.into());
+            .map_or_else(
+                || if nerd { "nerd font" } else { "monospace" }.into(),
+                |e| e.category.clone(),
+            );
         Some(Entry {
             id,
             family: name.clone(),
@@ -117,14 +119,14 @@ impl App {
         let installed = self.dl.tab == DlTab::Installed;
         let (cell_w, cell_h) = self.picker.as_ref().map_or((8, 16), |p| {
             let s = p.font_size();
-            (s.width as u32, s.height as u32)
+            (u32::from(s.width), u32::from(s.height))
         });
         let dpi = self.fonts.dpi;
         let palette = self.editor.palette.clone();
         let bg = palette.get("bg0");
         let pv = self.pv();
         let kind = pv.kind_for(e);
-        let (cols, rows) = (pv.area.0 as u32, pv.area.1 as u32);
+        let (cols, rows) = (u32::from(pv.area.0), u32::from(pv.area.1));
         let width = (cols * cell_w).saturating_sub(24).max(100);
         let st = samples::Style {
             family,

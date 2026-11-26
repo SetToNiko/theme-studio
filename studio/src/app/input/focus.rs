@@ -11,6 +11,7 @@
 
 use crate::app::App;
 use crate::app::state::nav::{Focus, Page, Side};
+use crate::app::state::steps::offset;
 use crate::keymap::Context;
 use crate::keymap::action::{Action, ActionGroup};
 use crate::preview_term::{Mode as PreviewMode, PaneId};
@@ -146,12 +147,12 @@ impl App {
         else {
             return;
         };
-        let c2 = (c as i32 + dx).clamp(0, 1) as usize;
+        let c2 = offset(c, dx).min(1);
         let col = &columns[c2];
         let r2 = if dx != 0 {
             r.min(col.len() - 1)
         } else {
-            (r as i32 + dy).clamp(0, col.len() as i32 - 1) as usize
+            offset(r, dy).min(col.len() - 1)
         };
         let target = col[r2];
         if target != cur {
@@ -244,7 +245,7 @@ impl App {
             .find(|b| b.id == id)
             .copied()
             .unwrap();
-        let pos = (b.pos() as i32 + (dx + dy) * n).max(0) as u16;
+        let pos = u16::try_from((i32::from(b.pos()) + (dx + dy) * n).max(0)).unwrap_or(u16::MAX);
         self.layout.move_border(id, pos);
     }
 }

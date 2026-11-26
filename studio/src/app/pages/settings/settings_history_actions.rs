@@ -11,6 +11,7 @@ use serde_json::Value;
 
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Naming};
+use crate::app::state::steps::offset;
 use crate::keymap::action::Action;
 use crate::model::color::Rgb;
 use crate::model::history::{History, SnapshotInfo};
@@ -25,8 +26,7 @@ impl App {
         if let Some(v) = self.settings_page.cached_versions(generation, file) {
             return v;
         }
-        let v = self
-            .history()
+        let v = History::current()
             .map(|h| h.list_info(FILES[file]))
             .unwrap_or_default();
         self.settings_page
@@ -108,7 +108,7 @@ impl App {
         }
         if matches!(a, Action::PageUp | Action::PageDown) {
             let d: i32 = if a == Action::PageUp { -10 } else { 10 };
-            p.diff_scroll = (p.diff_scroll as i32 + d).max(0) as usize;
+            p.diff_scroll = offset(p.diff_scroll, d);
             return;
         }
         if p.hist_focus == HistFocus::Files {
@@ -140,7 +140,7 @@ impl App {
             Action::SaveNamed => self.prompt(&format!("Name for the current {file}"), Naming::Version(file), ""),
             Action::Delete => match selected {
                 Some((path, s)) if s.name.is_some() => {
-                    self.ask(format!("Delete the version \"{}\"?", s.name.unwrap()), Deferred::DeleteVersion(path))
+                    self.ask(format!("Delete the version \"{}\"?", s.name.unwrap()), Deferred::DeleteVersion(path));
                 }
                 Some(_) => self.messages.info("Only named versions can be deleted (snapshots are pruned on their own)"),
                 None => {}

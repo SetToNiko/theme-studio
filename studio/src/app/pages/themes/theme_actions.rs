@@ -91,7 +91,7 @@ impl App {
     fn load_theme_parts(&mut self, t: &Theme) {
         match self.store.load(&t.palette) {
             Ok(p) => {
-                self.name = t.palette.clone();
+                self.name.clone_from(&t.palette);
                 self.is_new = false;
                 self.editor.load(p);
                 self.reset_history();

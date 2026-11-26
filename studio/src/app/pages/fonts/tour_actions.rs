@@ -89,7 +89,6 @@ impl App {
     }
 
     /// Enter on a pool: says what it takes and asks first.
-    // Long function: checks the pool, estimates the fetch, then builds the question, in that order.
     fn tour_ask(&mut self, pool: usize) {
         let (key, label) = POOLS[pool];
         let all = self.tour_pool(key);
@@ -108,29 +107,43 @@ impl App {
                 .info(format!("{label}: not enough fonts for a tournament"));
         }
         // what fetching the previews takes (a guess for the random pick)
-        let missing: Vec<&Entry> = all
-            .iter()
-            .filter_map(|(_, e)| e.as_ref())
-            .filter(|e| !download::preview::has_preview(&e.id))
-            .collect();
         let fetch = if key.starts_with("installed") {
             "nothing to fetch".to_string()
         } else {
-            let share = n as f64 / all.len() as f64;
-            let (_, bytes, _) =
-                crate::system::prefetch::estimate(self.dl.catalogue.as_ref().unwrap(), key);
-            let left = missing.len() as f64 * share;
-            let bytes = bytes as f64 * missing.len() as f64 / all.len().max(1) as f64 * share;
-            format!(
-                "previews to fetch: about {} ({})",
-                left.round() as usize,
-                crate::system::prefetch::size(bytes as u64)
-            )
+            self.fetch_estimate(key, n, &all)
         };
         self.overlay = Overlay::Ask {
             question: format!("{label}: {n} fonts, {} picks; {fetch}. Start?", n - 1),
             then: Deferred::StartTournament(pool),
         };
+    }
+
+    /// Text for the question: about how many previews a tournament with `n`
+    /// of the pool's `pool_len` fonts must fetch, and how large they are.
+    /// (A guess for the random pick: the share of fonts without a preview.)
+    #[expect(
+        clippy::cast_precision_loss,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a rough guess shown as text: font counts and byte sizes are far below 2^52, and the values are never negative"
+    )]
+    fn fetch_estimate(&self, key: &str, n: usize, pool: &[(Entrant, Option<Entry>)]) -> String {
+        let pool_len = pool.len();
+        let missing = pool
+            .iter()
+            .filter_map(|(_, e)| e.as_ref())
+            .filter(|e| !download::preview::has_preview(&e.id))
+            .count();
+        let share = n as f64 / pool_len as f64;
+        let (_, bytes, _) =
+            crate::system::prefetch::estimate(self.dl.catalogue.as_ref().unwrap(), key);
+        let left = missing as f64 * share;
+        let bytes = bytes as f64 * missing as f64 / pool_len.max(1) as f64 * share;
+        format!(
+            "previews to fetch: about {} ({})",
+            left.round() as usize,
+            crate::system::prefetch::size(bytes as u64)
+        )
     }
 
     /// Starts a tournament of a pool: picks the fonts, fetches what's
