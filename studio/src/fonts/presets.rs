@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result, anyhow};
 use serde_json::{Map, Value, json};
 
-use super::types::ROLES;
+use crate::model::theme::ROLES;
 
 /// The keys before version 3, still read.
 pub const OLD_ROLES: [&str; 3] = ["mono", "ui", "bar"];

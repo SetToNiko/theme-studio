@@ -243,7 +243,7 @@ impl Action {
     /// The action's name in keymaps.json.
     pub fn id(self) -> String {
         match self {
-            Action::UseFor(r) => format!("use-for-{}", crate::fonts::types::ROLES[r as usize % 3]),
+            Action::UseFor(r) => format!("use-for-{}", crate::model::theme::ROLES[r as usize % 3]),
             Action::Panel(n) => format!("panel-{n}"),
             Action::Filter(c) => FILTER_IDS
                 .iter()

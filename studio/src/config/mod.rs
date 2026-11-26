@@ -114,7 +114,7 @@ fn rename_use_for_actions(v: &mut Value) {
                                 .position(|o| *o == r)
                         });
                         match role {
-                            Some(r) => (format!("use-for-{}", crate::fonts::types::ROLES[r]), keys),
+                            Some(r) => (format!("use-for-{}", crate::model::theme::ROLES[r]), keys),
                             None => (k, keys),
                         }
                     })
