@@ -28,7 +28,7 @@ impl App {
         let Some(cat) = &self.dl.catalogue else {
             if !self.dl.loading {
                 self.dl.loading = true;
-                download::load_catalogue(self.dl_sender());
+                download::catalogue::load_catalogue(self.dl_sender());
             }
             return false;
         };
@@ -38,7 +38,7 @@ impl App {
             if self.prefetch.start_building(&cats) {
                 let (cat, tx) = (cat.clone(), self.dl_sender());
                 std::thread::spawn(move || {
-                    let (queue, total) = queue(&cat, &cats, download::has_preview);
+                    let (queue, total) = queue(&cat, &cats, download::preview::has_preview);
                     let _ = tx.send(Msg::PrefetchQueue {
                         categories: cats,
                         queue,
@@ -57,7 +57,10 @@ impl App {
     /// `AT_ONCE` at a time (Nerd Font archives one at a time; see
     /// [`crate::system::prefetch::Prefetch::take_next`]).
     fn feed(&mut self, urgent: bool) {
-        let fetch = self.prefetch.fetch.unwrap_or(download::fetch_preview);
+        let fetch = self
+            .prefetch
+            .fetch
+            .unwrap_or(download::preview::fetch_preview);
         while let Some(e) = self.prefetch.take_next(urgent) {
             if self.prefetch.is_in_flight(&e.id) {
                 continue;
@@ -86,7 +89,7 @@ impl App {
         }
         let tx = self.dl_sender();
         std::thread::spawn(move || {
-            let _ = tx.send(Msg::PreviewsSize(download::previews_size()));
+            let _ = tx.send(Msg::PreviewsSize(download::preview::previews_size()));
         });
     }
 }

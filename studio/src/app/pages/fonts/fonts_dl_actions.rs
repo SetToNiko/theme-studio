@@ -40,7 +40,7 @@ impl App {
     /// The installed-fonts list (read once, again after changes).
     pub fn dl_listed(&mut self) -> serde_json::Map<String, Value> {
         if self.dl.listed.is_none() {
-            self.dl.listed = Some(download::read_list(&self.installed_list_path()));
+            self.dl.listed = Some(download::list::read_list(&self.installed_list_path()));
         }
         self.dl.listed.clone().unwrap_or_default()
     }
@@ -209,10 +209,10 @@ impl App {
 
     fn record_install(&mut self, name: &str, entry: Value) {
         let path = self.installed_list_path();
-        let mut list = download::read_list(&path);
+        let mut list = download::list::read_list(&path);
         list.insert(name.to_string(), entry);
         self.dl.listed = None;
-        match download::write_list(&path, list) {
+        match download::list::write_list(&path, list) {
             Ok(()) => self.messages.info(format!(
                 "Installed {name}: it's in the font list now; a rebuild keeps it (listed in {})",
                 path.display()
@@ -314,7 +314,7 @@ impl App {
             _ => {
                 self.dl.jobs.insert(e.id.clone(), (e.family.clone(), 0, 0));
                 self.messages.info(format!("Downloading {}…", e.family));
-                download::install(
+                download::install::install(
                     e,
                     crate::model::paths::installed_fonts_dir(),
                     self.dl.sender(),
@@ -335,7 +335,7 @@ impl App {
             None => return,
         };
         let path = self.installed_list_path();
-        let mut list = download::read_list(&path);
+        let mut list = download::list::read_list(&path);
         let Some(entry) = list.remove(&name) else {
             return self
                 .messages
@@ -346,8 +346,9 @@ impl App {
             .and_then(Value::as_str)
             .unwrap_or("")
             .to_string();
-        let result = download::remove_files(&crate::model::paths::installed_fonts_dir(), &id)
-            .and_then(|_| download::write_list(&path, list));
+        let result =
+            download::install::remove_files(&crate::model::paths::installed_fonts_dir(), &id)
+                .and_then(|_| download::list::write_list(&path, list));
         self.dl.listed = None;
         match result {
             Ok(()) => self

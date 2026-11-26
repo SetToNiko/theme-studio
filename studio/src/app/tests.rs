@@ -1671,10 +1671,10 @@ fn download_page_lists_searches_and_removes() {
         "Zen Loop".into(),
         serde_json::json!({"source": "google", "id": "zen-loop"}),
     );
-    crate::system::download::write_list(&list, m).unwrap();
+    crate::system::download::list::write_list(&list, m).unwrap();
 
     let zen = app.dl_entries()[2].clone();
-    let listed = crate::system::download::read_list(&list);
+    let listed = crate::system::download::list::read_list(&list);
     assert_eq!(app.dl_status(&zen, &listed), DlStatus::Listed);
     // the Installed tab (a click) lists it; d removes it
     render(&mut app, 160, 45);
@@ -1682,7 +1682,7 @@ fn download_page_lists_searches_and_removes() {
     assert_eq!(app.dl.tab, DlTab::Installed);
     assert_eq!(app.dl_rows(), vec![DlRow::Listed("Zen Loop".into())]);
     press(&mut app, "d");
-    assert!(crate::system::download::read_list(&list).is_empty());
+    assert!(crate::system::download::list::read_list(&list).is_empty());
     assert!(app.dl_rows().is_empty());
     // Nerd Fonts tab, with the release (past the Tournament tab)
     press(&mut app, "]");

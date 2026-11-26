@@ -111,7 +111,7 @@ impl App {
         let missing: Vec<&Entry> = all
             .iter()
             .filter_map(|(_, e)| e.as_ref())
-            .filter(|e| !download::has_preview(&e.id))
+            .filter(|e| !download::preview::has_preview(&e.id))
             .collect();
         let fetch = if key.starts_with("installed") {
             "nothing to fetch".to_string()

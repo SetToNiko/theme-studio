@@ -84,7 +84,7 @@ impl App {
         pv.note_highlight(&e.id);
         // installed: its family from its own files, nothing to fetch
         if installed && !pv.families.contains_key(&e.id) && pv.fetching.insert(e.id.clone()) {
-            download::scan_installed(e.id.clone(), self.dl_sender());
+            download::preview::scan_installed(e.id.clone(), self.dl_sender());
         }
         let pv = self.pv();
         let nerd = matches!(e.source, Source::Nerd { .. });
@@ -95,7 +95,7 @@ impl App {
             && !pv.fetching.contains(&e.id)
         {
             pv.fetching.insert(e.id.clone());
-            download::fetch_preview(e.clone(), self.dl_sender());
+            download::preview::fetch_preview(e.clone(), self.dl_sender());
         }
         let Some(Ok(family)) = self.pv().families.get(&e.id).cloned() else {
             return false;
@@ -135,7 +135,7 @@ impl App {
             markup,
             bg,
             dpi,
-            (!installed).then(|| download::preview_fontconfig_for(&e.id)),
+            (!installed).then(|| download::preview::preview_fontconfig_for(&e.id)),
             // prose and the README wrap; code and icons are cut, like a terminal
             matches!(kind, Kind::Prose | Kind::Readme).then_some(width),
         );
@@ -180,7 +180,7 @@ impl App {
                         _ => String::new(),
                     };
                     let msg = format!("Fetching {} for its preview{what}…", e.family);
-                    download::fetch_preview(e, self.dl_sender());
+                    download::preview::fetch_preview(e, self.dl_sender());
                     self.messages.info(msg);
                 }
                 _ => {}

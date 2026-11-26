@@ -411,7 +411,7 @@ impl App {
             Deferred::NerdForRoles { id, group, roles } => {
                 self.install_nerd_for_roles(id, group, roles)
             }
-            Deferred::ClearPreviews => match crate::system::download::clear_previews() {
+            Deferred::ClearPreviews => match crate::system::download::preview::clear_previews() {
                 Ok(()) => {
                     let pv = self.pv();
                     pv.families.clear();

@@ -115,7 +115,7 @@ impl DlPage {
     /// messages; see `App::poll_downloads`).
     pub(crate) fn start_catalogue_load(&mut self) {
         self.loading = true;
-        download::load_catalogue(self.tx.clone());
+        download::catalogue::load_catalogue(self.tx.clone());
     }
 
     /// Where background work reports back.
