@@ -10,8 +10,8 @@
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use super::nav::{For, Overlay, Pending};
-use super::{App, open_matches};
+use crate::app::state::nav::{For, Overlay, Pending};
+use crate::app::{App, open_matches};
 use crate::color::Rgb;
 use crate::palette::Palette;
 
@@ -19,7 +19,7 @@ impl App {
     /// Opens the palette list (`For::Palette`) with the current palette highlighted.
     ///
     /// Shows an error message instead if the stored palettes cannot be read.
-    pub(super) fn open_overlay(&mut self) {
+    pub(in crate::app) fn open_overlay(&mut self) {
         self.overlay_for = For::Palette;
         match self.store.load_all() {
             Ok(all) => {
@@ -58,7 +58,7 @@ impl App {
     /// that overlay next, and `None` when it already set `self.overlay`
     /// itself (it opened something else). Never both.
     // Long function (reason verified, phase 3): one match over all 11 overlay kinds, one short arm each.
-    pub(super) fn on_overlay_key(&mut self, k: KeyEvent) {
+    pub(in crate::app) fn on_overlay_key(&mut self, k: KeyEvent) {
         let overlay = std::mem::replace(&mut self.overlay, Overlay::None);
         let next = match overlay {
             Overlay::Help { page } => Some(help_key(page, k)),
@@ -131,7 +131,7 @@ impl App {
         &mut self,
         title: String,
         mut input: String,
-        purpose: crate::app::nav::Naming,
+        purpose: crate::app::state::nav::Naming,
         k: KeyEvent,
     ) -> Option<Overlay> {
         match k.code {
@@ -158,7 +158,7 @@ impl App {
     fn ask_key(
         &mut self,
         question: String,
-        then: crate::app::nav::Deferred,
+        then: crate::app::state::nav::Deferred,
         k: KeyEvent,
     ) -> Option<Overlay> {
         match k.code {
@@ -371,7 +371,7 @@ fn help_key(page: usize, k: KeyEvent) -> Overlay {
 
 /// Picks the nine swatch colours (backgrounds, foreground and accents) from a
 /// palette's JSON object. Keys that are missing or not a colour are skipped.
-pub(super) fn swatches(v: &serde_json::Value) -> Vec<Rgb> {
+pub(in crate::app) fn swatches(v: &serde_json::Value) -> Vec<Rgb> {
     let mut out = Vec::new();
     for key in [
         "bg0", "fg0", "red", "orange", "yellow", "green", "aqua", "blue", "purple",

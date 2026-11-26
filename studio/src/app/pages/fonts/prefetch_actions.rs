@@ -6,8 +6,8 @@
 //! need the whole `App`: the per-loop poll, feeding downloads, and measuring
 //! the space the previews use.
 
-use super::App;
-use super::nav::Page;
+use crate::app::App;
+use crate::app::state::nav::Page;
 use crate::download::{self, Msg};
 use crate::prefetch::queue;
 

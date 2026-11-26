@@ -9,7 +9,7 @@ use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
-use crate::app::nav::{ColourRow, Focus, Overlay, Page, Side};
+use crate::app::state::nav::{ColourRow, Focus, Overlay, Page, Side};
 use crate::app::{App, open_matches};
 use crate::color::{self, Rgb};
 use crate::config::Sizes;
@@ -1828,10 +1828,11 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
         }
         Overlay::Confirm(p) => {
             // what's unsaved: the palette, the font preset, the settings
-            let quit = matches!(p, crate::app::nav::Pending::Quit);
+            let quit = matches!(p, crate::app::state::nav::Pending::Quit);
             let fonts = matches!(
                 p,
-                crate::app::nav::Pending::NewFonts | crate::app::nav::Pending::OpenFonts(_)
+                crate::app::state::nav::Pending::NewFonts
+                    | crate::app::state::nav::Pending::OpenFonts(_)
             );
             let mut what = Vec::new();
             if (quit || !fonts) && app.dirty() {
@@ -1843,7 +1844,8 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
             if (quit
                 || matches!(
                     p,
-                    crate::app::nav::Pending::NewTheme | crate::app::nav::Pending::OpenTheme(_)
+                    crate::app::state::nav::Pending::NewTheme
+                        | crate::app::state::nav::Pending::OpenTheme(_)
                 ))
                 && app.theme_dirty()
                 && what.is_empty()
@@ -1893,9 +1895,9 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
         } => {
             let mut lines = vec![
                 Line::raw(match app.overlay_for {
-                    crate::app::nav::For::Fonts => " Name in fonts.json:",
-                    crate::app::nav::For::Palette => " Name in palettes.json:",
-                    crate::app::nav::For::Theme => " Theme name (new parts get it too):",
+                    crate::app::state::nav::For::Fonts => " Name in fonts.json:",
+                    crate::app::state::nav::For::Palette => " Name in palettes.json:",
+                    crate::app::state::nav::For::Theme => " Theme name (new parts get it too):",
                 }),
                 Line::from(vec![
                     Span::raw(" "),
@@ -1913,11 +1915,11 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
         Overlay::Capture { what, keys } => {
             let typed = crate::keymap::display_seq(keys, app.keymap.leader);
             let lines = match what {
-                crate::app::nav::Capture::Leader => vec![
+                crate::app::state::nav::Capture::Leader => vec![
                     Line::raw(" Press the new leader key."),
                     Line::styled(" Esc cancels.", Style::new().dark_gray()),
                 ],
-                crate::app::nav::Capture::Binding { action, add, .. } => vec![
+                crate::app::state::nav::Capture::Binding { action, add, .. } => vec![
                     Line::raw(format!(
                         " {} keys for \"{}\":",
                         if *add { "Extra" } else { "New" },
@@ -2065,7 +2067,7 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
             // the palette list hangs under the Palette pane's dropdown row; the
             // other lists (and this one on other pages) are centred
             let hanging = match app.layout.palette_pane {
-                Some(p) if app.overlay_for == crate::app::nav::For::Palette => {
+                Some(p) if app.overlay_for == crate::app::state::nav::For::Palette => {
                     let w = 70.min(area.width);
                     let h = (entries.len() as u16 + 4)
                         .min(30)
@@ -2134,9 +2136,9 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
                 f,
                 r,
                 match app.overlay_for {
-                    crate::app::nav::For::Fonts => "Open a font preset for this theme",
-                    crate::app::nav::For::Palette => "Open a palette for this theme",
-                    crate::app::nav::For::Theme => "Open theme",
+                    crate::app::state::nav::For::Fonts => "Open a font preset for this theme",
+                    crate::app::state::nav::For::Palette => "Open a palette for this theme",
+                    crate::app::state::nav::For::Theme => "Open theme",
                 },
                 lines,
             );

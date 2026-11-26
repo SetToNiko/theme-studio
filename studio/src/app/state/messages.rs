@@ -2,7 +2,7 @@
 //!
 //! [`Messages`] holds what the user is told and when it goes away. It knows
 //! nothing about the rest of the studio. The settings it needs (how long a
-//! message stays) come in as parameters. [`App`](super::App) calls it.
+//! message stays) come in as parameters. [`App`](crate::app::App) calls it.
 
 use std::time::{Duration, Instant};
 

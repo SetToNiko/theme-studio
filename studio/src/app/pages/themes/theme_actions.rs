@@ -5,8 +5,8 @@
 //! themes.json and the current theme file) stays in `theme.rs`, and so do
 //! its tests; this file only holds the methods that need the whole `App`.
 
-use super::App;
-use super::nav::{For, Overlay};
+use crate::app::App;
+use crate::app::state::nav::{For, Overlay};
 use crate::color::Rgb;
 use crate::theme::{Theme, ThemeStore};
 
@@ -281,7 +281,7 @@ impl App {
             .map(|(n, t)| {
                 let sw = palettes
                     .get(&t.palette)
-                    .map(super::overlay::swatches)
+                    .map(crate::app::input::overlay::swatches)
                     .unwrap_or_default();
                 (n, sw)
             })

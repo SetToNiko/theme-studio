@@ -5,8 +5,8 @@
 //! row type `KmRow` and the page data stay in `settings.rs`; this file only
 //! holds the methods that need the whole `App`.
 
-use super::App;
-use super::nav::{Capture, Deferred, Naming, Overlay};
+use crate::app::App;
+use crate::app::state::nav::{Capture, Deferred, Naming, Overlay};
 use crate::keymap::{Action, Context, Key, Keymap, all_actions, display_seq};
 use crate::settings::{KmRow, move_over};
 

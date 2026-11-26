@@ -6,7 +6,7 @@
 //! for the same style). The set-up and fetching are in `tour_actions.rs`;
 //! `tour_page.rs` keeps the tab's own data and the bracket is in `tournament.rs`.
 
-use super::App;
+use crate::app::App;
 use crate::download;
 use crate::keymap::Action;
 use crate::samples::{self, Kind};
@@ -16,7 +16,7 @@ use crate::tournament::{self, Tournament};
 impl App {
     /// Asks pane `i` to show entrant `who`, and picks up a finished image.
     // Long function: one ordered sequence (find the font, size the sample, request the render) where each step needs the one before.
-    pub(super) fn tour_draw_pane(&mut self, i: usize, who: Option<usize>) -> bool {
+    pub(in crate::app) fn tour_draw_pane(&mut self, i: usize, who: Option<usize>) -> bool {
         let Some(who) = who else {
             let p = &mut self.tour().panes[i];
             let had = p.image.is_some();
@@ -85,7 +85,7 @@ impl App {
         }
     }
 
-    pub(super) fn tour_save(&mut self) {
+    pub(in crate::app) fn tour_save(&mut self) {
         let dir = tournament::dir();
         if let Some(t) = &self.tour().t
             && let Err(e) = t.save(&dir)

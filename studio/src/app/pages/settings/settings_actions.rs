@@ -10,8 +10,8 @@
 
 use std::path::PathBuf;
 
-use super::App;
-use super::nav::{Deferred, Naming, Overlay};
+use crate::app::App;
+use crate::app::state::nav::{Deferred, Naming, Overlay};
 use crate::history::History;
 use crate::keymap::{Action, Key};
 use crate::settings::{FILES, HistFocus, KmRow, SettingsPage, TABS, Tab, ends, wrap};
@@ -218,7 +218,7 @@ impl App {
                 return;
             }
             Action::Back => {
-                self.page = crate::app::nav::Page::Main;
+                self.page = crate::app::state::nav::Page::Main;
                 return;
             }
             // past the edge of the list next to the tabs: onto the tabs

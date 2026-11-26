@@ -1,6 +1,6 @@
 //! Tests for the app: key handling, panes, palette editing, fonts, and the tour.
 
-use super::nav::{ColourRow, Pending};
+use super::state::nav::{ColourRow, Pending};
 use super::*;
 
 use crate::keymap::{Action, Context};
@@ -987,7 +987,7 @@ fn settings_changes_wait_for_save() {
 
 #[test]
 fn settings_behaviour_tab_edits_then_saves() {
-    use crate::app::nav::BhRow;
+    use crate::app::state::nav::BhRow;
     use crate::behaviour::behaviour_rows;
     let store = temp_store("settings-behaviour");
     let dir = store.dir.clone();
@@ -1145,7 +1145,7 @@ fn ctrl_c_quits_unless_the_keymap_uses_it() {
 
 #[test]
 fn hover_look_is_configurable_and_pane_borders_light_up() {
-    use crate::app::nav::{BhRow, LookId};
+    use crate::app::state::nav::{BhRow, LookId};
     use crate::behaviour::behaviour_rows;
     use crate::hit::{Target as T, Underline};
     use ratatui::style::{Color, Modifier};
@@ -1331,7 +1331,7 @@ fn settings_tabs_take_the_keyboard_at_the_list_edge() {
     // the first row is the first group's title (groups fold open / shut)
     assert_eq!(
         crate::behaviour::behaviour_rows()[app.settings_page.bh_sel],
-        crate::app::nav::BhRow::Header("Keys")
+        crate::app::state::nav::BhRow::Header("Keys")
     );
     press(&mut app, "jk");
     assert!(!app.settings_page.tabs_focused);
@@ -1478,7 +1478,7 @@ fn preset_browser_previews_loads_creates_and_deletes() {
 
 #[test]
 fn settings_groups_fold_and_only_names_are_underlined() {
-    use crate::app::nav::BhRow;
+    use crate::app::state::nav::BhRow;
     use crate::behaviour::visible_behaviour_rows;
     use crate::hit::Target as T;
     use crate::settings::KmRow;
@@ -1844,7 +1844,7 @@ fn a_family_without_fitting_faces_offers_its_nerd_font() {
             );
             assert_eq!(
                 *then,
-                crate::app::nav::Deferred::NerdForRoles {
+                crate::app::state::nav::Deferred::NerdForRoles {
                     id: "nerd-firacode".into(),
                     group: "Fira Code".into(),
                     roles: vec![0, 1, 2],
@@ -2067,7 +2067,7 @@ fn palette_list_hangs_from_its_row_and_previews() {
 
 #[test]
 fn behaviour_tab_sets_up_prefetching() {
-    use crate::app::nav::BhRow;
+    use crate::app::state::nav::BhRow;
     use crate::behaviour::behaviour_rows;
     let store = temp_store("prefetch-rows");
     let dir = store.dir.clone();
@@ -2129,7 +2129,7 @@ fn behaviour_tab_sets_up_prefetching() {
     assert!(matches!(
         app.overlay,
         Overlay::Ask {
-            then: crate::app::nav::Deferred::ClearPreviews,
+            then: crate::app::state::nav::Deferred::ClearPreviews,
             ..
         }
     ));
@@ -2192,7 +2192,7 @@ fn hints_and_previews_toggle_per_page() {
 
 #[test]
 fn behaviour_cursor_keeps_the_swatch() {
-    use crate::app::nav::{BhRow, LookId};
+    use crate::app::state::nav::{BhRow, LookId};
     use crate::behaviour::visible_behaviour_rows;
     use ratatui::style::Modifier;
     let store = temp_store("cursor-swatch");

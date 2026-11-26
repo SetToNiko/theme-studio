@@ -6,8 +6,8 @@
 //! pause and renderer) and the dropdown lists stay in `fonts_preview.rs`;
 //! this file only holds the methods that need the whole `App`.
 
-use super::App;
-use super::nav::{Overlay, Page};
+use crate::app::App;
+use crate::app::state::nav::{Overlay, Page};
 use crate::download::{self, Entry, Source};
 use crate::fonts_dl::{DlRow, DlTab, mb};
 use crate::fonts_preview::FontPreview;

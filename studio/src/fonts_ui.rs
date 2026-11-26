@@ -9,7 +9,7 @@ use ratatui::widgets::{Block, Paragraph};
 use ratatui_image::{Resize, StatefulImage};
 
 use crate::app::App;
-use crate::app::nav::Side;
+use crate::app::state::nav::Side;
 use crate::fonts::{CHIPS, FontFocus, ROLE_NAMES, ROLE_NEEDS, ROLE_USE, Row};
 use crate::hit::{Target, hover};
 use crate::ui::pane_title;

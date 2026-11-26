@@ -10,7 +10,7 @@
 //! the item is new, save, then optionally apply). [`App::guard`] runs an
 //! action at once, or asks first when there are unsaved changes.
 
-use super::nav::{Focus, For, Overlay, Pending};
+use super::state::nav::{Focus, For, Overlay, Pending};
 use super::{App, open_matches};
 use crate::color::Rgb;
 

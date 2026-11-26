@@ -4,7 +4,7 @@
 //! The test module below also tests the `App` methods of
 //! `app/behaviour_actions.rs` (it builds an `App`).
 
-use crate::app::nav::{BhRow, LookId};
+use crate::app::state::nav::{BhRow, LookId};
 use crate::palette::GROUPS;
 
 impl BhRow {
@@ -130,7 +130,7 @@ mod tests {
     use super::*;
     use crate::app::App;
     use crate::app::Start;
-    use crate::app::nav::{Capture, Overlay};
+    use crate::app::state::nav::{Capture, Overlay};
     use crate::color::Rgb;
     use crate::config::{LookSettings, Settings};
     use crate::hit::Underline;

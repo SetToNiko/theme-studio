@@ -7,7 +7,7 @@
 //! running an edit on the draft, showing it, counting its changes, save and
 //! discard.
 
-use super::App;
+use crate::app::App;
 use crate::draft::{Draft, keymaps_value};
 
 impl App {

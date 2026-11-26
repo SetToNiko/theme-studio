@@ -9,8 +9,9 @@
 //! page tabs focus, the keymap contexts that follow the focus, and the
 //! resize-mode keys (they move the borders of the focused pane).
 
-use super::nav::{Focus, Page, Side};
-use super::{App, actions};
+use crate::app::App;
+use crate::app::input::actions;
+use crate::app::state::nav::{Focus, Page, Side};
 use crate::keymap::{Action, Context};
 use crate::preview::{Mode as PreviewMode, PaneId};
 
@@ -32,7 +33,7 @@ impl App {
     /// Keys with the keyboard on the page tabs: left / right change pages
     /// (the keyboard stays on the tabs); back towards the page, Enter or Esc
     /// return to it. True if handled here.
-    pub(super) fn page_tabs_action(&mut self, a: Action) -> bool {
+    pub(in crate::app) fn page_tabs_action(&mut self, a: Action) -> bool {
         const PAGES: [Page; 3] = [Page::Main, Page::Downloads, Page::Settings];
         let top = self.settings.layout.tabs_on_top();
         let i = PAGES.iter().position(|p| *p == self.page).unwrap_or(0);
@@ -135,7 +136,7 @@ impl App {
     /// `<C-w>h/j/k/l`: the neighbouring pane in the fonts and colour columns
     /// (the preview windows take the keyboard, so they're only entered on
     /// purpose: 6, 7, F12 or a click). Hidden panes are skipped.
-    pub(super) fn move_pane(&mut self, dx: i32, dy: i32) {
+    pub(in crate::app) fn move_pane(&mut self, dx: i32, dy: i32) {
         let columns = self.layout.pane_columns();
         let cur = self.current_pane();
         let Some((c, r)) = columns
@@ -159,7 +160,7 @@ impl App {
     }
 
     /// Shows the picker and gives it the keyboard (editing a colour).
-    pub(super) fn open_picker(&mut self) {
+    pub(in crate::app) fn open_picker(&mut self) {
         self.side = Side::Colours;
         self.layout.picker_visible = true;
         if self.focus == Focus::List {
@@ -170,7 +171,7 @@ impl App {
     /// Back to the colour list from the picker: Esc (`discard`) puts back what
     /// the colours were when you started changing them, Enter keeps them. The
     /// picker hides again unless Settings says it stays open.
-    pub(super) fn leave_picker(&mut self, discard: bool) {
+    pub(in crate::app) fn leave_picker(&mut self, discard: bool) {
         if self.editor.end_session(self.key(), discard) {
             self.messages
                 .info(format!("Discarded the change to {}", self.key()));
@@ -212,7 +213,7 @@ impl App {
     /// Resize-mode keys: h/l move the focused pane's side edge, j/k its lower
     /// edge, by one cell (capitals: five); = resets; Esc / Enter leave.
     // Long function (reason verified, phase 3): one match from the action to a step size, then the border move.
-    pub(super) fn run_resize(&mut self, a: Action) {
+    pub(in crate::app) fn run_resize(&mut self, a: Action) {
         let (dx, dy, n): (i32, i32, i32) = match a {
             Action::Left => (-1, 0, 1),
             Action::Right => (1, 0, 1),

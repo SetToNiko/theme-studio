@@ -12,8 +12,8 @@ use std::sync::mpsc::Sender;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::Value;
 
-use super::App;
-use super::nav::{Deferred, Overlay, Page};
+use crate::app::App;
+use crate::app::state::nav::{Deferred, Overlay, Page};
 use crate::download::{self, Catalogue, Entry, Msg, Source};
 use crate::fonts_dl::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb, norm};
 use crate::keymap::Action;
