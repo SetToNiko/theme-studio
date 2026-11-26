@@ -214,7 +214,7 @@ Completes: none (cycle count decreases, measured)
 - [x] P5.13 Page state into folders (decided after P5.9): new `settings_page/` (mod from settings.rs, behaviour, draft, keymap_presets from presets.rs, readme from docs.rs); tour_page.rs to `fonts/tournament_page.rs`; hit.rs to `app/state/hit.rs` | Files: moves, access paths | Target: T5 | Check: tests; cycles 0
 - [x] P5.10 `system/` folder: desktop, download, prefetch, out (samples went to model/ in P5.9; the page-state modules went to folders in P5.13), and the cycle ratchet set to 0: `nix flake check` fails on any cycle | Files: main.rs, system/mod.rs, moves, `docs/refactor/lint-baseline.txt` | Target: T5 | Check: tests; cycles 0; no module left in the root except main.rs
 - [ ] P5.14a `ui/page_bodies/settings.rs` (844 production lines) under 500: divide by tab | Files: the file, new files next to it | Target: limits | Check: tests
-- [ ] P5.14b `system/download.rs` (699) under 500 | Files: the file, new files in system/ | Target: limits | Check: tests
+- [x] P5.14b `system/download.rs` (699) under 500 | Files: system/download/{mod,net,catalogue,install,preview,list}.rs | Target: limits | Check: tests
 - [x] P5.14c `model/samples.rs` (523) under 500 | Files: the file, new files in model/ | Target: limits | Check: tests
 - [x] P5.14d `app/pages/themes/behaviour_actions.rs` (521) under 500: moved to app/pages/settings/ (it serves only the Behaviour tab) and divided | Files: settings/behaviour_actions.rs, behaviour_colours_actions.rs, behaviour_rows_actions.rs | Target: limits | Check: tests
 Removed: the old "settings: tabs into separate files" step (Phase 4 moved the impl App blocks out; settings.rs is under 500).
