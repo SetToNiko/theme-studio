@@ -17,15 +17,15 @@ use super::panes::preview::draw_preview;
 use crate::app::App;
 use crate::app::state::nav::Page;
 use crate::hit::{BorderId, Target};
-use crate::preview::Mode as PreviewMode;
+use crate::ui::desktop_preview::Mode as PreviewMode;
 
 /// The Main page: fonts, colour list, picker and preview, then the
 /// draggable borders between them.
 pub(super) fn draw_main_page(f: &mut Frame, app: &mut App, l: &MainLayout) {
     app.layout.wide = l.wide;
-    crate::fonts_ui::draw_fonts(f, app, l.roles, l.font_list);
+    crate::ui::page_bodies::fonts_column::draw_fonts(f, app, l.roles, l.font_list);
     if let Some(s) = l.sample {
-        crate::fonts_ui::draw_sample(f, app, s);
+        crate::ui::page_bodies::fonts_column::draw_sample(f, app, s);
     }
     draw_list(f, app, l.colour_list);
     if let Some(p) = l.picker {
@@ -63,12 +63,12 @@ fn draw_borders(f: &mut Frame, app: &mut App, l: &MainLayout) {
 /// The Download fonts and Settings pages (the body above the status line).
 pub(super) fn draw_body_page(f: &mut Frame, app: &mut App, body: Rect) {
     if app.page == Page::Downloads {
-        crate::fonts_dl_ui::draw_downloads(f, app, body);
+        crate::ui::page_bodies::fonts_download::draw_downloads(f, app, body);
     } else if app.page == Page::Settings {
         // as edited; Save / Discard drawn with what's live
         let changes = app.draft_changes();
-        app.show_draft(|app| crate::settings_ui::draw_settings(f, app, body));
-        crate::settings_ui::draw_save_buttons(f, app, body, changes);
+        app.show_draft(|app| crate::ui::page_bodies::settings::draw_settings(f, app, body));
+        crate::ui::page_bodies::settings::draw_save_buttons(f, app, body, changes);
     } else {
         draw_page(f, app, body);
     }

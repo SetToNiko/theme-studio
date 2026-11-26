@@ -1,7 +1,7 @@
 //! The Preview pane: the live desktop, or the swatch view.
 //!
 //! The live desktop (nvim, shell or yazi, i3 borders and bar, rofi) is drawn
-//! by `crate::preview`; this file draws its frame and the click targets.
+//! by `crate::ui::desktop_preview`; this file draws its frame and the click targets.
 //! The swatch view (V) lists every key as a swatch plus static samples.
 
 use ratatui::Frame;
@@ -15,7 +15,7 @@ use crate::hit::Target;
 use crate::keymap::Context;
 use crate::keymap::action::Action;
 use crate::palette::{self, GROUPS, Palette};
-use crate::preview::Mode as PreviewMode;
+use crate::ui::desktop_preview::Mode as PreviewMode;
 use crate::ui::widgets::friendly;
 use crate::ui::{focused_block, swatch};
 
@@ -46,7 +46,7 @@ pub fn draw_preview(f: &mut Frame, app: &mut App, area: Rect, stack: bool) {
         &app.editor.palette,
         app.terminal.as_ref(),
         &app.name,
-        crate::preview::Windows {
+        crate::ui::desktop_preview::Windows {
             stack,
             split: app.layout.sizes.preview_split,
         },

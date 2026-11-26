@@ -26,6 +26,8 @@ pub mod layout;
 mod status;
 use layout::{Arrangement, arrange};
 use status::draw_status;
+pub mod desktop_preview;
+mod page_bodies;
 mod panes;
 
 pub fn draw(f: &mut Frame, app: &mut App) {

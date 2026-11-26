@@ -6,8 +6,8 @@ use super::*;
 use crate::keymap::action::Action;
 
 use crate::keymap::Context;
-use crate::preview::PaneId;
 use crate::store::to_jq_string;
+use crate::ui::desktop_preview::PaneId;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{

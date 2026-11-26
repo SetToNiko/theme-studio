@@ -233,8 +233,9 @@ pub fn arrange(
     }
     // between nvim and the shell (inside the preview's frame, above the bar)
     if show_preview {
-        let desk = crate::preview::desk_area(preview);
-        let ((a, _), stacked) = crate::preview::split_windows(desk, wide, sizes.preview_split);
+        let desk = crate::ui::desktop_preview::desk_area(preview);
+        let ((a, _), stacked) =
+            crate::ui::desktop_preview::split_windows(desk, wide, sizes.preview_split);
         borders.push(if stacked {
             h_border(BorderId::PreviewSplit, a, desk.y, desk.height, false)
         } else {

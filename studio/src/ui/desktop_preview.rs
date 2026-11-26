@@ -1,7 +1,11 @@
-//! Live preview: a model of the i3 desktop with real programs in it. nvim
-//! (your config), an interactive shell (starship) and yazi run in hidden
-//! terminals; their screens are drawn with the draft palette, so nothing has
-//! to be reloaded except nvim, which re-reads the draft colours file itself.
+//! Live preview of the desktop: a model of the i3 desktop with real programs in it.
+//!
+//! Holds both the state (the hidden terminals, `Pane` and `Preview`) and the
+//! drawing of the desktop. The frame and click targets of the Preview pane are
+//! in `panes/preview.rs`. nvim (your config), an interactive shell (starship)
+//! and yazi run in the hidden terminals; their screens are drawn with the draft
+//! palette, so nothing has to be reloaded except nvim, which re-reads the draft
+//! colours file itself.
 
 use std::io::{Read, Write};
 use std::num::NonZeroU16;

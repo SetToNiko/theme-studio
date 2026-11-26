@@ -13,7 +13,7 @@ use crate::app::App;
 use crate::app::state::nav::{Focus, Page, Side};
 use crate::keymap::Context;
 use crate::keymap::action::{Action, ActionGroup};
-use crate::preview::{Mode as PreviewMode, PaneId};
+use crate::ui::desktop_preview::{Mode as PreviewMode, PaneId};
 
 impl App {
     /// Starts with the font roles focused (`--fonts`).
