@@ -7,6 +7,7 @@
 //! - `nav.rs`: plain enums for where the user is (`Page`, `Focus`, `Side`, `Overlay`, `Pending`, `For`, `ColourRow`, and the settings types `Capture`, `Naming`, `Deferred`, `BhRow`, `LookId`)
 //! - `persist.rs`: save, save as, apply, open, new, the unsaved-changes prompt (`guard`, `run_pending`)
 //! - `prefetch_actions.rs`: font-preview prefetching (`poll_prefetch`, feeding downloads); the prefetch data and logic stay in `prefetch.rs`
+//! - `presets_actions.rs`: the Keymaps tab's preset browser (open, keys, click, new/delete/reset preset); the preset types and drawing stay in `presets.rs`
 //! - `focus.rs`: which pane has the keyboard (`focus_pane`, `move_pane`), keymap contexts, resize mode keys
 //! - `colours.rs`: colour list rows, hex input, paste, Tab order through the picker
 //! - `actions.rs`: `run_action`, which sends a keymap action to the right method
@@ -21,7 +22,7 @@
 //!
 //! Other `impl App` blocks live next to the feature they serve, outside this
 //! folder: `settings.rs`, `behaviour.rs`, `draft.rs`, `theme.rs`, `fonts_dl.rs`,
-//! `fonts_preview.rs`, `tour_page.rs`, `presets.rs`.
+//! `fonts_preview.rs`, `tour_page.rs`.
 
 mod actions;
 mod colours;
@@ -34,6 +35,7 @@ mod overlay;
 mod palette_editor;
 mod persist;
 mod prefetch_actions;
+mod presets_actions;
 
 use std::io::Write;
 use std::time::{Duration, Instant};

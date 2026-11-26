@@ -209,7 +209,13 @@ fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
                 (d, p)
             }
         };
-        return crate::presets::draw_browse(f, app, diff, presets);
+        return crate::presets::draw_browse(
+            f,
+            (&mut app.hits, &app.presets, &app.keymap),
+            &mut app.settings_page,
+            diff,
+            presets,
+        );
     }
     let rows = app.keymap_rows();
     let n = rows.len();

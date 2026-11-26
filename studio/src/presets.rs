@@ -10,10 +10,9 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
 
-use crate::app::App;
-use crate::app::nav::{Deferred, Naming};
-use crate::hit::{Target, hover_line};
+use crate::hit::{HitMap, Target, hover_line};
 use crate::keymap::{Action, Context, Keymap, all_actions, display_seq};
+use crate::settings::SettingsPage;
 
 /// A line of the difference between two keymaps.
 #[derive(Clone, Debug, PartialEq)]
@@ -75,176 +74,36 @@ pub fn keymap_diff(now: &Keymap, then: &Keymap, all: bool) -> Vec<KmDiff> {
     out
 }
 
-fn is_shipped(name: &str) -> bool {
+pub(crate) fn is_shipped(name: &str) -> bool {
     Keymap::builtin().iter().any(|b| b.name == name)
-}
-
-impl App {
-    /// Opens the preset list, on the active preset.
-    pub fn open_browse(&mut self) {
-        let i = self
-            .presets
-            .iter()
-            .position(|p| p.name == self.keymap.name)
-            .unwrap_or(0);
-        self.settings_page.browse = Some(i);
-        self.settings_page.browse_scroll = 0;
-    }
-
-    fn highlighted(&self) -> Option<Keymap> {
-        self.settings_page
-            .browse
-            .and_then(|i| self.presets.get(i).cloned())
-    }
-
-    /// Makes the highlighted preset the active keymap (unsaved).
-    fn load_highlighted(&mut self) {
-        let Some(p) = self.highlighted() else { return };
-        // the current keymap's edits stay in its preset
-        self.sync_preset();
-        self.messages
-            .info(format!("Loaded the preset \"{}\" (unsaved)", p.name));
-        self.keymap = p;
-        self.settings_page.browse = None;
-    }
-
-    /// Keys while the preset list is open (inside the draft).
-    pub fn run_browse(&mut self, a: Action) {
-        let n = self.presets.len();
-        let Some(i) = self.settings_page.browse else {
-            return;
-        };
-        let p = &mut self.settings_page;
-        match a {
-            Action::Up | Action::Left => p.browse = Some(i.saturating_sub(1)),
-            Action::Down => p.browse = Some((i + 1).min(n.saturating_sub(1))),
-            Action::Top => p.browse = Some(0),
-            Action::Bottom => p.browse = Some(n.saturating_sub(1)),
-            Action::PageUp => p.browse_scroll = p.browse_scroll.saturating_sub(10),
-            Action::PageDown => p.browse_scroll += 10,
-            Action::ToggleAll => {
-                p.browse_all = !p.browse_all;
-                p.browse_scroll = 0;
-            }
-            Action::Confirm | Action::Right => return self.load_highlighted(),
-            Action::Back => p.browse = None,
-            Action::SaveNamed => {
-                let name = self.presets[i].name.clone();
-                self.overlay = crate::app::nav::Overlay::Prompt {
-                    title: format!("Name for a new preset made from \"{name}\""),
-                    input: String::new(),
-                    purpose: Naming::PresetFrom(name),
-                };
-            }
-            Action::Delete if is_shipped(&self.presets[i].name) => self
-                .messages
-                .info("Shipped presets can't be deleted (R resets them)"),
-            Action::Delete => {
-                let name = self.presets[i].name.clone();
-                self.overlay = crate::app::nav::Overlay::Ask {
-                    question: format!("Delete the preset \"{name}\"? (Save makes it final)"),
-                    then: Deferred::DeletePreset(name),
-                };
-            }
-            Action::ResetPreset if is_shipped(&self.presets[i].name) => {
-                let name = self.presets[i].name.clone();
-                self.overlay = crate::app::nav::Overlay::Ask {
-                    question: format!("Reset \"{name}\" to the shipped keys?"),
-                    then: Deferred::ResetPreset(name),
-                };
-            }
-            Action::ResetPreset => self
-                .messages
-                .info("Only shipped presets can be reset; this one is yours"),
-            _ => {}
-        }
-        if self.settings_page.browse != Some(i) {
-            self.settings_page.browse_scroll = 0;
-        }
-    }
-
-    /// A click on a preset: highlights it; on the highlighted one, loads it.
-    pub fn preset_click(&mut self, i: usize) {
-        if self.settings_page.browse == Some(i) {
-            self.load_highlighted();
-        } else {
-            self.settings_page.browse = Some(i);
-            self.settings_page.browse_scroll = 0;
-        }
-    }
-
-    /// A new preset, a copy of `from`, highlighted in the list.
-    pub fn new_preset_from(&mut self, from: &str, name: String) {
-        if self.presets.iter().any(|p| p.name == name) {
-            return self
-                .messages
-                .error(format!("There's already a preset \"{name}\""));
-        }
-        let Some(mut km) = self.presets.iter().find(|p| p.name == from).cloned() else {
-            return;
-        };
-        km.name = name.clone();
-        self.presets.push(km);
-        self.settings_page.browse = Some(self.presets.len() - 1);
-        self.messages.info(format!(
-            "New preset \"{name}\" from \"{from}\" (unsaved); Enter loads it"
-        ));
-    }
-
-    /// Deletes a preset (the active one: Vim becomes active).
-    pub fn delete_preset(&mut self, name: &str) {
-        self.presets.retain(|p| p.name != name);
-        if self.keymap.name == name {
-            self.keymap = self
-                .presets
-                .iter()
-                .find(|p| p.name == "Vim")
-                .cloned()
-                .unwrap_or_else(Keymap::vim);
-        }
-        if let Some(i) = self.settings_page.browse {
-            self.settings_page.browse = Some(i.min(self.presets.len().saturating_sub(1)));
-        }
-        self.messages
-            .info(format!("Deleted the preset \"{name}\" (unsaved)"));
-    }
-
-    /// Puts a shipped preset back to its shipped keys.
-    pub fn reset_preset(&mut self, name: &str) {
-        let Some(b) = Keymap::builtin().into_iter().find(|b| b.name == name) else {
-            return;
-        };
-        if let Some(p) = self.presets.iter_mut().find(|p| p.name == name) {
-            *p = b.clone();
-        }
-        if self.keymap.name == name {
-            self.keymap = b;
-        }
-        self.messages
-            .info(format!("\"{name}\" is back to the shipped keys (unsaved)"));
-    }
 }
 
 // ----- drawing ---------------------------------------------------------------
 
 /// The browser: the difference on the left (`diff`), the list on the right
 /// (`list`).
-pub fn draw_browse(f: &mut Frame, app: &mut App, diff: Rect, list: Rect) {
-    let Some(sel) = app.settings_page.browse else {
+pub fn draw_browse(
+    f: &mut Frame,
+    (hits, presets, keymap): (&mut HitMap, &[Keymap], &Keymap),
+    page: &mut SettingsPage,
+    diff: Rect,
+    list: Rect,
+) {
+    let Some(sel) = page.browse else {
         return;
     };
-    let Some(then) = app.presets.get(sel).cloned() else {
+    let Some(then) = presets.get(sel).cloned() else {
         return;
     };
 
     // the list
     let mut lines = vec![Line::styled("Presets", Style::new().bold()), Line::raw("")];
     let top = list.y + 2;
-    for (i, p) in app.presets.iter().enumerate() {
+    for (i, p) in presets.iter().enumerate() {
         if top + i as u16 >= list.bottom() {
             break;
         }
-        let active = p.name == app.keymap.name;
+        let active = p.name == keymap.name;
         let style = if i == sel {
             Style::new().reversed()
         } else {
@@ -256,7 +115,7 @@ pub fn draw_browse(f: &mut Frame, app: &mut App, diff: Rect, list: Rect) {
             width: list.width,
             height: 1,
         };
-        let hovered = app.hits.add(r, Target::PresetRow(i)) && i != sel;
+        let hovered = hits.add(r, Target::PresetRow(i)) && i != sel;
         // the cursor on the name, not the padding around it
         let mut spans = crate::hit::cursor_spans(format!(" {:<16}", p.name), Style::new(), style);
         spans.push(Span::styled(
@@ -297,19 +156,19 @@ pub fn draw_browse(f: &mut Frame, app: &mut App, diff: Rect, list: Rect) {
     );
 
     // the difference
-    let all = app.settings_page.browse_all;
-    let rows = keymap_diff(&app.keymap, &then, all);
-    let changed = keymap_diff(&app.keymap, &then, false)
+    let all = page.browse_all;
+    let rows = keymap_diff(keymap, &then, all);
+    let changed = keymap_diff(keymap, &then, false)
         .iter()
         .filter(|d| !matches!(d, KmDiff::Context(_)))
         .count();
     let [head, body] = Layout::vertical([Constraint::Length(2), Constraint::Min(0)]).areas(diff);
-    let title = if then.name == app.keymap.name {
+    let title = if then.name == keymap.name {
         format!(" {} (the current keymap)", then.name)
     } else if changed == 0 {
-        format!(" {} → {}: the same keys", app.keymap.name, then.name)
+        format!(" {} → {}: the same keys", keymap.name, then.name)
     } else {
-        format!(" {} → {}: {changed} differ", app.keymap.name, then.name)
+        format!(" {} → {}: {changed} differ", keymap.name, then.name)
     };
     f.render_widget(
         Paragraph::new(vec![
@@ -321,14 +180,14 @@ pub fn draw_browse(f: &mut Frame, app: &mut App, diff: Rect, list: Rect) {
         ]),
         head,
     );
-    app.hits.add(body, Target::SettingsDiff);
+    hits.add(body, Target::SettingsDiff);
     let h = body.height as usize;
     let max = rows.len().saturating_sub(h);
-    app.settings_page.browse_scroll = app.settings_page.browse_scroll.min(max);
+    page.browse_scroll = page.browse_scroll.min(max);
     let w = (body.width as usize).saturating_sub(4).min(46);
     let out: Vec<Line> = rows
         .iter()
-        .skip(app.settings_page.browse_scroll)
+        .skip(page.browse_scroll)
         .take(h)
         .map(|d| match d {
             KmDiff::Context(c) => {
