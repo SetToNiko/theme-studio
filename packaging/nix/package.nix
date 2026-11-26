@@ -19,7 +19,6 @@
   procps,
   jq,
   fontconfig,
-  rofi,
   ghostty,
   i3,
 }:
@@ -55,7 +54,7 @@ let
   };
 
   # What the scripts run. The basics come first; the desktop's own programs
-  # (rofi, ghostty, i3-msg) only when the system has none, so its versions
+  # (ghostty, i3-msg) only when the system has none, so its versions
   # and configs win.
   basics = [
     coreutils
@@ -67,7 +66,6 @@ let
     fontconfig.bin
   ];
   desktop = [
-    rofi
     ghostty
     i3
   ];

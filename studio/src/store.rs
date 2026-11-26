@@ -183,7 +183,7 @@ impl Store {
     }
 
     /// Writes one palette into palettes.json (re-read first, so changes made
-    /// elsewhere meanwhile, like a delete from the rofi menu, are kept).
+    /// elsewhere meanwhile, like a delete made by another tool, are kept).
     /// An existing palette keeps its place; a new one goes at the end.
     pub fn save(&self, name: &str, palette: &Palette) -> Result<()> {
         let mut all = self.load_all()?;

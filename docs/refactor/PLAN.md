@@ -132,7 +132,7 @@ Completes: criterion 4 (the check command exists)
 - [x] R.3 [removal] NixOS module: remove `packaging/nix/nixos-module.nix` and the `nixosModules` output, and its documentation | Files: `packaging/nix/nixos-module.nix`, `flake.nix`, `README.md`, `docs/theme-studio.md` | Target: goal | Check: `nix flake check`
 - [x] R.4 Shared data reader: move `json_data` from `rofi-picker.sh` into `scripts/lib/data.sh` (no behavior change) | Files: `scripts/lib/rofi-picker.sh`, `scripts/lib/data.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: T1 | Check: golden files unchanged
 - [x] R.5 [removal] rofi picker: remove `scripts/lib/rofi-picker.sh` and the picker branches. No name: a usage message, exit 2 | Files: `scripts/lib/rofi-picker.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh`, `tests/scripts/run.sh` (new no-name cases) | Target: goal | Check: golden files unchanged, new no-name cases pass
-- [ ] R.6 [removal] Picker documentation: README and the guide describe the switch commands with a name only | Files: `README.md`, `docs/theme-studio.md` | Target: goal | Check: `grep -i "rofi menu\|picker" README.md docs/theme-studio.md` names only rofi as a themed app
+- [x] R.6 [removal] Picker documentation: README and the guide describe the switch commands with a name only | Files: `README.md`, `docs/theme-studio.md`, `packaging/nix/package.nix`, `studio/src/store.rs` | Target: goal | Check: `grep -i "rofi menu\|picker" README.md docs/theme-studio.md` names only rofi as a themed app
 Completes: the removals of GOAL.md. Criterion 3 for the scripts (the system paths of font-switch.sh go with R.2)
 
 ### Phase 1: One source for paths
@@ -230,7 +230,7 @@ Completes: criterion 6
 |---|---|
 | Plan | done |
 | Phase 0 safety net | done |
-| Phase R steps | open |
+| Phase R steps | done |
 | Phase R review | open |
 | Phase 1 steps | open |
 | Phase 1 review | open |

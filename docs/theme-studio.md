@@ -39,19 +39,21 @@ them.
 
 ## Switching
 
-| Key            | What                                                    |
-| -------------- | ------------------------------------------------------- |
-| `$mod+t`       | theme picker (rofi): palette and fonts together         |
-| `$mod+p`       | palette picker, for a quick colour change               |
-| `$mod+Shift+t` | font preset picker                                      |
-| `$mod+Ctrl+t`  | the studio, in a floating window                        |
+| Command                   | What                                        |
+| ------------------------- | ------------------------------------------- |
+| `themes-switch.sh <name>` | a theme: palette and fonts together         |
+| `theme-switch.sh <name>`  | a palette only, for a quick colour change   |
+| `font-switch.sh <name>`   | a font preset only                          |
 
-In the pickers, Alt+BackSpace deletes the highlighted entry. The scripts
-behind them also take a name: `themes-switch.sh <name>`,
-`theme-switch.sh <name>`, `font-switch.sh <name>`. They write the files
-the apps read (`~/.config/colors/`, `~/.config/fonts/`, GTK and fontconfig
-settings) and reload Ghostty and i3; rofi, GTK apps and the lock
-screen pick the change up next time they start.
+Each command needs a name. Without one it prints a usage message and exits
+with status 2. The names are the ones in `palettes.json`, `fonts.json` and
+`themes.json` in your data folder. A menu or key binding of your own can run
+`theme-switch <name>`. The commands write the files the apps read
+(`~/.config/colors/`, `~/.config/fonts/`, GTK and fontconfig settings) and
+reload Ghostty and i3; rofi, GTK apps and the lock screen pick the change up
+next time they start.
+
+The studio itself (`$mod+Ctrl+t`) opens in a floating window.
 
 ## The studio
 
@@ -133,7 +135,7 @@ To work on it:
 cd studio
 nix develop .. --command cargo test     # the tests
 nix develop .. --command cargo run      # the studio, from the checkout
-bash ../scripts/theme-switch.sh         # a script, from the checkout
+bash ../scripts/theme-switch.sh <name>  # a script, from the checkout
 ```
 
 Tests that need the real data or a tool that isn't there skip themselves.
