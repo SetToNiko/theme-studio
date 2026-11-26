@@ -366,7 +366,6 @@ mod tests {
     }
 
     #[test]
-    // Long function: one scenario in order on one page; each step needs the state of the step before.
     fn choose_key_navigation_clamps_at_both_ends() {
         let mut app = test_app("choose-clamp");
         let keys = theme_keys();

@@ -28,7 +28,6 @@ impl App {
 
     /// The font the preview shows: the highlighted catalogue font, or on the
     /// Installed tab the highlighted installed one (drawn from its files).
-    // Long function: most lines are the `Entry` literal for an installed font.
     pub fn preview_entry(&mut self) -> Option<Entry> {
         if let Some(e) = self.dl_selected() {
             return Some(e);
@@ -40,36 +39,21 @@ impl App {
         let v = listed.get(&name)?;
         let id = v.get("id")?.as_str()?.to_string();
         let nerd = v.get("source").and_then(|s| s.as_str()) == Some("nerd");
-        // the catalogue knows its category (for the default text); without
-        // it, Nerd Fonts get icons and the rest code
-        let category = self
-            .dl
+        let category = self.catalogue_category(&id, nerd);
+        Some(listed_entry(name, id, category, nerd))
+    }
+
+    /// The catalogue's category of font `id`, for the default text. Without
+    /// the catalogue, Nerd Fonts (`nerd`) get icons and the rest code.
+    fn catalogue_category(&self, id: &str, nerd: bool) -> String {
+        self.dl
             .catalogue
             .as_ref()
             .and_then(|c| c.google.iter().chain(c.nerd.iter()).find(|e| e.id == id))
             .map_or_else(
                 || if nerd { "nerd font" } else { "monospace" }.into(),
                 |e| e.category.clone(),
-            );
-        Some(Entry {
-            id,
-            family: name.clone(),
-            category,
-            license: String::new(),
-            weights: vec![400],
-            italic: false,
-            variable: false,
-            source: if nerd {
-                Source::Nerd {
-                    asset: name,
-                    url: String::new(),
-                    size: 0,
-                }
-            } else {
-                Source::Fontsource
-            },
-            subset: "latin".into(),
-        })
+            )
     }
 
     /// Each loop: fetch the highlighted font after a pause, render it, pick
@@ -313,5 +297,30 @@ fn sample_markup(
             pv.next_page = next;
             m
         }
+    }
+}
+
+/// The `Entry` of an installed font `name` (its catalogue `id` and `category`;
+/// `nerd` when it comes from Nerd Fonts), with the plain values of a font that
+/// is not in the catalogue.
+fn listed_entry(name: String, id: String, category: String, nerd: bool) -> Entry {
+    Entry {
+        id,
+        family: name.clone(),
+        category,
+        license: String::new(),
+        weights: vec![400],
+        italic: false,
+        variable: false,
+        source: if nerd {
+            Source::Nerd {
+                asset: name,
+                url: String::new(),
+                size: 0,
+            }
+        } else {
+            Source::Fontsource
+        },
+        subset: "latin".into(),
     }
 }

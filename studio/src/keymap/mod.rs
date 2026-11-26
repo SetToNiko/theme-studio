@@ -466,7 +466,6 @@ mod tests {
         Key::new(KeyCode::Char(' '), KeyModifiers::NONE)
     }
 
-    // Long function: one list of notation examples; each assert is one example.
     #[test]
     fn parses_and_displays_vim_notation() {
         let l = space();

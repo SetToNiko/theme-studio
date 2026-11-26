@@ -159,7 +159,6 @@ impl App {
 
     /// Keys while recording new keys (Enter finishes, Esc cancels,
     /// Backspace takes the last one back).
-    // Long function: one match over the recording keys (Esc, Enter, Backspace, others) for each kind of capture.
     pub fn capture_key(
         &mut self,
         what: Capture,

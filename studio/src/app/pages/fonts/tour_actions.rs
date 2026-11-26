@@ -46,46 +46,52 @@ impl App {
     }
 
     /// A pool's fonts (all of them).
-    // Long function: builds the `Entrant`s of both sources (installed fonts, catalogue) in one match.
     pub fn tour_pool(&self, key: &str) -> Vec<(Entrant, Option<Entry>)> {
-        let installed = |mono: bool| -> Vec<(Entrant, Option<Entry>)> {
-            self.fonts
-                .installed
-                .iter()
-                .filter(|f| f.mono == mono && !f.bitmap && !f.special)
-                .map(|f| {
-                    (
-                        Entrant {
-                            id: f.family.clone(),
-                            name: f.family.clone(),
-                            installed: true,
-                        },
-                        None,
-                    )
-                })
-                .collect()
-        };
         match key {
-            "installed-mono" => installed(true),
-            "installed-propo" => installed(false),
-            cat => self
-                .dl
-                .catalogue
-                .iter()
-                .flat_map(|c| c.google.iter().chain(c.nerd.iter()))
-                .filter(|e| e.category == cat)
-                .map(|e| {
-                    (
-                        Entrant {
-                            id: e.id.clone(),
-                            name: e.family.clone(),
-                            installed: false,
-                        },
-                        Some(e.clone()),
-                    )
-                })
-                .collect(),
+            "installed-mono" => self.installed_pool(true),
+            "installed-propo" => self.installed_pool(false),
+            cat => self.catalogue_pool(cat),
         }
+    }
+
+    /// The installed fonts that are monospace (`mono`) or proportional,
+    /// without bitmap and special fonts. They have no catalogue entry.
+    fn installed_pool(&self, mono: bool) -> Vec<(Entrant, Option<Entry>)> {
+        self.fonts
+            .installed
+            .iter()
+            .filter(|f| f.mono == mono && !f.bitmap && !f.special)
+            .map(|f| {
+                (
+                    Entrant {
+                        id: f.family.clone(),
+                        name: f.family.clone(),
+                        installed: true,
+                    },
+                    None,
+                )
+            })
+            .collect()
+    }
+
+    /// The catalogue fonts (Google and Nerd) of one `category`, with their entries.
+    fn catalogue_pool(&self, category: &str) -> Vec<(Entrant, Option<Entry>)> {
+        self.dl
+            .catalogue
+            .iter()
+            .flat_map(|c| c.google.iter().chain(c.nerd.iter()))
+            .filter(|e| e.category == category)
+            .map(|e| {
+                (
+                    Entrant {
+                        id: e.id.clone(),
+                        name: e.family.clone(),
+                        installed: false,
+                    },
+                    Some(e.clone()),
+                )
+            })
+            .collect()
     }
 
     /// Enter on a pool: says what it takes and asks first.
@@ -195,7 +201,6 @@ impl App {
 
     /// Each loop on the Tournament tab: the bracket once the previews are
     /// in, the two fonts drawn. True when something changed.
-    // Long function: two stages in order (finish fetching and start the bracket, then draw the panes).
     pub fn poll_tournament(&mut self) -> bool {
         if self.page != Page::Downloads
             || self.dl.tab != DlTab::Tournament
@@ -205,43 +210,51 @@ impl App {
         }
         let mut changed = false;
         if self.tour().stage == Stage::Fetching {
-            let (ok, failed, n) = self.tour_fetched();
-            if ok + failed < n {
-                return false;
+            match self.finish_fetching() {
+                None => return false,
+                Some(done) => changed = done,
             }
-            // every preview in: the fonts that can be drawn play
-            let ready: Vec<Entrant> = {
-                let pending = std::mem::take(&mut self.tour().pending);
-                let pv = self.pv();
-                pending
-                    .into_iter()
-                    .filter(|e| matches!(pv.families.get(&e.id), Some(Ok(_))))
-                    .collect()
-            };
-            let t = self.tour();
-            if ready.len() < 2 {
-                t.stage = Stage::Setup;
-                return {
-                    self.messages
-                        .error("Too few previews could be fetched for a tournament");
-                    true
-                };
-            }
-            t.start_bracket(ready);
-            t.stage = Stage::Playing;
-            t.past = None;
-            self.tour_save();
-            if failed > 0 {
-                self.messages.info(format!(
-                    "{failed} fonts left out: their previews couldn't be fetched"
-                ));
-            }
-            changed = true;
         }
         for (i, show) in self.tour_pane_fonts().into_iter().enumerate() {
             changed |= self.tour_draw_pane(i, show);
         }
         changed
+    }
+
+    /// Ends the Fetching stage once every preview is in: starts the bracket
+    /// with the fonts that can be drawn. `None`: keep waiting. `Some(true)`:
+    /// something changed (the bracket started, or too few previews came).
+    fn finish_fetching(&mut self) -> Option<bool> {
+        let (ok, failed, n) = self.tour_fetched();
+        if ok + failed < n {
+            return None;
+        }
+        // every preview in: the fonts that can be drawn play
+        let ready: Vec<Entrant> = {
+            let pending = std::mem::take(&mut self.tour().pending);
+            let pv = self.pv();
+            pending
+                .into_iter()
+                .filter(|e| matches!(pv.families.get(&e.id), Some(Ok(_))))
+                .collect()
+        };
+        let t = self.tour();
+        if ready.len() < 2 {
+            t.stage = Stage::Setup;
+            self.messages
+                .error("Too few previews could be fetched for a tournament");
+            return Some(true);
+        }
+        t.start_bracket(ready);
+        t.stage = Stage::Playing;
+        t.past = None;
+        self.tour_save();
+        if failed > 0 {
+            self.messages.info(format!(
+                "{failed} fonts left out: their previews couldn't be fetched"
+            ));
+        }
+        Some(true)
     }
 
     /// Which entrants the two panes show: the current pairing while playing,
