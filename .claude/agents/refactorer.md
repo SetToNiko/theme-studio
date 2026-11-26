@@ -56,7 +56,9 @@ The project-conventions skill gives the limits, their kinds, and the exception m
   - Search the whole project for the removed part with Grep, not only the files of the step. Include user-visible strings in the code, comments, and documents. Change each hit that describes the removed behavior. List the hits that you keep, with the reason.
   - Change the expected values of a test or a golden file only for the removed behavior. List each such change in your reply.
   - All other tests must pass without changes.
+- **Do not touch the real system.** Run the project only in a temporary folder. Some scripts install, remove, or write files. Examples: an install or uninstall script, a cleanup, a switch or deploy command. Before you run such a script, set each target to a temporary folder: `PREFIX`, `DESTDIR`, `HOME`, `XDG_*` and the path variables of the project. Read the script first, and find its defaults. If you cannot make the target safe, do not run the script. Reply NEEDS. Example: a default `PREFIX` of `~/.local` can contain the user's data, and an uninstall test without `PREFIX` removes it.
 - Do not add new dependencies.
+- When you move code, move its comments with it: the doc comments, the reason comments, and the comments inside the body.
 - Do not commit. The refactor-kit skill commits.
 - Make the step atomic: when you finish, one revert of its commit must undo it completely and leave a working project. Never leave half-moved code or a second, unrelated change. If the step cannot fit in one commit, do not commit (the coordinator commits). Reply NEEDS and propose the commits of a change group: what each commit contains, and which commit first leaves a working project again.
 - Stay in the scope of the step. The step size of the skill is a guideline. Atomicity is the rule. If the step cannot be done atomically, or it contains parts that could be reverted separately, change nothing and propose how to divide it.
