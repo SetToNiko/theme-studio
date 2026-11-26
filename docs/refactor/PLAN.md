@@ -185,7 +185,7 @@ Completes: none (prepares criterion 5)
 - [x] P4.4 `base64` out of app into the leaf module `encoding.rs` (app and download.rs use it) | Files: `app/mod.rs`, `app/tests.rs`, `download.rs`, `main.rs`, `encoding.rs` (new) | Target: T5 | Check: download no longer imports app
 - [x] P4.5 prefetch: its `impl App` block moves to `app/prefetch_actions.rs` | Files: `prefetch.rs`, new `app/prefetch_actions.rs`, `app/mod.rs` | Target: T5 | Check: prefetch no longer imports App
 - [x] P4.6 presets: `impl App` block into app/ | Files: `presets.rs`, new `app/presets_actions.rs`, `app/mod.rs`, `settings_ui.rs` | Target: T5 | Check: presets no longer imports App
-- [ ] P4.7 draft: `impl App` block into app/ | Target: T5 | Check: draft no longer imports App
+- [x] P4.7 draft: `impl App` block into app/ | Files: `draft.rs`, new `app/draft_actions.rs`, `app/mod.rs` | Target: T5 | Check: draft no longer imports App
 - [ ] P4.8 theme: theme data stays in theme.rs, the `impl App` block (theme actions) moves into app/ | Target: T1, T5 | Check: theme no longer imports App
 - [ ] P4.9 behaviour: `impl App` block into app/ | Target: T5
 - [ ] P4.10 fonts_dl: `impl App` block into app/ | Target: T5
