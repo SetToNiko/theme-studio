@@ -1,4 +1,4 @@
-//! Drawing the bodies of pages and tabs that are too big for `pages.rs`.
+//! Drawing the bodies of pages and tabs, one file or folder each.
 //!
 //! - `settings/`: the Settings page (F3), one file per tab.
 //! - `fonts_column.rs`: the fonts column of the Main page.

@@ -37,7 +37,7 @@ pub enum Mode {
 }
 
 pub struct Preview {
-    pub(crate) configs: PathBuf,
+    configs: PathBuf,
     /// Where the shell and yazi start: a git checkout (for `git log`), else home.
     workdir: PathBuf,
     draft_dir: PathBuf,

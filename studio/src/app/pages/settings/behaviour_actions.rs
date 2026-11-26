@@ -1,4 +1,4 @@
-//! App's methods for the Behaviour tab's keys: move, and change a row's value.
+//! App's methods for the Behaviour tab's keys: move, change a row's value, and the palette key list.
 //!
 //! This is another `impl App { ... }` block (see `theme_actions.rs` for the
 //! same style). The tab's own data (the row list, which rows are visible,
@@ -262,6 +262,44 @@ impl App {
             }
             _ => {}
         }
+    }
+
+    // Long function: one match over every key the list reacts to, one arm per key.
+    /// Keys while the list of palette keys is open. Moving shows each key on
+    /// the setting (in the draft); Enter keeps it, Esc puts `original` back.
+    pub fn choose_colour_key_press(
+        &mut self,
+        row: BhRow,
+        mut sel: usize,
+        original: String,
+        k: ratatui::crossterm::event::KeyEvent,
+    ) {
+        use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+        let keys = theme_keys();
+        let last = keys.len() - 1;
+        let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
+        match k.code {
+            KeyCode::Esc => {
+                self.overlay = Overlay::None;
+                return self.set_colour_setting(row, &original);
+            }
+            KeyCode::Enter => {
+                self.overlay = Overlay::None;
+                return self.set_colour_setting(row, keys[sel]);
+            }
+            KeyCode::Up | KeyCode::Char('k') if !ctrl => sel = sel.saturating_sub(1),
+            KeyCode::Char('p') if ctrl => sel = sel.saturating_sub(1),
+            KeyCode::Down | KeyCode::Char('j') if !ctrl => sel = (sel + 1).min(last),
+            KeyCode::Char('n') if ctrl => sel = (sel + 1).min(last),
+            KeyCode::PageUp => sel = sel.saturating_sub(10),
+            KeyCode::PageDown => sel = (sel + 10).min(last),
+            KeyCode::Home | KeyCode::Char('g') => sel = 0,
+            KeyCode::End | KeyCode::Char('G') => sel = last,
+            _ => {}
+        }
+        // still open: preview the highlighted key
+        self.set_colour_setting(row, keys[sel]);
+        self.overlay = Overlay::ChooseKey { row, sel, original };
     }
 }
 

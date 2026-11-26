@@ -112,7 +112,6 @@ impl App {
     /// The checks that come first (resize mode, the copy-from pop-up, undo of
     /// a config change, the page tabs) can end the call. Then one `match`
     /// sends the action to the method of its group.
-    // Long function (reason verified, phase 3): four early returns, then one match that lists every action group.
     pub fn run_action(&mut self, a: Action) {
         if self.layout.resize_mode {
             return self.run_resize(a);

@@ -345,10 +345,10 @@ mod tests {
         let keys = theme_keys();
         let row = BhRow::PaneBorder;
         let original = app.settings.hover.pane_border.clone();
-        app.choose_key_key(row, 0, original.clone(), key(KeyCode::Down));
+        app.choose_colour_key_press(row, 0, original.clone(), key(KeyCode::Down));
         assert_eq!(app.settings.hover.pane_border, keys[1]);
         assert!(matches!(app.overlay, Overlay::ChooseKey { sel: 1, .. }));
-        app.choose_key_key(row, 1, original, key(KeyCode::Enter));
+        app.choose_colour_key_press(row, 1, original, key(KeyCode::Enter));
         assert_eq!(app.settings.hover.pane_border, keys[1]);
         assert!(matches!(app.overlay, Overlay::None));
     }
@@ -357,9 +357,9 @@ mod tests {
     fn choose_key_esc_puts_the_original_back() {
         let mut app = test_app("choose-esc");
         let original = app.settings.hover.pane_border.clone();
-        app.choose_key_key(BhRow::PaneBorder, 3, original.clone(), key(KeyCode::Down));
+        app.choose_colour_key_press(BhRow::PaneBorder, 3, original.clone(), key(KeyCode::Down));
         assert_ne!(app.settings.hover.pane_border, original);
-        app.choose_key_key(BhRow::PaneBorder, 4, original.clone(), key(KeyCode::Esc));
+        app.choose_colour_key_press(BhRow::PaneBorder, 4, original.clone(), key(KeyCode::Esc));
         assert_eq!(app.settings.hover.pane_border, original);
         assert!(matches!(app.overlay, Overlay::None));
     }
@@ -370,23 +370,23 @@ mod tests {
         let keys = theme_keys();
         let last = keys.len() - 1;
         let row = BhRow::PaneBorder;
-        app.choose_key_key(row, 0, String::new(), key(KeyCode::Up));
+        app.choose_colour_key_press(row, 0, String::new(), key(KeyCode::Up));
         assert!(matches!(app.overlay, Overlay::ChooseKey { sel: 0, .. }));
-        app.choose_key_key(row, last, String::new(), key(KeyCode::Down));
+        app.choose_colour_key_press(row, last, String::new(), key(KeyCode::Down));
         assert!(matches!(app.overlay, Overlay::ChooseKey { sel, .. } if sel == last));
-        app.choose_key_key(row, 0, String::new(), key(KeyCode::PageDown));
+        app.choose_colour_key_press(row, 0, String::new(), key(KeyCode::PageDown));
         assert!(matches!(app.overlay, Overlay::ChooseKey { sel: 10, .. }));
-        app.choose_key_key(row, 5, String::new(), key(KeyCode::PageUp));
+        app.choose_colour_key_press(row, 5, String::new(), key(KeyCode::PageUp));
         assert!(matches!(app.overlay, Overlay::ChooseKey { sel: 0, .. }));
-        app.choose_key_key(row, 5, String::new(), key(KeyCode::End));
+        app.choose_colour_key_press(row, 5, String::new(), key(KeyCode::End));
         assert_eq!(app.settings.hover.pane_border, keys[last]);
-        app.choose_key_key(row, 5, String::new(), key(KeyCode::Char('g')));
+        app.choose_colour_key_press(row, 5, String::new(), key(KeyCode::Char('g')));
         assert_eq!(app.settings.hover.pane_border, keys[0]);
         // vim and emacs keys
-        app.choose_key_key(row, 5, String::new(), key(KeyCode::Char('j')));
+        app.choose_colour_key_press(row, 5, String::new(), key(KeyCode::Char('j')));
         assert!(matches!(app.overlay, Overlay::ChooseKey { sel: 6, .. }));
         let ctrl_p = KeyEvent::new(KeyCode::Char('p'), KeyModifiers::CONTROL);
-        app.choose_key_key(row, 5, String::new(), ctrl_p);
+        app.choose_colour_key_press(row, 5, String::new(), ctrl_p);
         assert!(matches!(app.overlay, Overlay::ChooseKey { sel: 4, .. }));
     }
 

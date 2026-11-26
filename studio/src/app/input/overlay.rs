@@ -65,7 +65,7 @@ impl App {
             Overlay::Menu { menu, sel, at } => self.menu_key(menu, sel, at, k),
             // Settings page pop-ups edit the draft (see `settings_page/draft.rs`)
             Overlay::ChooseKey { row, sel, original } => {
-                self.with_draft(|app| app.choose_key_key(row, sel, original, k));
+                self.with_draft(|app| app.choose_colour_key_press(row, sel, original, k));
                 None
             }
             Overlay::Capture { what, keys } => {

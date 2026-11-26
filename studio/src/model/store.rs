@@ -135,8 +135,9 @@ impl Store {
         }
     }
 
-    /// A switch script (`theme-switch`, `font-switch`), told where this
-    /// store's data and share folders are.
+    /// Builds the command for a switch script (`theme-switch`, `font-switch`),
+    /// told where this store's data and share folders are. It does not run
+    /// the command: the caller runs it.
     pub fn switch_command(&self, name: &str) -> Command {
         crate::model::paths::switch_command(name, &self.dir, &self.share)
     }

@@ -309,7 +309,11 @@ impl Action {
         s.to_string()
     }
 
-    /// Names from earlier versions: renamed, or (None) dropped without a warning.
+    /// Looks up a name that an earlier version used.
+    ///
+    /// - `None`: `id` is not an old name.
+    /// - `Some(None)`: the old action was dropped (no warning is needed).
+    /// - `Some(Some(a))`: the old action was renamed to `a`.
     pub fn legacy(id: &str) -> Option<Option<Action>> {
         match id {
             "tab-colours" => Some(Some(Action::PageMain)),
@@ -318,6 +322,7 @@ impl Action {
         }
     }
 
+    /// The action with this id (the name in keymap files); `None` if unknown.
     pub fn from_id(id: &str) -> Option<Action> {
         all_actions().into_iter().find(|a| a.id() == id)
     }

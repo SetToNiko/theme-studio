@@ -1,4 +1,7 @@
-//! The Fonts page's Tournament tab (`fonts/`, next to `download_page.rs` and `preview_page.rs`): choosing a pool, fetching its previews,
+//! The Fonts page's Tournament tab (`fonts/`, next to `download_page.rs` and
+//! `preview_page.rs`).
+//!
+//! It covers choosing a pool, fetching its previews,
 //! playing the matches, and the results (model/tournament.rs has the bracket).
 //! Stages: Setup → Fetching → Playing → Results; Esc goes back to Setup,
 //! where an unfinished tournament can be picked up again.

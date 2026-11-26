@@ -1,9 +1,11 @@
 //! Drawing of the live desktop preview: the bar, the rofi menu and the two windows.
 //!
+//! The Preview pane (`ui/panes/preview.rs`) calls it for its desktop view.
+//!
 //! A model of the i3 desktop with real programs in it. The hidden terminals
 //! (`Preview`, `Pane`) are in `crate::preview_term`; this file draws their screens
-//! with the draft palette. The frame and click targets of the Preview pane are in
-//! `panes/preview.rs`.
+//! with the draft palette. The pane's frame and click targets are in
+//! `panes/preview.rs`, not here.
 
 use ratatui::Frame;
 use ratatui::layout::Rect;

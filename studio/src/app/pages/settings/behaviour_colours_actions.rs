@@ -1,7 +1,7 @@
 //! App's methods for the Behaviour tab's looks and colour rows.
 //!
-//! Turns look settings into colours, and sets a colour row from the list of
-//! palette keys. This is another `impl App { ... }` block (see
+//! Turns look settings into colours, and sets a colour row to a
+//! palette key. This is another `impl App { ... }` block (see
 //! `theme_actions.rs` for the same style). The tab's own data stays in
 //! `settings_page/behaviour.rs`, which also tests these methods (it builds an `App`).
 
@@ -9,7 +9,7 @@ use ratatui::style::{Color, Modifier};
 
 use crate::app::App;
 use crate::app::state::hit::{Look, Looks, Underline};
-use crate::app::state::nav::{BhRow, LookId, Overlay};
+use crate::app::state::nav::{BhRow, LookId};
 use crate::config::settings::{LookSettings, Settings};
 use crate::settings_page::behaviour::theme_keys;
 
@@ -84,43 +84,5 @@ impl App {
         if let Some(v) = self.colour_setting(row) {
             *v = key.to_string();
         }
-    }
-
-    // Long function: one match over every key the list reacts to, one arm per key.
-    /// Keys while the list of palette keys is open. Moving shows each key on
-    /// the setting (in the draft); Enter keeps it, Esc puts `original` back.
-    pub fn choose_key_key(
-        &mut self,
-        row: BhRow,
-        mut sel: usize,
-        original: String,
-        k: ratatui::crossterm::event::KeyEvent,
-    ) {
-        use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-        let keys = theme_keys();
-        let last = keys.len() - 1;
-        let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
-        match k.code {
-            KeyCode::Esc => {
-                self.overlay = Overlay::None;
-                return self.set_colour_setting(row, &original);
-            }
-            KeyCode::Enter => {
-                self.overlay = Overlay::None;
-                return self.set_colour_setting(row, keys[sel]);
-            }
-            KeyCode::Up | KeyCode::Char('k') if !ctrl => sel = sel.saturating_sub(1),
-            KeyCode::Char('p') if ctrl => sel = sel.saturating_sub(1),
-            KeyCode::Down | KeyCode::Char('j') if !ctrl => sel = (sel + 1).min(last),
-            KeyCode::Char('n') if ctrl => sel = (sel + 1).min(last),
-            KeyCode::PageUp => sel = sel.saturating_sub(10),
-            KeyCode::PageDown => sel = (sel + 10).min(last),
-            KeyCode::Home | KeyCode::Char('g') => sel = 0,
-            KeyCode::End | KeyCode::Char('G') => sel = last,
-            _ => {}
-        }
-        // still open: preview the highlighted key
-        self.set_colour_setting(row, keys[sel]);
-        self.overlay = Overlay::ChooseKey { row, sel, original };
     }
 }

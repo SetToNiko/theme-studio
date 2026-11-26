@@ -75,7 +75,7 @@ pub(super) fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
     {
         let r = row_rect(list, i - scroll);
         let on = i == sel;
-        let line = km_row_line(app, row, shipped.as_ref(), w);
+        let line = keymaps_row_line(app, row, shipped.as_ref(), w);
         let clickable = !matches!(row, KmRow::Gap);
         let mut style = selected_style(on, true);
         let mut line = line;
@@ -118,7 +118,7 @@ pub(super) fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
 /// The text of one row of the list: the preset, a gap, a context title or a binding.
 /// `shipped` is the built-in keymap of the same name (to mark changed keys); `w` is the list width.
 // Long function: one match over the three row kinds (preset, gap, context title, binding).
-fn km_row_line(app: &App, row: &KmRow, shipped: Option<&Keymap>, w: usize) -> Line<'static> {
+fn keymaps_row_line(app: &App, row: &KmRow, shipped: Option<&Keymap>, w: usize) -> Line<'static> {
     let leader = app.keymap.leader;
     match *row {
         KmRow::Preset => {

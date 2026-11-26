@@ -51,7 +51,7 @@ pub(super) fn draw_behaviour(f: &mut Frame, app: &mut App, area: Rect) {
         .take(list.height as usize)
     {
         let r = row_rect(list, i - scroll);
-        let line = bh_row_line(app, row, &looks);
+        let line = behaviour_row_line(app, row, &looks);
         let on = i == sel;
         let mut style = selected_style(on, focused);
         let mut line = line;
@@ -89,7 +89,7 @@ pub(super) fn draw_behaviour(f: &mut Frame, app: &mut App, area: Rect) {
 
 /// The text of one row of the list: a gap, a group title, a sample line or a setting.
 // Long function: one match over all kinds of Behaviour row (gap, title, two samples, button, colour, choice).
-fn bh_row_line(app: &App, row: &BhRow, looks: &Looks) -> Line<'static> {
+fn behaviour_row_line(app: &App, row: &BhRow, looks: &Looks) -> Line<'static> {
     match *row {
         BhRow::Gap => Line::raw(""),
         BhRow::Header(h) => Line::from(vec![

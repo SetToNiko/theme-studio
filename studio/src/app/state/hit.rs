@@ -1,5 +1,7 @@
-//! What's clickable where on screen (`app/state/`: part of what `App` remembers). Rebuilt on every draw; clicks, hover
-//! highlights and the mouse pointer shape all use it.
+//! What's clickable where on screen.
+//!
+//! Part of what `App` remembers (`app/state/`). The map is rebuilt on every
+//! draw; clicks, hover highlights and the mouse pointer shape all use it.
 
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
@@ -7,6 +9,8 @@ use ratatui::style::{Color, Modifier, Style};
 use crate::app::state::nav::Page;
 use crate::preview_term::PaneId;
 
+/// Something on screen that a click can hit; the draw code records one per
+/// clickable area in the [`HitMap`].
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Target {
     /// F1 / F2 / F3 tabs
@@ -21,13 +25,21 @@ pub enum Target {
     FontRole(usize),
     /// A row of the font list (index into its rows).
     FontRow(usize),
+    /// The search box of the font list.
     FontSearch,
+    /// A category chip of the font list (its letter).
     Chip(char),
+    /// The colour square of the Colour pane.
     Square,
+    /// The hue strip of the Colour pane.
     Hue,
+    /// The hue slider.
     SliderH,
+    /// The saturation slider.
     SliderS,
+    /// The lightness slider.
     SliderL,
+    /// The hex input.
     Hex,
     /// nvim or the shell: a click hands it the keyboard.
     Preview(PaneId),
@@ -58,9 +70,13 @@ pub enum Target {
     /// Download fonts page: a tab, a list row, a category chip, the search
     /// box, Install ('i') / Remove ('r').
     DlTab(u8),
+    /// Download fonts page: a row of the list (index into its rows).
     DlRow(usize),
+    /// Download fonts page: a category chip (index).
     DlChip(u8),
+    /// Download fonts page: the search box.
     DlSearch,
+    /// Download fonts page: Install ('i') or Remove ('r').
     DlButton(char),
     /// Download fonts page: the preview (the wheel scrolls it; no hover).
     DlPreview,
@@ -68,6 +84,7 @@ pub enum Target {
     PreviewMenu(u8),
     /// Tournament: a pane (a click picks that font), a row (setup, results).
     TourPane(u8),
+    /// Tournament: a row of the setup or results list (index).
     TourRow(usize),
 }
 
@@ -141,11 +158,14 @@ impl Border {
 /// Underline styles.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Underline {
+    /// One line.
     Single,
+    /// Two lines.
     Double,
 }
 
 impl Underline {
+    /// Reads a setting's text (`single` or `double`); `None` if it is neither.
     pub fn parse(s: &str) -> Option<Underline> {
         match s {
             "single" => Some(Underline::Single),
@@ -166,6 +186,7 @@ pub struct Look {
 }
 
 impl Look {
+    /// `style` with this look added on top.
     pub fn apply(&self, style: Style) -> Style {
         let mut s = style;
         if let Some(bg) = self.bg {
@@ -229,6 +250,7 @@ pub fn set_looks(l: Looks) {
     LOOKS.with(|x| *x.borrow_mut() = l);
 }
 
+/// The looks that the last `set_looks` stored.
 pub fn looks() -> Looks {
     LOOKS.with(|x| x.borrow().clone())
 }
@@ -281,6 +303,7 @@ pub fn derived(style: Style) -> Style {
     LOOKS.with(|x| x.borrow().derived.apply(style))
 }
 
+/// The clickable areas of the last draw, and where the mouse is.
 #[derive(Default, Debug)]
 pub struct HitMap {
     hits: Vec<(Rect, Target)>,
@@ -289,6 +312,7 @@ pub struct HitMap {
 }
 
 impl HitMap {
+    /// Forgets all areas (the start of each draw).
     pub fn clear(&mut self) {
         self.hits.clear();
     }
@@ -300,6 +324,7 @@ impl HitMap {
         t.shows_hover() && self.over(r)
     }
 
+    /// True when the mouse is inside `r`.
     pub fn over(&self, r: Rect) -> bool {
         self.mouse
             .is_some_and(|(x, y)| x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height)

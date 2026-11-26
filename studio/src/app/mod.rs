@@ -2,10 +2,11 @@
 //!
 //! `App` is one struct. Its methods are split by topic over several files
 //! (Rust allows more than one `impl App` block, in any file of the crate).
-//! Each file's own `//!` says what stays outside it. Where to look:
+//! Each file's own `//!` says what stays outside it. A key press starts at
+//! `input/actions.rs` (`run_action`). Where to look:
 //! - `state/`: the data behind `App`: `nav.rs` (where the user is: `Page`, `Focus`, `Overlay`, ...), `palette_editor.rs`, `layout.rs`, `messages.rs` (own structs, not `impl App`)
 //! - `input/`: `actions.rs` (`run_action`), `focus.rs`, `mouse.rs`, `overlay.rs` (pop-ups), `colours.rs`
-//! - `pages/settings/`: `settings_actions.rs` (the page as a whole), `settings_keymaps_actions.rs`, `settings_history_actions.rs`, `draft_actions.rs` (Settings drafts), `behaviour_actions.rs`, `behaviour_colours_actions.rs`, `behaviour_rows_actions.rs` (Behaviour tab)
+//! - `pages/settings/`: `settings_actions.rs` (the page as a whole), `settings_keymaps_actions.rs`, `settings_history_actions.rs`, `draft_actions.rs` (Settings drafts), `behaviour_actions.rs`, `behaviour_colours_actions.rs`, `behaviour_labels_actions.rs` (Behaviour tab)
 //! - `pages/fonts/`: `fonts_dl_actions.rs` (Download fonts), `fonts_preview_actions.rs`, `prefetch_actions.rs`, `tour_actions.rs` and `tour_rounds.rs` (Tournament)
 //! - `pages/themes/`: `theme_actions.rs`, `presets_actions.rs`
 //! - this folder: this file (`App` and its core methods), `persist.rs` (save, open, unsaved-changes prompt), `tests.rs` (tests of the above)
