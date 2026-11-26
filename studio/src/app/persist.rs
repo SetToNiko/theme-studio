@@ -56,7 +56,7 @@ impl App {
 
     pub(super) fn apply_saved(&mut self) {
         let name = self.name.clone();
-        match self.store.apply(&name) {
+        match crate::system::switch::apply_theme(&self.store, &name) {
             Ok(()) => {
                 self.active = Some(name.clone());
                 self.system_palette = Some(self.editor.palette.clone());

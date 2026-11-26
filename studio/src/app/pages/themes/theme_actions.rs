@@ -276,7 +276,7 @@ impl App {
             return self.messages.error(format!("Applying the fonts: {e:#}"));
         }
         self.fonts.active = Some(t.fonts.clone());
-        if let Err(e) = self.store.apply(&t.palette) {
+        if let Err(e) = crate::system::switch::apply_theme(&self.store, &t.palette) {
             return self.messages.error(format!("Applying the palette: {e:#}"));
         }
         self.active = Some(t.palette.clone());

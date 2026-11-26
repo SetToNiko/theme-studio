@@ -3,9 +3,8 @@
 //! fonts.json (the data folder).
 
 use std::path::PathBuf;
-use std::process::Stdio;
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow};
 use serde_json::{Map, Value, json};
 
 use super::types::ROLES;
@@ -159,6 +158,12 @@ pub struct FontStore {
     pub share: PathBuf,
 }
 
+impl crate::model::theme::PresetSizes for FontStore {
+    fn sizes_of(&self, name: &str) -> [u32; 3] {
+        self.load(name).map_or(DEFAULT_SIZES, |p| p.sizes())
+    }
+}
+
 impl FontStore {
     fn path(&self) -> PathBuf {
         self.dir.join("fonts.json")
@@ -239,35 +244,13 @@ impl FontStore {
     /// theme's sizes (`FONT_SIZES`; without it font-switch would use the
     /// active theme's, which may be another theme).
     pub fn apply(&self, name: &str, sizes: [u32; 3]) -> Result<()> {
-        self.run_switch(name, sizes, false)
+        crate::system::switch::apply_fonts(&self.dir, &self.share, name, sizes, false)
     }
 
     /// Applies without restarting Ghostty and i3 (a theme's palette, applied
     /// next, restarts them once for both).
     pub fn apply_quietly(&self, name: &str, sizes: [u32; 3]) -> Result<()> {
-        self.run_switch(name, sizes, true)
-    }
-
-    fn run_switch(&self, name: &str, sizes: [u32; 3], quiet: bool) -> Result<()> {
-        let mut cmd = crate::model::paths::switch_command("font-switch", &self.dir, &self.share);
-        cmd.env("FONT_SIZES", sizes.map(|s| s.to_string()).join(" "));
-        if quiet {
-            cmd.env("NO_RESTART", "1");
-        }
-        let out = cmd
-            .arg(name)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped())
-            .output()
-            .context("running font-switch.sh")?;
-        if !out.status.success() {
-            bail!(
-                "font-switch.sh: {}",
-                String::from_utf8_lossy(&out.stderr).trim()
-            );
-        }
-        Ok(())
+        crate::system::switch::apply_fonts(&self.dir, &self.share, name, sizes, true)
     }
 
     /// The preset font-switch.sh last applied.
