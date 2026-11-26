@@ -10,17 +10,16 @@ use std::collections::HashSet;
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
 
-use crate::app::App;
-use crate::download::{self, Catalogue, Entry, Msg, Source};
+use crate::download::{Catalogue, Entry, Msg, Source};
 
 /// How many previews download at once (Nerd Font archives: one).
-const AT_ONCE: usize = 3;
+pub(crate) const AT_ONCE: usize = 3;
 
 /// The status line's progress is redrawn at most this often.
-const PROGRESS_EVERY: Duration = Duration::from_millis(250);
+pub(crate) const PROGRESS_EVERY: Duration = Duration::from_millis(250);
 
 /// The Behaviour tab's "space used" is measured again after this long.
-const SIZE_EVERY: Duration = Duration::from_secs(5);
+pub(crate) const SIZE_EVERY: Duration = Duration::from_secs(5);
 
 /// A Google / Fontsource preview file, about.
 const GOOGLE_FILE: u64 = 100_000;
@@ -33,27 +32,27 @@ pub type Fetch = fn(Entry, Sender<Msg>);
 #[derive(Debug, Default)]
 pub struct Prefetch {
     /// The categories the queue was made for, and ones it's being made for.
-    built_for: Option<Vec<String>>,
-    building: Option<Vec<String>>,
+    pub(crate) built_for: Option<Vec<String>>,
+    pub(crate) building: Option<Vec<String>>,
     /// Still to fetch (taken from the end).
-    queue: Vec<Entry>,
+    pub(crate) queue: Vec<Entry>,
     /// Fetched first, prefetching on or off: a tournament's fonts.
     pub urgent: Vec<Entry>,
     /// Those of them on their way (they don't count in the progress).
-    urgent_in_flight: HashSet<String>,
-    in_flight: HashSet<String>,
+    pub(crate) urgent_in_flight: HashSet<String>,
+    pub(crate) in_flight: HashSet<String>,
     /// Nerd Font archives among them.
     pub(crate) nerd_in_flight: HashSet<String>,
     /// Fonts in the chosen categories, and how many have a preview.
     pub total: usize,
     pub done: usize,
     /// The progress last drawn, and when.
-    drawn: (usize, Option<Instant>),
+    pub(crate) drawn: (usize, Option<Instant>),
     /// The space the previews take, and when it was measured (None while
     /// it's being measured for the first time).
     pub used: Option<u64>,
-    measured: Option<Instant>,
-    measuring: bool,
+    pub(crate) measured: Option<Instant>,
+    pub(crate) measuring: bool,
     /// Tests swap the downloads for a stub.
     pub fetch: Option<Fetch>,
 }
@@ -152,124 +151,6 @@ pub fn size(b: u64) -> String {
         b if b >= 1_000_000_000 => format!("{:.1} GB", b as f64 / 1e9),
         b if b >= 1_000_000 => format!("{:.1} MB", b as f64 / 1e6),
         b => format!("{} KB", b.div_ceil(1000)),
-    }
-}
-
-impl App {
-    /// Each loop: keeps a few previews downloading while prefetching is on,
-    /// and the Behaviour tab's "space used" up to date. Quick: the slow
-    /// parts run on threads. True when the screen should be redrawn.
-    pub fn poll_prefetch(&mut self) -> bool {
-        self.measure_previews();
-        // a tournament's fonts first, whatever the settings say
-        self.feed(true);
-        let s = &self.settings.fonts_page;
-        if !s.prefetch {
-            // ones on their way still land; nothing new starts
-            let was = self.prefetch.active();
-            self.prefetch.queue.clear();
-            self.prefetch.built_for = None;
-            self.prefetch.building = None;
-            return was && !self.prefetch.active();
-        }
-        let Some(cat) = &self.dl.catalogue else {
-            if !self.dl.loading {
-                self.dl.loading = true;
-                download::load_catalogue(self.dl_sender());
-            }
-            return false;
-        };
-        let cats = s.prefetch_categories.clone();
-        if self.prefetch.built_for.as_ref() != Some(&cats) {
-            // the queue is made on a thread (it checks every font's folder)
-            if self.prefetch.building.as_ref() != Some(&cats) {
-                self.prefetch.building = Some(cats.clone());
-                let (cat, tx) = (cat.clone(), self.dl_sender());
-                std::thread::spawn(move || {
-                    let (queue, total) = queue(&cat, &cats, download::has_preview);
-                    let _ = tx.send(Msg::PrefetchQueue {
-                        categories: cats,
-                        queue,
-                        total,
-                    });
-                });
-            }
-            return false;
-        }
-        self.feed(false);
-        // the status line's "fetching previews 12/72", a few times a second
-        let p = &mut self.prefetch;
-        let due = p.drawn.1.is_none_or(|t| t.elapsed() >= PROGRESS_EVERY);
-        if p.drawn.0 != p.done && due {
-            p.drawn = (p.done, Some(Instant::now()));
-            return true;
-        }
-        false
-    }
-
-    /// Starts downloads from the urgent queue or the prefetch queue, up to
-    /// AT_ONCE at a time (Nerd Font archives one at a time).
-    fn feed(&mut self, urgent: bool) {
-        let fetch = self.prefetch.fetch.unwrap_or(download::fetch_preview);
-        while self.prefetch.in_flight.len() < AT_ONCE {
-            let q = if urgent {
-                &self.prefetch.urgent
-            } else {
-                &self.prefetch.queue
-            };
-            let Some(e) = q.last() else {
-                break;
-            };
-            // Nerd Font archives one at a time
-            let nerd = matches!(e.source, Source::Nerd { .. });
-            if nerd && !self.prefetch.nerd_in_flight.is_empty() {
-                break;
-            }
-            let e = if urgent {
-                self.prefetch.urgent.pop()
-            } else {
-                self.prefetch.queue.pop()
-            }
-            .unwrap();
-            if self.prefetch.in_flight.contains(&e.id) {
-                continue;
-            }
-            let tx = self.dl_sender();
-            let pv = self.pv();
-            if pv.families.contains_key(&e.id) {
-                if !urgent {
-                    self.prefetch.done += 1;
-                }
-                continue;
-            }
-            // the page may be fetching it already; its result counts here too
-            if pv.fetching.insert(e.id.clone()) {
-                fetch(e.clone(), tx);
-            }
-            if nerd {
-                self.prefetch.nerd_in_flight.insert(e.id.clone());
-            }
-            if urgent {
-                self.prefetch.urgent_in_flight.insert(e.id.clone());
-            }
-            self.prefetch.in_flight.insert(e.id);
-        }
-    }
-
-    /// The Behaviour tab shows the space the previews take: measured on a
-    /// thread while it's open, every few seconds.
-    fn measure_previews(&mut self) {
-        let shown = self.page == crate::app::nav::Page::Settings
-            && self.settings_page.tab == crate::settings::Tab::Behaviour;
-        let p = &mut self.prefetch;
-        if !shown || p.measuring || p.measured.is_some_and(|t| t.elapsed() < SIZE_EVERY) {
-            return;
-        }
-        p.measuring = true;
-        let tx = self.dl_sender();
-        std::thread::spawn(move || {
-            let _ = tx.send(Msg::PreviewsSize(download::previews_size()));
-        });
     }
 }
 
