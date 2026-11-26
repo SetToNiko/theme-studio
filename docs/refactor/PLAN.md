@@ -105,6 +105,7 @@ Advanced techniques that the refactor adds:
 | 19 | `scripts/lib/paths.sh`, `studio/src/paths.rs` | The two files agree on colors_dir, fonts_dir, host_fonts_file only through comments. No test compares them (Phase 1 review) | T2 (single source) | L |
 | 20 | `studio/src/paths.rs` | `studio_config_dir`, `history_dir`, `timing_log_dir` have no tests for their different XDG rules (finding 18). Tests need care: env vars in parallel tests (Phase 1 review) | T4 (testability) | M |
 | 21 | `config::dir()`, `history::default_dir()` | One-line wrappers around paths.rs functions since P1.2. Callers could use paths:: directly (Phase 1 review) | T4 | L |
+| 22 | `studio/src/preview.rs:338` | Reads `XDG_RUNTIME_DIR` (else the temp folder) for the preview's runtime files outside paths.rs (found in P1.5) | rule 1 | L |
 
 ## 5. Test coverage
 - Rust: 119 tests in 25 modules (115 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
@@ -145,7 +146,7 @@ Completes: the removals of GOAL.md. Criterion 3 for the scripts (the system path
 - [x] P1.2 Config and state folders through paths.rs | Files: `paths.rs`, `config.rs`, `history.rs`, `fonts.rs` | Target: rule 1 | Check: tests
 - [x] P1.3 Script folders in paths.sh: `colors_dir`, `fonts_dir`, `cache_dir` | Files: `scripts/lib/paths.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: goal 3 | Check: golden tests
 - [x] P1.4 Sample text: replace the old dotfiles path in the Go sample with `$XDG_CONFIG_HOME/theme-studio/themes.json` | Files: `studio/src/samples/code/go.go` | Target: success criteria | Check: grep = 0, tests
-- [ ] P1.5 Download folders through paths.rs: move the `xdg()` helper of download.rs and its 3 folders (installed fonts, cache, preview cache) into paths.rs, behavior unchanged | Files: `studio/src/paths.rs`, `studio/src/download.rs` | Target: goal 3, rule 1 | Check: tests, no XDG or HOME path built outside paths.rs
+- [x] P1.5 Download folders through paths.rs: move the `xdg()` helper of download.rs and its 3 folders (installed fonts, cache, preview cache) into paths.rs, behavior unchanged | Files: `studio/src/paths.rs`, `studio/src/download.rs` | Target: goal 3, rule 1 | Check: tests, no XDG or HOME path built outside paths.rs
 Completes: criterion 3 for the Rust code. For the scripts, the per-app paths (GTK settings.ini, fontconfig conf.d, Ghostty themes) become entries of the integrations list in Phase 2, which completes criterion 3 there.
 
 ### Phase 2: App integrations as data
@@ -241,8 +242,8 @@ Completes: criterion 6
 | Phase 0 safety net | done |
 | Phase R steps | done |
 | Phase R review | done |
-| Phase 1 steps | open |
-| Phase 1 review | open |
+| Phase 1 steps | done |
+| Phase 1 review | done |
 | Phase 2 steps | open |
 | Phase 2 review | open |
 | Phase 3 steps | open |

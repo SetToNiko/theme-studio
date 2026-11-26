@@ -401,7 +401,7 @@ impl App {
             _ => {
                 self.dl.jobs.insert(e.id.clone(), (e.family.clone(), 0, 0));
                 self.info(format!("Downloading {}…", e.family));
-                download::install(e, download::installed_fonts_dir(), self.dl.tx.clone());
+                download::install(e, crate::paths::installed_fonts_dir(), self.dl.tx.clone());
             }
         }
     }
@@ -426,7 +426,7 @@ impl App {
             .and_then(Value::as_str)
             .unwrap_or("")
             .to_string();
-        let result = download::remove_files(&download::installed_fonts_dir(), &id)
+        let result = download::remove_files(&crate::paths::installed_fonts_dir(), &id)
             .and_then(|_| download::write_list(&path, list));
         self.dl.listed = None;
         match result {

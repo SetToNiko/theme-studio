@@ -65,6 +65,49 @@ pub fn history_dir() -> PathBuf {
     base.join("theme-studio/history")
 }
 
+/// Resolves a user data folder from an XDG variable, for the download code.
+///
+/// Honours `var` only when it is an absolute path; otherwise uses `~/<fallback>`.
+/// In tests it returns a folder in the temporary directory instead, so tests
+/// never touch your real folders.
+fn xdg(var: &str, fallback: &str) -> PathBuf {
+    // tests never touch your folders: a temporary home of their own
+    if cfg!(test) {
+        return std::env::temp_dir()
+            .join(format!("theme-studio-test-home-{}", std::process::id()))
+            .join(fallback);
+    }
+    std::env::var_os(var)
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute())
+        .unwrap_or_else(|| home().join(fallback))
+}
+
+/// Where downloaded fonts are installed:
+/// `$XDG_DATA_HOME/fonts/theme-studio`, default `~/.local/share/fonts/theme-studio`.
+///
+/// Honours `$XDG_DATA_HOME` only when it is an absolute path.
+pub fn installed_fonts_dir() -> PathBuf {
+    xdg("XDG_DATA_HOME", ".local/share").join("fonts/theme-studio")
+}
+
+/// The studio's download cache:
+/// `$XDG_CACHE_HOME/theme-studio`, default `~/.cache/theme-studio`.
+///
+/// Honours `$XDG_CACHE_HOME` only when it is an absolute path.
+pub fn download_cache_dir() -> PathBuf {
+    xdg("XDG_CACHE_HOME", ".cache").join("theme-studio")
+}
+
+/// Fonts fetched only to preview them:
+/// `$XDG_DATA_HOME/theme-studio/previews`, default `~/.local/share/theme-studio/previews`.
+///
+/// Honours `$XDG_DATA_HOME` only when it is an absolute path. It is not in the
+/// cache, so cleanup tools don't undo a prefetch or a tournament's downloads.
+pub fn preview_cache_dir() -> PathBuf {
+    xdg("XDG_DATA_HOME", ".local/share").join("theme-studio/previews")
+}
+
 /// The folder for the render timing log (`timing.log`):
 /// `$XDG_STATE_HOME/theme-studio`, default `~/.local/state/theme-studio`.
 ///

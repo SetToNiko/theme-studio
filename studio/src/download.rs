@@ -15,7 +15,9 @@ use std::time::{Duration, SystemTime};
 use anyhow::{Context, Result, anyhow, bail};
 use serde_json::{Map, Value, json};
 
-use crate::paths::{SYSTEM_FONTCONFIG, home};
+use crate::paths::{
+    SYSTEM_FONTCONFIG, download_cache_dir, home, installed_fonts_dir, preview_cache_dir,
+};
 
 /// Where a font comes from.
 #[derive(Clone, Debug, PartialEq)]
@@ -87,28 +89,6 @@ pub enum Msg {
     PreviewsSize(u64),
 }
 
-fn xdg(var: &str, fallback: &str) -> PathBuf {
-    // tests never touch your folders: a temporary home of their own
-    if cfg!(test) {
-        return std::env::temp_dir()
-            .join(format!("theme-studio-test-home-{}", std::process::id()))
-            .join(fallback);
-    }
-    std::env::var_os(var)
-        .map(PathBuf::from)
-        .filter(|p| p.is_absolute())
-        .unwrap_or_else(|| home().join(fallback))
-}
-
-/// `~/.local/share/fonts/theme-studio` (or under `$XDG_DATA_HOME`).
-pub fn installed_fonts_dir() -> PathBuf {
-    xdg("XDG_DATA_HOME", ".local/share").join("fonts/theme-studio")
-}
-
-fn cache_dir() -> PathBuf {
-    xdg("XDG_CACHE_HOME", ".cache").join("theme-studio")
-}
-
 /// A command at a lower priority (nice), so downloads, unpacking and font
 /// scans in the background never slow the studio, nvim or the shell.
 fn low(program: &str) -> Command {
@@ -177,7 +157,7 @@ fn fetch(url: &str, out: &Path, mut progress: impl FnMut(u64)) -> Result<()> {
 
 /// A JSON answer, cached for a week (an old copy is used when offline).
 fn cached(name: &str, url: &str) -> Result<Value> {
-    let path = cache_dir().join(name);
+    let path = download_cache_dir().join(name);
     let fresh = std::fs::metadata(&path)
         .and_then(|m| m.modified())
         .ok()
@@ -190,7 +170,7 @@ fn cached(name: &str, url: &str) -> Result<Value> {
     }
     match get(url).and_then(|t| Ok(serde_json::from_str::<Value>(&t)?)) {
         Ok(v) => {
-            let _ = std::fs::create_dir_all(cache_dir());
+            let _ = std::fs::create_dir_all(download_cache_dir());
             let _ = std::fs::write(&path, v.to_string());
             Ok(v)
         }
@@ -502,17 +482,10 @@ pub fn install(e: Entry, root: PathBuf, tx: Sender<Msg>) {
 
 // ----- previews ---------------------------------------------------------------------
 
-/// Fonts fetched only to preview them:
-/// `~/.local/share/theme-studio/previews/<id>/` (not the cache, so cleanup
-/// tools don't undo a prefetch or a tournament's downloads).
-pub fn preview_dir() -> PathBuf {
-    xdg("XDG_DATA_HOME", ".local/share").join("theme-studio/previews")
-}
-
 /// Moves previews from where older versions kept them
 /// (`~/.cache/theme-studio/preview/`), keeping only each font's Regular.
 pub fn migrate_previews() {
-    let (old, new) = (cache_dir().join("preview"), preview_dir());
+    let (old, new) = (download_cache_dir().join("preview"), preview_cache_dir());
     if !old.is_dir() || new.exists() {
         return;
     }
@@ -533,15 +506,15 @@ pub fn migrate_previews() {
 /// font's folder. Much quicker to load than one listing every preview
 /// (fontconfig checks each folder it's given on every start).
 pub fn preview_fontconfig_for(id: &str) -> PathBuf {
-    let dir = cache_dir().join("fontconfig-confs");
+    let dir = download_cache_dir().join("fontconfig-confs");
     let path = dir.join(format!("{id}.conf"));
     let conf = format!(
         "<?xml version=\"1.0\"?>\n<!DOCTYPE fontconfig SYSTEM \"fonts.dtd\">\n<fontconfig>\n  \
          <include ignore_missing=\"yes\">{}</include>\n  <dir>{}</dir>\n  \
          <cachedir>{}</cachedir>\n</fontconfig>\n",
         SYSTEM_FONTCONFIG,
-        preview_dir().join(id).display(),
-        cache_dir().join("fontconfig").display()
+        preview_cache_dir().join(id).display(),
+        download_cache_dir().join("fontconfig").display()
     );
     if std::fs::read_to_string(&path).ok().as_deref() != Some(conf.as_str()) {
         let _ = std::fs::create_dir_all(&dir);
@@ -552,7 +525,7 @@ pub fn preview_fontconfig_for(id: &str) -> PathBuf {
 
 /// Whether a font's preview file is already here.
 pub fn has_preview(id: &str) -> bool {
-    preview_file(&preview_dir().join(id)).is_some()
+    preview_file(&preview_cache_dir().join(id)).is_some()
 }
 
 /// The space the preview fonts take, in bytes.
@@ -568,13 +541,13 @@ pub fn previews_size() -> u64 {
                 .sum()
         })
     }
-    walk(&preview_dir())
+    walk(&preview_cache_dir())
 }
 
 /// Deletes every preview font (they're fetched again when needed).
 pub fn clear_previews() -> Result<()> {
-    let _ = std::fs::remove_dir_all(cache_dir().join("fontconfig-confs"));
-    let dir = preview_dir();
+    let _ = std::fs::remove_dir_all(download_cache_dir().join("fontconfig-confs"));
+    let dir = preview_cache_dir();
     if dir.exists() {
         std::fs::remove_dir_all(&dir).with_context(|| format!("removing {}", dir.display()))?;
     }
@@ -639,7 +612,7 @@ fn preview_file(dir: &Path) -> Option<PathBuf> {
 /// the Regular is kept), unless already here.
 pub fn fetch_preview(e: Entry, tx: Sender<Msg>) {
     std::thread::spawn(move || {
-        let dir = preview_dir().join(&e.id);
+        let dir = preview_cache_dir().join(&e.id);
         let result = (|| -> Result<String> {
             if let Some(f) = preview_file(&dir) {
                 return family_of(&f).ok_or_else(|| anyhow!("no family name in {}", f.display()));
