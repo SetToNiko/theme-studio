@@ -8,9 +8,9 @@
 //! which checks, in this order: the notice box, a focused preview window,
 //! Ctrl+C, the pop-ups, the text fields, and last the keymap. The keymap
 //! turns the keys into an [`Action`]. [`App::run_action`] then does what the
-//! action means. It tries one method per group of actions: the page, the
-//! view (windows and panes), the theme files, and the fonts column. What
-//! is left goes to the colours column (`run_colours`).
+//! action means. One `match` sends each action to the method of its group:
+//! the view (windows and panes), the theme files, the other pages, or the
+//! fonts column. What is left goes to the colours column (`run_colours`).
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
@@ -107,9 +107,9 @@ impl App {
     /// Does what an action means in the pane with the keyboard.
     ///
     /// The checks that come first (resize mode, the copy-from pop-up, undo of
-    /// a config change, the page tabs, the other pages) can end the call. Then
-    /// each group of actions gets its turn, and the first group that knows the
-    /// action does it.
+    /// a config change, the page tabs) can end the call. Then one `match`
+    /// sends the action to the method of its group.
+    // Long function: four early returns, then one match that lists every action group.
     pub fn run_action(&mut self, a: Action) {
         if self.layout.resize_mode {
             return self.run_resize(a);
@@ -123,51 +123,45 @@ impl App {
         if self.layout.page_tabs_focused && self.page_tabs_action(a) {
             return;
         }
-        if self.run_other_page(a) {
-            return;
+        match a {
+            // quit, help, page switch, hints and preview toggles: on every page
+            _ if is_page_action(a) => self.run_view_action(a),
+            // the other pages take every other action themselves
+            _ if self.page == Page::Settings => self.run_settings(a),
+            _ if self.page == Page::Downloads => self.run_downloads(a),
+            _ if self.page != Page::Main => {}
+            // from here on: the Main page
+            Action::PreviewCycle
+            | Action::TogglePicker
+            | Action::ToggleSample
+            | Action::ResizeMode
+            | Action::PaneLeft
+            | Action::PaneRight
+            | Action::PaneUp
+            | Action::PaneDown
+            | Action::Panel(_) => self.run_view_action(a),
+            Action::SavePalette
+            | Action::SaveFonts
+            | Action::ApplyPalette
+            | Action::ApplyFonts
+            | Action::Save
+            | Action::SaveAs
+            | Action::Apply
+            | Action::Open
+            | Action::New
+            | Action::OpenPalette
+            | Action::OpenFonts
+            | Action::NewPalette
+            | Action::NewFonts => self.run_theme_action(a),
+            _ if self.side == Side::Fonts => self.run_fonts(a),
+            _ => self.run_colours(a),
         }
-        if self.run_view_action(a) || self.run_theme_action(a) {
-            return;
-        }
-        if self.side == Side::Fonts {
-            self.run_fonts(a);
-        } else {
-            self.run_colours(a);
-        }
-    }
-
-    /// Sends the action to the Settings or Downloads page, or drops it on a
-    /// page that is not Main. Returns `true` when the action is used up.
-    ///
-    /// The actions that work on every page (quit, help, page switch, hints and
-    /// preview toggles) are not used up. They go on to `run_view_action`.
-    fn run_other_page(&mut self, a: Action) -> bool {
-        let page_action = matches!(
-            a,
-            Action::Quit
-                | Action::Help
-                | Action::PageMain
-                | Action::PageDownloads
-                | Action::PageSettings
-                | Action::ToggleHints
-                | Action::TogglePreview
-        );
-        if self.page == Page::Settings && !page_action {
-            self.run_settings(a);
-            return true;
-        }
-        if self.page == Page::Downloads && !page_action {
-            self.run_downloads(a);
-            return true;
-        }
-        self.page != Page::Main && !page_action
     }
 
     /// Actions for the window: quit, help, page switch, the toggles, resize
-    /// mode and the pane focus. Returns `false` when the action is not one of
-    /// these.
+    /// mode and the pane focus. Other actions do nothing.
     // Long function: one match with one arm per window action.
-    fn run_view_action(&mut self, a: Action) -> bool {
+    fn run_view_action(&mut self, a: Action) {
         match a {
             Action::Quit => self.guard(Pending::Quit),
             Action::Help => self.overlay = Overlay::Help { page: 0 },
@@ -213,14 +207,13 @@ impl App {
             Action::PaneUp => self.move_pane(0, -1),
             Action::PaneDown => self.move_pane(0, 1),
             Action::Panel(n) => self.focus_pane(n),
-            _ => return false,
+            _ => {}
         }
-        true
     }
 
-    /// Actions for the theme and its parts (save, apply, open, new). Returns
-    /// `false` when the action is not one of these.
-    fn run_theme_action(&mut self, a: Action) -> bool {
+    /// Actions for the theme and its parts (save, apply, open, new). Other
+    /// actions do nothing.
+    fn run_theme_action(&mut self, a: Action) {
         match a {
             Action::SavePalette => self.save(false),
             Action::SaveFonts => self.fonts_save(false),
@@ -244,9 +237,8 @@ impl App {
             Action::OpenFonts => self.fonts_open_overlay(),
             Action::NewPalette => self.guard(Pending::New),
             Action::NewFonts => self.guard(Pending::NewFonts),
-            _ => return false,
+            _ => {}
         }
-        true
     }
 
     /// Fonts-column actions: the focus order, filling the roles, the jump to
@@ -402,18 +394,9 @@ impl App {
             }
             _ if self.focus == Focus::List => self.list_action(a),
             _ => {
-                let (dx, dy, big) = match a {
-                    Action::Left => (-1, 0, false),
-                    Action::Right => (1, 0, false),
-                    Action::Up => (0, -1, false),
-                    Action::Down => (0, 1, false),
-                    Action::LeftBig => (-1, 0, true),
-                    Action::RightBig => (1, 0, true),
-                    Action::UpBig => (0, -1, true),
-                    Action::DownBig => (0, 1, true),
-                    _ => return,
-                };
-                self.nudge(dx, dy, big);
+                if let Some((dx, dy, big)) = nudge_step(a) {
+                    self.nudge(dx, dy, big);
+                }
             }
         }
     }
@@ -489,4 +472,38 @@ impl App {
             self.fonts_save_as(&name, true);
         }
     }
+}
+
+/// Says if an action works on every page: quit, help, page switch, and the
+/// hints and preview toggles.
+///
+/// `run_action` and `page_tabs_action` both use it, so the list is in one place.
+pub(super) fn is_page_action(a: Action) -> bool {
+    matches!(
+        a,
+        Action::Quit
+            | Action::Help
+            | Action::PageMain
+            | Action::PageDownloads
+            | Action::PageSettings
+            | Action::ToggleHints
+            | Action::TogglePreview
+    )
+}
+
+/// Turns a move action of the picker into a step `(dx, dy, big)`: the
+/// direction (-1, 0 or 1 on each axis) and `true` for the large step.
+/// Returns `None` for any other action.
+fn nudge_step(a: Action) -> Option<(i32, i32, bool)> {
+    Some(match a {
+        Action::Left => (-1, 0, false),
+        Action::Right => (1, 0, false),
+        Action::Up => (0, -1, false),
+        Action::Down => (0, 1, false),
+        Action::LeftBig => (-1, 0, true),
+        Action::RightBig => (1, 0, true),
+        Action::UpBig => (0, -1, true),
+        Action::DownBig => (0, 1, true),
+        _ => return None,
+    })
 }

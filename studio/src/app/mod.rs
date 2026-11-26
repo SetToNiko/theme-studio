@@ -832,13 +832,7 @@ impl App {
             Action::Up if !top => self.layout.page_tabs_focused = false,
             Action::Confirm | Action::Back => self.layout.page_tabs_focused = false,
             // page keys, quitting and help work as anywhere
-            Action::Quit
-            | Action::Help
-            | Action::PageMain
-            | Action::PageDownloads
-            | Action::PageSettings
-            | Action::ToggleHints
-            | Action::TogglePreview => return false,
+            _ if actions::is_page_action(a) => return false,
             _ => {}
         }
         true

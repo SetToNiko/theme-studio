@@ -13,7 +13,7 @@ use crate::hit::{Border, BorderId};
 /// Pane sizes, resize and drag state, visibility flags, and where the keyboard is on the page tabs.
 #[expect(
     clippy::struct_excessive_bools,
-    reason = "each bool is an independent show/hide or focus flag that settings and keys toggle one by one"
+    reason = "show/hide flags toggled one by one by keys and settings, plus `wide` (set by each draw), `resize_mode`, and two keyboard-focus flags; they do not form a state machine"
 )]
 pub struct Layout {
     /// Pane sizes (shares), from settings.json; resizing changes them.

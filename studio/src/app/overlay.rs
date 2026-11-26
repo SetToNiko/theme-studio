@@ -18,23 +18,13 @@ impl App {
     /// Opens the palette list (`For::Palette`) with the current palette highlighted.
     ///
     /// Shows an error message instead if the stored palettes cannot be read.
-    // Long function: builds the palette list (swatches, preview palettes) in one pass.
     pub(super) fn open_overlay(&mut self) {
         self.overlay_for = For::Palette;
         match self.store.load_all() {
             Ok(all) => {
                 let entries = all
                     .iter()
-                    .map(|(name, v)| {
-                        let sw = [
-                            "bg0", "fg0", "red", "orange", "yellow", "green", "aqua", "blue",
-                            "purple",
-                        ]
-                        .iter()
-                        .filter_map(|k| v.get(*k).and_then(|x| x.as_str()).and_then(Rgb::parse))
-                        .collect();
-                        (name.clone(), sw)
-                    })
+                    .map(|(name, v)| (name.clone(), swatches(v)))
                     .collect::<Vec<_>>();
                 let sel = entries
                     .iter()
@@ -58,9 +48,14 @@ impl App {
 
     /// Gives one key to the open overlay.
     ///
-    /// Takes the overlay out of `self.overlay`, so the methods below can use
-    /// `self` freely. Each method returns the overlay to show next, or `None`
-    /// when it already set `self.overlay` itself (it opened something else).
+    /// Takes the overlay out of `self.overlay` with
+    /// `std::mem::replace(&mut x, new)`. That call moves the old value out of
+    /// `x` and leaves `new` in its place. Without it, `self.overlay` would stay
+    /// borrowed, and the per-kind methods below could not take `&mut self`.
+    ///
+    /// The rule for each per-kind method: it returns `Some(overlay)` to show
+    /// that overlay next, and `None` when it already set `self.overlay`
+    /// itself (it opened something else). Never both.
     // Long function: one match over all 11 overlay kinds, one short arm each.
     pub(super) fn on_overlay_key(&mut self, k: KeyEvent) {
         let overlay = std::mem::replace(&mut self.overlay, Overlay::None);
@@ -114,7 +109,7 @@ impl App {
         let last = crate::fonts_preview::menu_items(menu).len() - 1;
         let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
         match k.code {
-            KeyCode::Esc => return None,
+            KeyCode::Esc => return Some(Overlay::None),
             KeyCode::Enter => {
                 self.choose_menu(menu, sel);
                 return None;
@@ -252,6 +247,7 @@ impl App {
             }
         } else {
             self.theme_save_as(&name, then_apply);
+            // theme_save_as may have opened another overlay: take it, leave `None`
             std::mem::replace(&mut self.overlay, Overlay::None)
         }
     }
@@ -297,6 +293,7 @@ impl App {
     }
 
     /// Keys in the "open" list: filter by typing, move, Enter opens, Esc closes.
+    // Long function: one match over the keys of the list; Enter hands over to `open_enter`.
     fn open_key(
         &mut self,
         mut filter: String,
@@ -348,7 +345,7 @@ impl App {
                     For::Palette => Pending::Open(name),
                     For::Theme => Pending::OpenTheme(name),
                 });
-                // guard() may have opened a confirmation instead
+                // guard() may have opened a confirmation instead: take it, leave `None`
                 std::mem::replace(&mut self.overlay, Overlay::None)
             }
             None => Overlay::Open {
@@ -369,4 +366,18 @@ fn help_key(page: usize, k: KeyEvent) -> Overlay {
         },
         _ => Overlay::None,
     }
+}
+
+/// Picks the nine swatch colours (backgrounds, foreground and accents) from a
+/// palette's JSON object. Keys that are missing or not a colour are skipped.
+fn swatches(v: &serde_json::Value) -> Vec<Rgb> {
+    let mut out = Vec::new();
+    for key in [
+        "bg0", "fg0", "red", "orange", "yellow", "green", "aqua", "blue", "purple",
+    ] {
+        if let Some(c) = v.get(key).and_then(|x| x.as_str()).and_then(Rgb::parse) {
+            out.push(c);
+        }
+    }
+    out
 }
