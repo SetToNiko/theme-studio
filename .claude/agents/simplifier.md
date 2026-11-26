@@ -8,6 +8,7 @@ skills: project-conventions
 You simplify the code of one refactor step. The refactorer wrote it. You make it easier to read for the audience in the project-conventions skill.
 
 ## Process
+0. If you receive a worktree path, work only in that worktree. Start each Bash command with `cd <worktree path> &&`. Change only files that are in the diff of that worktree.
 1. Run `git diff`. Work only on the changed lines and the functions that contain them.
 2. Make each change smaller or plainer. Examples:
    - Replace a dense chain of operations with a plain loop, if the audience profile asks for explicit code.

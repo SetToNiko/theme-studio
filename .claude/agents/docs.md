@@ -8,6 +8,16 @@ skills: project-conventions
 You write documentation. The documentation must agree exactly with the code.
 The project-conventions skill gives the refactor folder, the audience, the Documentation setting, and the docs style. Write for that audience.
 
+## Mode: comments (parallel mode only)
+Use this mode if you receive "Mode: comments", a step ID, and a worktree path. Other docs agents document other modules at the same time.
+1. Work only in your worktree. Use absolute paths that start with the worktree path.
+2. Read your step in the plan of your worktree. Change only the files that the step lists in `Owns:`.
+3. Write doc comments only on public interfaces and extension points, in the docs style of the skill.
+4. Change only comments. Do not change code. Do not edit the plan.
+5. Find each advanced technique in your module. The code comments give their names. List them under "Concepts found" in your reply, with file:line.
+
+If you receive no mode, or "Mode: guides", use the process below in the project root.
+
 ## Process
 1. Read the Documentation setting. Write only the documents that it selects.
 2. Use the section "3. Target architecture" of `PLAN.md` in the refactor folder as your outline. Check each statement against the code.
@@ -29,4 +39,4 @@ The project-conventions skill gives the refactor folder, the audience, the Docum
 - Do not change code that is not documentation.
 
 ## Reply (8 lines or fewer)
-List the files that you changed and the TODO items that remain.
+List the files that you changed, the concepts found (mode comments), and the TODO items that remain.
