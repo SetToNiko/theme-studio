@@ -14,35 +14,17 @@
 # Sizes get a per-host offset from ~/.config/host/fonts.json
 # ({"monospace": 0, "proportional": 3, "icons": 3}; icons falls back to the
 # proportional offset).
-# Usage: font-switch.sh <name>, or no argument for a rofi picker.
+# Usage: font-switch.sh <font preset name>
 here=$(dirname "$(readlink -f "$0")")
 . "$here/lib/paths.sh" # data_file, share_file
 fonts="${FONTS:-$(data_file fonts.json)}"
 out="$HOME/.config/fonts"
 # shellcheck disable=SC1091 # the other lib files are not followed either
-. "$here/lib/data.sh"        # json_data (either file layout)
-. "$here/lib/rofi-picker.sh" # json_picker
+. "$here/lib/data.sh" # json_data (either file layout)
 
-# Menu rows: bold name, then each font's family written in that font, and
-# "(active)" after the current preset
-menu_rows='def esc: gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
-  def sample: "<span font_family=\"\(.family | esc)\">\(.family | esc)</span>";
-  def role($new; $old): .[$new] // .[$old];
-  to_entries[]
-  | (.value | role("proportional"; "ui")) as $ui
-  | "<b>\(.key | esc)</b>   monospace: \(.value | role("monospace"; "mono") | sample)   proportional: \($ui | sample)   icons: \(.value | role("icons"; "bar") // $ui | sample)"
-    + (if .key == $cur then "   <i>(active)</i>" else "" end)'
+name=${1:-}
+[ -n "$name" ] || { echo "usage: font-switch.sh <font preset name>" >&2; exit 2; }
 
-if [ -n "$1" ]; then
-  name=$1
-else
-  current=$(cat "$out/current" 2>/dev/null)
-  # Delete messages use the active palette's red
-  red=$(sed -n 's/^red=//p' "$HOME/.config/colors/colors.sh" 2>/dev/null)
-  name=$(json_picker "$fonts" Fonts "$menu_rows" "$current" "${red:-#ff5555}" "Font preset") || exit 0
-fi
-
-[ -n "$name" ] || exit 0
 # Everything below reads the presets map (whichever layout the file has)
 data=$(mktemp)
 trap 'rm -f "$data"' EXIT

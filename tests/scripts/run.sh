@@ -14,14 +14,13 @@
 #   - THEME_STUDIO_DATA = a copy of tests/scripts/fixtures/data
 #   - THEME_STUDIO_SHARE = the project's share/ (or $SCRIPTS_SHARE)
 #   - a PATH with only the real tools that the scripts need (bash, jq, awk, ...)
-#     and stub commands for the desktop programs (pkill, i3-msg, rofi, pywalfox,
+#     and stub commands for the desktop programs (pkill, i3-msg, pywalfox,
 #     fc-list, fc-match). Each stub writes its arguments to
 #     calls.log. ghostty is not on PATH, on purpose: then the result does not
 #     depend on the themes of an installed Ghostty.
 # The result of a case is: the files under HOME, calls.log, stderr, and the exit
 # code. They are compared with tests/scripts/golden/<case>/ with `diff -r`.
 #
-# Not covered: the rofi picker (no name given).
 # Stub assumption: fc-list calls each family with "Mono" in its name
 # monospaced (also "... Nerd Font Propo"). The golden files record the
 # script under that assumption.
@@ -67,7 +66,7 @@ make_stubs_dir() {
   local bash_path
   bash_path=$(command -v bash)
   local name
-  for name in pkill i3-msg rofi pywalfox fc-cache fc-match; do
+  for name in pkill i3-msg pywalfox fc-cache fc-match; do
     printf '#!%s\necho "%s $*" >> "$CALLS_LOG"\n' "$bash_path" "$name" > "$work/stubs/$name"
   done
   # fc-list: every font is installed (-q succeeds). For a spacing question, a
@@ -139,6 +138,7 @@ cases_theme_switch() {
   run_case theme-switch-palette bash "$scripts/theme-switch.sh" "CRT Amber"
   run_case theme-switch-no-restart env NO_RESTART=1 bash "$scripts/theme-switch.sh" "0x96f"
   run_case theme-switch-unknown bash "$scripts/theme-switch.sh" "No Such Palette"
+  run_case theme-switch-no-name bash "$scripts/theme-switch.sh"
 }
 
 # Setup functions: setup_<case> runs with HOME set to the case's home folder.
@@ -173,6 +173,7 @@ cases_font_switch() {
   run_case font-switch-gtk-settings bash "$scripts/font-switch.sh" "JetBrains Mono"
   run_case font-switch-no-restart env NO_RESTART=1 bash "$scripts/font-switch.sh" "JetBrains Mono"
   run_case font-switch-unknown bash "$scripts/font-switch.sh" "No Such Preset"
+  run_case font-switch-no-name bash "$scripts/font-switch.sh"
 }
 
 # A theme whose palette is not in palettes.json.
@@ -190,6 +191,7 @@ cases_themes_switch() {
   run_case themes-switch-theme bash "$scripts/themes-switch.sh" "CRT Amber"
   run_case themes-switch-missing-palette bash "$scripts/themes-switch.sh" "Broken"
   run_case themes-switch-unknown bash "$scripts/themes-switch.sh" "No Such Theme"
+  run_case themes-switch-no-name bash "$scripts/themes-switch.sh"
 }
 
 # ---- Main -------------------------------------------------------------------

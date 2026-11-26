@@ -1,31 +1,16 @@
 #!/usr/bin/env bash
 # Switch colour scheme.
-# Usage: theme-switch.sh <name>, or no argument for a rofi picker.
+# Usage: theme-switch.sh <palette name>
 here=$(dirname "$(readlink -f "$0")")
 . "$here/lib/paths.sh" # data_file, share_file
 palettes="${PALETTES:-$(data_file palettes.json)}"
 out="$HOME/.config/colors"
 # shellcheck disable=SC1091 # the other lib files are not followed either
-. "$here/lib/data.sh"        # json_data (either file layout)
-. "$here/lib/rofi-picker.sh" # json_picker
+. "$here/lib/data.sh" # json_data (either file layout)
 
-# Menu rows: bold name, one swatch per main colour,
-# and "(active)" after the current scheme
-menu_rows='to_entries[]
-  | "<b>\(.key)</b>   "
-    + ([.value | .bg0, .fg0, .red, .orange, .yellow, .green, .aqua, .blue, .purple | "<span foreground=\"\(.)\">██</span>"] | join(""))
-    + (if .key == $cur then "   <i>(active)</i>" else "" end)'
+name=${1:-}
+[ -n "$name" ] || { echo "usage: theme-switch.sh <palette name>" >&2; exit 2; }
 
-if [ -n "$1" ]; then
-  name=$1
-else
-  current=$(cat "$out/current" 2>/dev/null)
-  # Delete messages use the active palette's red
-  red=$(json_data "$palettes" | jq -r --arg n "$current" '.[$n].red // "#ff5555"')
-  name=$(json_picker "$palettes" Theme "$menu_rows" "$current" "$red" Palette) || exit 0
-fi
-
-[ -n "$name" ] || exit 0
 # Everything below reads the palettes map (whichever layout the file has)
 data=$(mktemp)
 trap 'rm -f "$data"' EXIT
