@@ -39,26 +39,7 @@ impl App {
         rows
     }
 
-    /// The cursor can rest on everything but the blank lines.
-    pub fn keymap_selectable(rows: &[KmRow]) -> Vec<bool> {
-        rows.iter().map(|r| !matches!(r, KmRow::Gap)).collect()
-    }
-
-    pub(crate) fn move_sel(sel: &mut usize, n: usize, a: Action) -> bool {
-        let last = n.saturating_sub(1) as i32;
-        let d: i32 = match a {
-            Action::Up => -1,
-            Action::Down => 1,
-            Action::PageUp => -10,
-            Action::PageDown => 10,
-            Action::Top => -(*sel as i32),
-            Action::Bottom => last - *sel as i32,
-            _ => return false,
-        };
-        *sel = (*sel as i32 + d).clamp(0, last) as usize;
-        true
-    }
-
+    // Long function: one match over the Keymaps tab's row kinds and keys.
     pub(crate) fn run_keymaps_tab(&mut self, a: Action) {
         if self.settings_page.browse.is_some() {
             return self.run_browse(a);
@@ -97,56 +78,58 @@ impl App {
                 .messages
                 .info("Only shipped presets can be reset; this one is yours"),
             (Some(KmRow::Binding(ctx, action)), Action::Confirm | Action::Right) => {
-                self.overlay = Overlay::Capture {
-                    what: Capture::Binding {
-                        ctx,
-                        action,
-                        add: false,
-                    },
-                    keys: Vec::new(),
-                }
+                self.start_capture(ctx, action, false);
             }
             (Some(KmRow::Binding(ctx, action)), Action::Add) => {
-                self.overlay = Overlay::Capture {
-                    what: Capture::Binding {
-                        ctx,
-                        action,
-                        add: true,
-                    },
-                    keys: Vec::new(),
-                }
+                self.start_capture(ctx, action, true);
             }
             (Some(KmRow::Binding(ctx, action)), Action::EditText) => {
-                let current: Vec<String> = self
-                    .keymap
-                    .keys_of(ctx, action)
-                    .iter()
-                    .map(|k| display_seq(k, self.keymap.leader))
-                    .collect();
-                self.prompt(
-                    &format!(
-                        "Keys for \"{}\" (Vim notation; space between several)",
-                        action.describe()
-                    ),
-                    Naming::BindingText {
-                        ctx,
-                        action,
-                        add: false,
-                    },
-                    &current.join(" "),
-                )
+                self.edit_binding_text(ctx, action);
             }
-            (Some(KmRow::Binding(ctx, action)), Action::Delete) => {
-                self.keymap.set_keys(ctx, action, Vec::new());
-                self.sync_preset();
-                self.messages.info(format!(
-                    "\"{}\" has no keys now ({})",
-                    action.describe(),
-                    ctx.title()
-                ));
-            }
+            (Some(KmRow::Binding(ctx, action)), Action::Delete) => self.unbind(ctx, action),
             _ => {}
         }
+    }
+
+    /// Opens the key-recording pop-up for an action (`add`: keep its old keys).
+    fn start_capture(&mut self, ctx: Context, action: Action, add: bool) {
+        self.overlay = Overlay::Capture {
+            what: Capture::Binding { ctx, action, add },
+            keys: Vec::new(),
+        };
+    }
+
+    /// Opens the text prompt for an action's keys, filled with its current keys.
+    fn edit_binding_text(&mut self, ctx: Context, action: Action) {
+        let current: Vec<String> = self
+            .keymap
+            .keys_of(ctx, action)
+            .iter()
+            .map(|k| display_seq(k, self.keymap.leader))
+            .collect();
+        self.prompt(
+            &format!(
+                "Keys for \"{}\" (Vim notation; space between several)",
+                action.describe()
+            ),
+            Naming::BindingText {
+                ctx,
+                action,
+                add: false,
+            },
+            &current.join(" "),
+        );
+    }
+
+    /// Removes all keys of an action (it stays in the list, unbound).
+    fn unbind(&mut self, ctx: Context, action: Action) {
+        self.keymap.set_keys(ctx, action, Vec::new());
+        self.sync_preset();
+        self.messages.info(format!(
+            "\"{}\" has no keys now ({})",
+            action.describe(),
+            ctx.title()
+        ));
     }
 
     /// Sets an action's keys from the capture or the text prompt.
@@ -174,6 +157,7 @@ impl App {
 
     /// Keys while recording new keys (Enter finishes, Esc cancels,
     /// Backspace takes the last one back).
+    // Long function: one match over the recording keys (Esc, Enter, Backspace, others) for each kind of capture.
     pub fn capture_key(
         &mut self,
         what: Capture,

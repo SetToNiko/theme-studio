@@ -14,10 +14,32 @@ use super::App;
 use super::nav::{Deferred, Naming, Overlay};
 use crate::history::History;
 use crate::keymap::{Action, Key};
-use crate::settings::{FILES, HistFocus, SettingsPage, TABS, Tab, ends, wrap};
+use crate::settings::{FILES, HistFocus, KmRow, SettingsPage, TABS, Tab, ends, wrap};
 
 impl App {
     // ----- shared ----------------------------------------------------------
+
+    /// The cursor can rest on everything but the blank lines.
+    pub fn keymap_selectable(rows: &[KmRow]) -> Vec<bool> {
+        rows.iter().map(|r| !matches!(r, KmRow::Gap)).collect()
+    }
+
+    /// Moves a list cursor `sel` over `n` rows for a movement action (up,
+    /// down, page, top, bottom). False when `a` is not a movement.
+    pub(crate) fn move_sel(sel: &mut usize, n: usize, a: Action) -> bool {
+        let last = n.saturating_sub(1) as i32;
+        let d: i32 = match a {
+            Action::Up => -1,
+            Action::Down => 1,
+            Action::PageUp => -10,
+            Action::PageDown => 10,
+            Action::Top => -(*sel as i32),
+            Action::Bottom => last - *sel as i32,
+            _ => return false,
+        };
+        *sel = (*sel as i32 + d).clamp(0, last) as usize;
+        true
+    }
 
     pub fn history(&self) -> Option<History> {
         History::current()
@@ -98,6 +120,7 @@ impl App {
 
     /// A click on the Settings page: selects; on the selected row, acts
     /// like Enter.
+    // Long function: one match over the click targets of the Settings page.
     pub fn settings_click(&mut self, t: crate::hit::Target) {
         use crate::hit::Target as T;
         if let T::PresetRow(i) = t {
@@ -172,35 +195,15 @@ impl App {
 
     // ----- keys ------------------------------------------------------------
 
+    // Long function: one match over the page-wide keys, then the hand-over to the current tab.
     pub fn run_settings(&mut self, a: Action) {
         let top = self.settings.layout.inner_tabs_on_top();
-        let switch = |p: &mut SettingsPage, d: i32| {
-            let i = TABS.iter().position(|(t, _)| *t == p.tab).unwrap_or(0);
-            p.tab = TABS[wrap(i, d, TABS.len())].0;
-        };
-        // the keyboard on the tab strip: left/right change tabs; moving back
-        // towards the page, Enter or Esc return to it
         if self.settings_page.tabs_focused {
-            match a {
-                Action::Left | Action::TabPrev => switch(&mut self.settings_page, -1),
-                Action::Right | Action::TabNext => switch(&mut self.settings_page, 1),
-                Action::Down if top => self.settings_page.tabs_focused = false,
-                Action::Up if !top => self.settings_page.tabs_focused = false,
-                // on past the page's tabs to the page tabs (F1 / F2 / F3)
-                Action::Up if top => {
-                    self.focus_page_tabs(true);
-                }
-                Action::Down if !top => {
-                    self.focus_page_tabs(false);
-                }
-                Action::Confirm | Action::Back => self.settings_page.tabs_focused = false,
-                _ => {}
-            }
-            return;
+            return self.run_settings_tab_strip(a, top);
         }
         match a {
             Action::TabNext | Action::TabPrev => {
-                switch(
+                switch_tab(
                     &mut self.settings_page,
                     if a == Action::TabNext { 1 } else { -1 },
                 );
@@ -238,6 +241,27 @@ impl App {
             Tab::Behaviour => self.with_draft(|app| app.run_behaviour_tab(a)),
             Tab::History => self.run_history_tab(a),
             Tab::Readme => self.run_readme_tab(a),
+        }
+    }
+
+    /// Keys while the keyboard is on the tab strip: left/right change tabs;
+    /// moving back towards the page, Enter or Esc return to it. `top` is
+    /// whether the strip is above the page.
+    fn run_settings_tab_strip(&mut self, a: Action, top: bool) {
+        match a {
+            Action::Left | Action::TabPrev => switch_tab(&mut self.settings_page, -1),
+            Action::Right | Action::TabNext => switch_tab(&mut self.settings_page, 1),
+            Action::Down if top => self.settings_page.tabs_focused = false,
+            Action::Up if !top => self.settings_page.tabs_focused = false,
+            // on past the page's tabs to the page tabs (F1 / F2 / F3)
+            Action::Up if top => {
+                self.focus_page_tabs(true);
+            }
+            Action::Down if !top => {
+                self.focus_page_tabs(false);
+            }
+            Action::Confirm | Action::Back => self.settings_page.tabs_focused = false,
+            _ => {}
         }
     }
 
@@ -307,6 +331,7 @@ impl App {
     }
 
     /// The prompt's text, confirmed.
+    // Long function: one match over the kinds of name or text prompt.
     pub fn finish_prompt(&mut self, purpose: Naming, input: String) {
         let text = input.trim().to_string();
         if text.is_empty() {
@@ -353,6 +378,7 @@ impl App {
     }
 
     /// The question was answered yes.
+    // Long function: one match over every yes/no question the page asks.
     pub fn run_deferred(&mut self, d: Deferred) {
         match d {
             Deferred::Restore { file, version } => {
@@ -396,4 +422,10 @@ impl App {
             },
         }
     }
+}
+
+/// Moves the Settings page to the next (`d` = 1) or previous (-1) tab.
+fn switch_tab(p: &mut SettingsPage, d: i32) {
+    let i = TABS.iter().position(|(t, _)| *t == p.tab).unwrap_or(0);
+    p.tab = TABS[wrap(i, d, TABS.len())].0;
 }

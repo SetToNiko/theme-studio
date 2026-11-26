@@ -46,6 +46,7 @@ impl App {
     }
 
     /// A pool's fonts (all of them).
+    // Long function: builds the `Entrant`s of both sources (installed fonts, catalogue) in one match.
     pub fn tour_pool(&self, key: &str) -> Vec<(Entrant, Option<Entry>)> {
         let installed = |mono: bool| -> Vec<(Entrant, Option<Entry>)> {
             self.fonts
@@ -88,6 +89,7 @@ impl App {
     }
 
     /// Enter on a pool: says what it takes and asks first.
+    // Long function: checks the pool, estimates the fetch, then builds the question, in that order.
     fn tour_ask(&mut self, pool: usize) {
         let (key, label) = POOLS[pool];
         let all = self.tour_pool(key);
@@ -179,6 +181,7 @@ impl App {
 
     /// Each loop on the Tournament tab: the bracket once the previews are
     /// in, the two fonts drawn. True when something changed.
+    // Long function: two stages in order (finish fetching and start the bracket, then draw the panes).
     pub fn poll_tournament(&mut self) -> bool {
         if self.page != Page::Downloads
             || self.dl.tab != DlTab::Tournament
@@ -221,26 +224,29 @@ impl App {
             }
             changed = true;
         }
-        // which fonts the panes show
-        let shows: [Option<usize>; 2] = {
-            let t = self.tour();
-            match (t.stage, &t.t) {
-                (Stage::Playing, Some(x)) => match x.pairing() {
-                    Some((a, b)) => [Some(a), Some(b)],
-                    None => [None, None],
-                },
-                (Stage::Results, Some(x)) => {
-                    [x.top().into_iter().flat_map(|(_, v)| v).nth(t.sel), None]
-                }
-                _ => [None, None],
-            }
-        };
-        for (i, show) in shows.into_iter().enumerate() {
+        for (i, show) in self.tour_pane_fonts().into_iter().enumerate() {
             changed |= self.tour_draw_pane(i, show);
         }
         changed
     }
 
+    /// Which entrants the two panes show: the current pairing while playing,
+    /// the selected result on the results page.
+    fn tour_pane_fonts(&mut self) -> [Option<usize>; 2] {
+        let t = self.tour();
+        match (t.stage, &t.t) {
+            (Stage::Playing, Some(x)) => match x.pairing() {
+                Some((a, b)) => [Some(a), Some(b)],
+                None => [None, None],
+            },
+            (Stage::Results, Some(x)) => {
+                [x.top().into_iter().flat_map(|(_, v)| v).nth(t.sel), None]
+            }
+            _ => [None, None],
+        }
+    }
+
+    // Long function: one match over the set-up page's keys.
     pub(super) fn run_tour_setup(&mut self, a: Action) -> bool {
         let rows = self.tour_setup_rows();
         let last = rows.len().saturating_sub(1);

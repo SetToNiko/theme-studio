@@ -2,30 +2,12 @@
 //!
 //! `App` is one struct. Its methods are split by topic over several files
 //! (Rust allows more than one `impl App` block, in any file of the crate).
-//! Where to look:
-//! - this file: the `App` struct and its core methods
-//! - `nav.rs`: plain enums for where the user is (`Page`, `Focus`, `Side`, `Overlay`, `Pending`, `For`, `ColourRow`, and the settings types `Capture`, `Naming`, `Deferred`, `BhRow`, `LookId`)
-//! - `persist.rs`: save, save as, apply, open, new, the unsaved-changes prompt (`guard`, `run_pending`)
-//! - `prefetch_actions.rs`: font-preview prefetching (`poll_prefetch`, feeding downloads); the prefetch data and logic stay in `prefetch.rs`
-//! - `presets_actions.rs`: the Keymaps tab's preset browser (open, keys, click, new/delete/reset preset); the preset types and drawing stay in `presets.rs`
-//! - `draft_actions.rs`: the Settings page's unsaved changes (`with_draft`, `show_draft`, `settings_save`, `settings_discard`); the `Draft` type and its tests stay in `draft.rs`
-//! - `theme_actions.rs`: themes (open, save, apply, the open list, font sizes); the `Theme` and `ThemeStore` types, themes.json and their tests stay in `theme.rs`
-//! - `behaviour_actions.rs`: the Settings page's Behaviour tab (looks, colour rows, row values, the key list, `run_behaviour_tab`); the row list and `theme_keys` stay in `behaviour.rs`
-//! - `fonts_dl_actions.rs`: the Download fonts page (rows, status, polling downloads, install, remove, keys, clicks, the Nerd Font offer); `DlPage` and its types stay in `fonts_dl.rs`
-//! - `fonts_preview_actions.rs`: the Fonts page's preview (fetch and draw the highlighted font, its keys, wheel, title dropdowns); `FontPreview`, its text kinds and the dropdown lists stay in `fonts_preview.rs`
-//! - `tour_actions.rs`: the Fonts page's Tournament tab, set-up (pool choice, the question before it starts, fetching previews, `poll_tournament`); `TourPage` and its types stay in `tour_page.rs`
-//! - `tour_rounds.rs`: the Tournament tab's rounds and results (drawing the two fonts, keys while playing and on the results, install or use a result, clicks)
-//! - `settings_actions.rs`: the Settings page as a whole (clicks, scrolling, keys, undo, the prompt and yes/no questions); its data types stay in `settings.rs`
-//! - `settings_keymaps_actions.rs`: the Settings page's Keymaps tab (key list rows, keys, `bind`, recording keys)
-//! - `settings_history_actions.rs`: the Settings page's History tab (versions, the difference view, keys)
-//! - `focus.rs`: which pane has the keyboard (`focus_pane`, `move_pane`), keymap contexts, resize mode keys
-//! - `colours.rs`: colour list rows, hex input, paste, Tab order through the picker
-//! - `actions.rs`: `run_action`, which sends a keymap action to the right method
-//! - `overlay.rs`: pop-ups (open, save as, confirm, help, menus) and their keys
-//! - `mouse.rs`: mouse events and clicks (uses `hit.rs` for what is where)
-//! - `palette_editor.rs`: the palette being edited, undo history, picker numbers (its own struct, not an `impl App`)
-//! - `layout.rs`: pane sizes, borders, resize and drag state (its own struct, not an `impl App`)
-//! - `messages.rs`: status-line message, save box, hover note (its own struct, not an `impl App`)
+//! Each file's own `//!` says what stays outside it. Where to look:
+//! - state: this file (`App` and its core methods), `nav.rs` (where the user is: `Page`, `Focus`, `Overlay`, ...), `palette_editor.rs`, `layout.rs`, `messages.rs` (own structs, not `impl App`)
+//! - input: `actions.rs` (`run_action`), `focus.rs`, `mouse.rs`, `overlay.rs` (pop-ups), `colours.rs`
+//! - saving: `persist.rs` (save, open, unsaved-changes prompt), `draft_actions.rs` (Settings drafts), `theme_actions.rs`
+//! - fonts: `fonts_dl_actions.rs` (Download fonts), `fonts_preview_actions.rs`, `prefetch_actions.rs`, `tour_actions.rs` and `tour_rounds.rs` (Tournament)
+//! - settings: `settings_actions.rs` (the page as a whole), `settings_keymaps_actions.rs`, `settings_history_actions.rs`, `behaviour_actions.rs`, `presets_actions.rs`
 //! - `tests.rs`: tests of the above
 //!
 //! The run loop (`App::run`) does not draw by itself: `main.rs` passes in `ui::draw`.

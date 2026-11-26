@@ -116,6 +116,7 @@ impl App {
 
     /// Background results: the catalogue, progress, finished installs. True
     /// when something changed (redraw).
+    // Long function: one match over every kind of background message (catalogue, progress, preview, prefetch, install).
     pub fn poll_downloads(&mut self) -> bool {
         if self.page == Page::Downloads && self.dl.catalogue.is_none() && !self.dl.loading {
             self.dl.start_catalogue_load();
@@ -171,28 +172,34 @@ impl App {
                 }
                 Msg::Installed { id, result } => {
                     changed = true;
-                    let fill = match &self.dl.fill_after {
-                        Some((after, ..)) if *after == id => self.dl.fill_after.take(),
-                        _ => None,
-                    };
-                    let family = self.dl.jobs.remove(&id).map_or(id, |j| j.0);
-                    match result {
-                        Ok((name, entry)) => {
-                            self.record_install(&name, entry);
-                            if let Some((_, group, roles)) = fill {
-                                let fill = self.fonts.fill_roles(&group, &roles);
-                                self.apply_fill(fill);
-                            }
-                        }
-                        Err(e) => self
-                            .messages
-                            .error(format!("Downloading {family} failed: {e}")),
-                    }
+                    self.finish_install(id, result);
                 }
             }
         }
         // the preview: fetch, draw, pick up a finished image
         self.poll_preview() || changed
+    }
+
+    /// An install finished: record it (and fill the roles that asked for it),
+    /// or show why it failed.
+    fn finish_install(&mut self, id: String, result: Result<(String, Value), String>) {
+        let fill = match &self.dl.fill_after {
+            Some((after, ..)) if *after == id => self.dl.fill_after.take(),
+            _ => None,
+        };
+        let family = self.dl.jobs.remove(&id).map_or(id, |j| j.0);
+        match result {
+            Ok((name, entry)) => {
+                self.record_install(&name, entry);
+                if let Some((_, group, roles)) = fill {
+                    let fill = self.fonts.fill_roles(&group, &roles);
+                    self.apply_fill(fill);
+                }
+            }
+            Err(e) => self
+                .messages
+                .error(format!("Downloading {family} failed: {e}")),
+        }
     }
 
     /// Where background work reports back.
@@ -313,6 +320,7 @@ impl App {
     }
 
     /// Removes a font from the list and its downloaded files.
+    // Long function: one straight sequence: find the name, drop it from the list, delete the files, refresh.
     pub fn dl_remove(&mut self) {
         let name = match self.dl_rows().get(self.dl.sel) {
             Some(DlRow::Listed(n)) => n.clone(),
@@ -361,6 +369,7 @@ impl App {
     }
 
     /// Keys on the page (not while typing in the search box).
+    // Long function: one match over the page's keys, after the tab-strip and Tournament cases.
     pub fn run_downloads(&mut self, a: Action) {
         let top = self.settings.layout.inner_tabs_on_top();
         if self.dl.tabs_focused {
