@@ -20,14 +20,12 @@ docs/             theme-studio.md: the guide (also the studio's README tab)
 It works on NixOS today (packaged with Nix); making it work on other
 distros is the next step (`docs/migration.md`, at the end).
 
-## Build and test
+## Install
 
-```sh
-nix build                                    # the package: studio + commands
-cd studio && nix develop .. --command cargo test
-```
+There are two ways to install Theme Studio. Both give you the commands
+`theme-studio`, `theme-switch`, `themes-switch` and `font-switch`.
 
-## Use it from a NixOS flake
+### With Nix
 
 ```nix
 inputs.theme-studio = {
@@ -38,8 +36,44 @@ inputs.theme-studio = {
 #                programs.theme-studio.enable = true;
 ```
 
-Your palettes, font presets and themes aren't part of the project: they're
-read from `$THEME_STUDIO_DATA`, by default `~/.config/theme-studio/`.
+The Nix package brings most of its programs with it. Your palettes, font
+presets and themes are not part of the project: they are read from
+`$THEME_STUDIO_DATA`, by default `~/.config/theme-studio/`.
+
+### Without Nix
+
+```sh
+./install.sh                      # installs into $HOME/.local
+PREFIX=/usr/local ./install.sh    # installs into another prefix
+./install.sh --uninstall          # removes what the script installed
+```
+
+The default `PREFIX` is `$HOME/.local`. Make sure `$PREFIX/bin` is in your
+`PATH`.
+
+To build, you need a Rust toolchain (`cargo`). To run, you need these
+programs:
+
+| Program                         | Needed for                           |
+| ------------------------------- | ------------------------------------ |
+| `bash`, `jq`                    | the switch commands, the studio      |
+| `awk`, `sed`, `grep`, coreutils | the switch commands                  |
+| fontconfig (`fc-list`, ...)     | fonts                                |
+| ImageMagick (`magick`)          | font previews in the studio          |
+| `curl`, `tar`                   | the font download page               |
+| `ghostty`, `i3`, `pywalfox`     | optional: only the apps that you use |
+| `nvim`, `yazi`, `git`, `xrdb`   | optional: preview panes, screen DPI  |
+
+The full table is in
+[`docs/theme-studio.md`](docs/theme-studio.md#runtime-dependencies).
+It also says what happens when an optional program is missing.
+
+## Build and test
+
+```sh
+nix build                                    # the package: studio + commands
+cd studio && nix develop .. --command cargo test
+```
 
 ## Licence
 

@@ -116,6 +116,65 @@ The JSON files are written exactly as `jq .` would, so a save only changes
 the lines that changed. Each has a `version`; the studio updates older
 files when it starts, keeping the old one in the history.
 
+## Runtime dependencies
+
+The studio and the switch commands start the programs below. The column
+"Package" says if the Nix package provides the program. Without Nix, you
+install the programs yourself.
+
+| Program | Used by | Need | Package |
+| ------- | ------- | ---- | ------- |
+| `bash` | the three switch commands; the studio (switch commands, bar blocks, preview shell) | required | yes |
+| `jq` | the switch commands and all `.jq` generators | required | yes |
+| `awk`, `sed`, `grep` | `gtk-font.sh`, `fontconfig-font.sh` | required | yes |
+| `mktemp`, `cat`, `dirname`, `readlink`, `nice`, `sha256sum` (coreutils) | the switch commands; the studio (`nice`, `sha256sum` in the font download) | required | yes |
+| `kill` | the studio (stops a bar block) | required | yes (procps) |
+| `fc-list`, `fc-cache`, `fc-scan` (fontconfig) | the studio (font list, install, preview); `font-switch`, `fontconfig-font.sh` | required | yes |
+| `magick` (ImageMagick) | the studio (font and text previews) | required | no |
+| `curl` | the studio (font download) | required | no |
+| `tar` | the studio (font download) | required | no |
+| `pkill` (procps) | the Ghostty reload in `share/integrations.json` | optional: Ghostty | yes |
+| `ghostty` | `ghostty-colors.sh` (finds the built-in theme folder) | optional: Ghostty | yes |
+| `i3-msg` (i3) | the i3 reload in `share/integrations.json` | optional: i3 | yes |
+| `pywalfox` | the Firefox reload in `share/integrations.json` | optional: Pywalfox | no |
+| `nvim` | the studio (preview pane) | optional | no |
+| `yazi` | the studio (preview pane) | optional | no |
+| `git`, `ls` | the demo commands in the preview shell | optional | no |
+| `xrdb` | the studio (reads `Xft.dpi` for font previews) | optional | no |
+
+Notes:
+
+- The Nix package puts the programs of the "yes" rows in the `PATH` of the
+  three switch commands only. The `theme-studio` command gets the system
+  `PATH` plus its own folder. Programs that the studio itself starts
+  (`magick`, `curl`, `tar`, `nvim`, `yazi`, `xrdb`, `fc-list`, `nice` and the
+  others) must come from the system.
+- Each program that a `reload` entry of `share/integrations.json` runs is
+  optional. If you add an app with a `reload` command, that program is
+  optional too.
+- The bar blocks in your `i3blocks/config` are your own commands. The studio
+  runs them with `bash` and needs no other program for them.
+
+### If an optional program is missing
+
+A switch command writes all its files first and reloads the apps last. A
+missing program never stops the files from being written. The reloads run
+in the order of `share/integrations.json`, and a failed reload does not
+stop the next one. The exit code of the switch command is the exit code of
+the last reload that ran. For `theme-switch` that is Pywalfox: without
+`pywalfox` it prints nothing (the output of that reload is hidden), writes
+every file, and exits with status 127. For `font-switch` the last reload is
+`i3-msg`: without i3 it prints "command not found" and exits with status
+127. `themes-switch` stops when `theme-switch` fails, so in that case it does
+not write `~/.config/colors/theme`. If Ghostty is not running, `pkill` exits
+with status 1; this matters only when it is the last reload. A caller that
+checks the exit code, for example a key binding, can see a failed switch
+although the files are correct. In the studio, a missing `nvim` or `yazi`
+shows an error for that pane only. A missing `xrdb` makes the font preview
+use 96 DPI. A missing `magick` makes each preview render report an
+ImageMagick error. A missing `jq`, `curl` or `nice` makes the switch or the
+download fail with an error message.
+
 ## Building and testing
 
 The package is `packaging/nix/package.nix` (`nix build` in the checkout);
