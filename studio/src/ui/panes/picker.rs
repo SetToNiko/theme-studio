@@ -18,7 +18,7 @@ use crate::model::color::{self, Rgb};
 use crate::model::palette;
 use crate::ui::focused_block;
 use crate::ui::pane_chrome::pane_title;
-use crate::ui::widgets::panel_number;
+use crate::ui::widgets::{f64_to_u16, panel_number, to_u16};
 
 /// Where the parts of the picker are, and which of them the mouse is over.
 struct PickerParts {
@@ -90,24 +90,30 @@ fn picker_title(app: &App, key: &'static str) -> Line<'static> {
     ])
 }
 
-/// Works out where each part goes and registers the clickable ones.
-// Long function: one place computes the six clickable rectangles and registers them, because each rectangle depends on the same rows and inner size.
-fn register_hits(app: &mut App, inner: Rect) -> PickerParts {
+/// The rectangles of the picker for an inside `inner`: the rows of the
+/// colour square, the square, the hue strip and the width of a slider track.
+fn part_rects(inner: Rect) -> (u16, Rect, Rect, u16) {
     // Colour square rows: whatever the 3 sliders, a gap and the hex row leave
     let rows: u16 = inner.height.saturating_sub(5).max(2);
-    let sq = Rect {
+    let square = Rect {
         x: inner.x + 1,
         y: inner.y,
         width: inner.width.saturating_sub(7),
         height: rows,
     };
     let hue = Rect {
-        x: sq.x + sq.width + 1,
+        x: square.x + square.width + 1,
         y: inner.y,
         width: 2,
         height: rows,
     };
-    let track_w = inner.width.saturating_sub(10);
+    (rows, square, hue, inner.width.saturating_sub(10))
+}
+
+/// Works out where each part goes and registers the clickable ones.
+// Long function: six `hits.add` calls that share `inner`, `rows` and `track_w`; splitting would only pass these three values around.
+fn register_hits(app: &mut App, inner: Rect) -> PickerParts {
+    let (rows, sq, hue, track_w) = part_rects(inner);
     let track = |row: u16| Rect {
         x: inner.x + 3,
         y: inner.y + rows + row,
@@ -143,43 +149,50 @@ fn register_hits(app: &mut App, inner: Rect) -> PickerParts {
     }
 }
 
+/// The colour grid of the square: saturation left to right, value top to
+/// bottom, for hue `hue_deg`. Each cell is two pixels (`▀`: top and bottom).
+fn draw_square_grid(buf: &mut Buffer, parts: &PickerParts, hue_deg: f64) {
+    let (sq, rows) = (parts.sq, parts.rows);
+    let pixels = f64::from(rows * 2 - 1);
+    for row in 0..rows {
+        for col in 0..sq.width {
+            let sat = f64::from(col) / f64::from((sq.width - 1).max(1));
+            let top = color::hsv_to_rgb(hue_deg, sat, 1.0 - f64::from(2 * row) / pixels);
+            let bottom = color::hsv_to_rgb(hue_deg, sat, 1.0 - f64::from(2 * row + 1) / pixels);
+            set_cell(buf, sq.x + col, sq.y + row, "▀", top, bottom);
+        }
+    }
+}
+
 /// Saturation (left to right) × value (top to bottom), two pixels per cell,
 /// with the marker on the current colour and a crosshair under the mouse.
-// Long function: two pixels per cell: the colour grid, the marker and the hover crosshair share the same grid maths.
 fn draw_square(
     buf: &mut Buffer,
     app: &App,
-    p: &PickerParts,
+    parts: &PickerParts,
     current: Rgb,
     mouse: Option<(u16, u16)>,
 ) {
-    let (sq, rows) = (p.sq, p.rows);
-    let (h, s, v) = app.editor.hsv;
-    let px = (rows * 2 - 1) as f64;
-    for cy in 0..rows {
-        for cx in 0..sq.width {
-            let sx = cx as f64 / (sq.width - 1).max(1) as f64;
-            let top = color::hsv_to_rgb(h, sx, 1.0 - (2 * cy) as f64 / px);
-            let bot = color::hsv_to_rgb(h, sx, 1.0 - (2 * cy + 1) as f64 / px);
-            set_cell(buf, sq.x + cx, sq.y + cy, "▀", top, bot);
-        }
-    }
-    let mx = sq.x + (s * (sq.width - 1) as f64).round() as u16;
-    let my = sq.y + (((1.0 - v) * px).round() as u16 / 2).min(rows - 1);
+    let (sq, rows) = (parts.sq, parts.rows);
+    let (hue_deg, sat, val) = app.editor.hsv;
+    draw_square_grid(buf, parts, hue_deg);
+    let pixels = f64::from(rows * 2 - 1);
+    let marker_x = sq.x + f64_to_u16((sat * f64::from(sq.width - 1)).round());
+    let marker_y = sq.y + (f64_to_u16(((1.0 - val) * pixels).round()) / 2).min(rows - 1);
     let marker = if app.focus == Focus::Square {
         "◉"
     } else {
         "○"
     };
-    set_cell(buf, mx, my, marker, current.text_on(), current);
+    set_cell(buf, marker_x, marker_y, marker, current.text_on(), current);
     // hovering the square: a crosshair where a click would pick
-    if p.sq_hover
+    if parts.sq_hover
         && let Some((x, y)) = mouse
     {
         let under = buf
             .cell((x, y))
-            .and_then(|c| match c.fg {
-                Color::Rgb(r, g, b) => Some(Rgb(r, g, b)),
+            .and_then(|cell| match cell.fg {
+                Color::Rgb(red, green, blue) => Some(Rgb(red, green, blue)),
                 _ => None,
             })
             .unwrap_or(current);
@@ -188,19 +201,19 @@ fn draw_square(
 }
 
 /// The hue strip, with a marker at the current hue and a pale one under the mouse.
-fn draw_hue(buf: &mut Buffer, app: &App, p: &PickerParts, mouse: Option<(u16, u16)>) {
-    let (hue, rows) = (p.hue, p.rows);
-    let (h, _, _) = app.editor.hsv;
-    let px = (rows * 2 - 1) as f64;
-    for cy in 0..rows {
-        let top = color::hsv_to_rgb((2 * cy) as f64 / px * 360.0, 1.0, 1.0);
-        let bot = color::hsv_to_rgb((2 * cy + 1) as f64 / px * 360.0, 1.0, 1.0);
-        for cx in 0..hue.width {
-            set_cell(buf, hue.x + cx, hue.y + cy, "▀", top, bot);
+fn draw_hue(buf: &mut Buffer, app: &App, parts: &PickerParts, mouse: Option<(u16, u16)>) {
+    let (hue, rows) = (parts.hue, parts.rows);
+    let (hue_deg, _, _) = app.editor.hsv;
+    let pixels = f64::from(rows * 2 - 1);
+    for row in 0..rows {
+        let top = color::hsv_to_rgb(f64::from(2 * row) / pixels * 360.0, 1.0, 1.0);
+        let bottom = color::hsv_to_rgb(f64::from(2 * row + 1) / pixels * 360.0, 1.0, 1.0);
+        for col in 0..hue.width {
+            set_cell(buf, hue.x + col, hue.y + row, "▀", top, bottom);
         }
     }
-    let hy = hue.y + ((h / 360.0 * px).round() as u16 / 2).min(rows - 1);
-    if let Some(cell) = buf.cell_mut((hue.x + hue.width, hy)) {
+    let marker_y = hue.y + (f64_to_u16((hue_deg / 360.0 * pixels).round()) / 2).min(rows - 1);
+    if let Some(cell) = buf.cell_mut((hue.x + hue.width, marker_y)) {
         cell.set_symbol("◀");
         cell.set_style(if app.focus == Focus::Hue {
             Style::new().yellow()
@@ -209,7 +222,7 @@ fn draw_hue(buf: &mut Buffer, app: &App, p: &PickerParts, mouse: Option<(u16, u1
         });
     }
     // hovering the hue strip: a pale marker at the hue a click would pick
-    if p.hue_hover
+    if parts.hue_hover
         && let Some((_, y)) = mouse
         && let Some(cell) = buf.cell_mut((hue.x + hue.width, y))
         && cell.symbol() != "◀"
@@ -218,76 +231,93 @@ fn draw_hue(buf: &mut Buffer, app: &App, p: &PickerParts, mouse: Option<(u16, u1
     }
 }
 
+/// A slider value as a whole number for its text (degrees or percent).
+fn whole(value: f64) -> i32 {
+    i32::from(f64_to_u16(value.round()))
+}
+
 /// H, S, L sliders, each showing what moving it would give.
-// Long function: the three sliders (H, S, L) are one loop over a table; each iteration draws label, track, thumb and value in order.
-fn draw_sliders(buf: &mut Buffer, app: &App, p: &PickerParts, key: &'static str) {
-    let inner = p.inner;
-    let (h, _, _) = app.editor.hsv;
-    let (sl_s, sl_l) = app.editor.hsl(key);
+fn draw_sliders(buf: &mut Buffer, app: &App, parts: &PickerParts, key: &'static str) {
+    let (hue_deg, _, _) = app.editor.hsv;
+    let (sat, lum) = app.editor.hsl(key);
     let sliders: [(Focus, &str, f64, String); 3] = [
         (
             Focus::SliderH,
             "H",
-            h / 360.0,
-            format!("{:>3}°", h.round() as i32),
+            hue_deg / 360.0,
+            format!("{:>3}°", whole(hue_deg)),
         ),
         (
             Focus::SliderS,
             "S",
-            sl_s,
-            format!("{:>3}%", (sl_s * 100.0).round() as i32),
+            sat,
+            format!("{:>3}%", whole(sat * 100.0)),
         ),
         (
             Focus::SliderL,
             "L",
-            sl_l,
-            format!("{:>3}%", (sl_l * 100.0).round() as i32),
+            lum,
+            format!("{:>3}%", whole(lum * 100.0)),
         ),
     ];
-    for (row, (focus, label, t, value)) in sliders.into_iter().enumerate() {
-        let y = inner.y + p.rows + row as u16;
-        let mut label_style = if app.focus == focus {
-            Style::new().yellow().bold()
-        } else {
-            Style::new()
-        };
-        if p.slider_hover[row] {
-            label_style = hover(label_style);
-        }
-        if let Some(cell) = buf.cell_mut((inner.x + 1, y)) {
-            cell.set_symbol(label).set_style(label_style);
-        }
-        let track = Rect {
-            x: inner.x + 3,
-            y,
-            width: p.track_w,
-            height: 1,
-        };
-        for cx in 0..track.width {
-            let u = cx as f64 / (track.width - 1).max(1) as f64;
-            let c = match focus {
-                Focus::SliderH => color::hsv_to_rgb(u * 360.0, 0.85, 0.9),
-                Focus::SliderS => color::hsl_to_rgb(h, u, sl_l),
-                _ => color::hsl_to_rgb(h, sl_s, u),
-            };
-            set_cell(buf, track.x + cx, y, " ", c, c);
-        }
-        let tx = track.x + (t * (track.width - 1) as f64).round() as u16;
-        let under = buf.cell((tx, y)).map(|c| c.bg).unwrap_or(Color::Reset);
-        let under = match under {
-            Color::Rgb(r, g, b) => Rgb(r, g, b),
-            _ => Rgb(0, 0, 0),
-        };
-        set_cell(buf, tx, y, "┃", under.text_on(), under);
-        buf.set_string(track.x + track.width + 1, y, value, label_style);
+    for (row, slider) in sliders.into_iter().enumerate() {
+        draw_slider(buf, app, parts, (row, slider), (hue_deg, sat, lum));
     }
+}
+
+/// One slider row: its label, the colour track, the thumb and the value text.
+/// `hsl` is the colour that the other two sliders show.
+// Long function: label, track, thumb and value text of one slider are drawn in this order into the same buffer row, so later cells overwrite earlier ones.
+fn draw_slider(
+    buf: &mut Buffer,
+    app: &App,
+    parts: &PickerParts,
+    (row, (focus, label, position, value)): (usize, (Focus, &str, f64, String)),
+    (hue_deg, sat, lum): (f64, f64, f64),
+) {
+    let inner = parts.inner;
+    let y = inner.y + parts.rows + to_u16(row);
+    let mut label_style = if app.focus == focus {
+        Style::new().yellow().bold()
+    } else {
+        Style::new()
+    };
+    if parts.slider_hover[row] {
+        label_style = hover(label_style);
+    }
+    if let Some(cell) = buf.cell_mut((inner.x + 1, y)) {
+        cell.set_symbol(label).set_style(label_style);
+    }
+    let track = Rect {
+        x: inner.x + 3,
+        y,
+        width: parts.track_w,
+        height: 1,
+    };
+    for col in 0..track.width {
+        let along = f64::from(col) / f64::from((track.width - 1).max(1));
+        let colour = match focus {
+            Focus::SliderH => color::hsv_to_rgb(along * 360.0, 0.85, 0.9),
+            Focus::SliderS => color::hsl_to_rgb(hue_deg, along, lum),
+            _ => color::hsl_to_rgb(hue_deg, sat, along),
+        };
+        set_cell(buf, track.x + col, y, " ", colour, colour);
+    }
+    let thumb_x = track.x + f64_to_u16((position * f64::from(track.width - 1)).round());
+    let under = buf.cell((thumb_x, y)).map_or(Color::Reset, |cell| cell.bg);
+    let under = match under {
+        Color::Rgb(red, green, blue) => Rgb(red, green, blue),
+        _ => Rgb(0, 0, 0),
+    };
+    set_cell(buf, thumb_x, y, "┃", under.text_on(), under);
+    buf.set_string(track.x + track.width + 1, y, value, label_style);
 }
 
 /// The hex input row, and the colour before and after editing.
 // Long function: one line of six spans (label, input, saved and current swatches) plus its row rectangle.
-fn draw_hex(f: &mut Frame, app: &App, p: &PickerParts, key: &str, current: Rgb) {
-    let inner = p.inner;
-    let y = inner.y + p.rows + 4;
+fn draw_hex(f: &mut Frame, app: &App, parts: &PickerParts, key: &str, current: Rgb) {
+    let inner = parts.inner;
+    let y = inner.y + parts.rows + 4;
     let editing = app.focus == Focus::Hex;
     let hex_style = if editing {
         Style::new().yellow().underlined()
@@ -300,15 +330,20 @@ fn draw_hex(f: &mut Frame, app: &App, p: &PickerParts, key: &str, current: Rgb) 
         format!("{:<8}", current.hex())
     };
     let old = app.editor.saved.get(key);
+    let label_style = if editing {
+        Style::new().yellow().bold()
+    } else {
+        Style::new()
+    };
     let line = Line::from(vec![
-        Span::styled(" hex ", {
-            let s = if editing {
-                Style::new().yellow().bold()
+        Span::styled(
+            " hex ",
+            if parts.hex_hover {
+                hover(label_style)
             } else {
-                Style::new()
-            };
-            if p.hex_hover { hover(s) } else { s }
-        }),
+                label_style
+            },
+        ),
         Span::styled(hex_text, hex_style),
         "   saved ".dark_gray(),
         framed(old),

@@ -14,6 +14,7 @@ use super::layout::MainLayout;
 use super::panes::colours::draw_list;
 use super::panes::picker::draw_picker;
 use super::panes::preview::draw_preview;
+use super::widgets::to_u16;
 use crate::app::App;
 use crate::app::state::hit::{BorderId, Target};
 use crate::app::state::nav::Page;
@@ -36,7 +37,7 @@ pub(super) fn draw_main_page(f: &mut Frame, app: &mut App, l: &MainLayout) {
         draw_preview(f, app, l.preview, l.wide);
     }
     draw_borders(f, app, l);
-    app.layout.borders = l.borders.clone();
+    app.layout.borders.clone_from(&l.borders);
 }
 
 /// The draggable borders: highlighted under the mouse and while dragged.
@@ -115,7 +116,7 @@ pub(super) fn draw_too_small(f: &mut Frame, area: Rect, need_w: u16, need_h: u16
         Line::styled("Needed:", Style::new().bold()),
         Line::raw(format!("Width = {need_w}  Height = {need_h}")),
     ];
-    let h = (lines.len() as u16).min(area.height);
+    let h = to_u16(lines.len()).min(area.height);
     let r = Rect {
         x: area.x,
         y: area.y + (area.height - h) / 2,

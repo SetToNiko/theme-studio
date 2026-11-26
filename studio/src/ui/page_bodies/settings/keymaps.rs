@@ -13,6 +13,7 @@ use crate::app::state::hit::{Target, hover_line, hover_row};
 use crate::keymap::Keymap;
 use crate::keymap::key::display_seq;
 use crate::settings_page::KmRow;
+use crate::ui::widgets::to_u16;
 
 // Long function: layout, the preset browser, the row loop with hover and cursor handling, and the info column run in one pass over shared state.
 pub(super) fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
@@ -31,18 +32,17 @@ pub(super) fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
     // the preset list: the difference on the left, the list on the right
     // (stacked when narrow)
     if app.settings_page.browse.is_some() {
-        let (diff, presets) = match info {
-            Some(i) => (list, i),
-            None => {
-                let h = app.presets.len() as u16 + 10;
-                let [p, _, d] = Layout::vertical([
-                    Constraint::Length(h),
-                    Constraint::Length(1),
-                    Constraint::Min(3),
-                ])
-                .areas(area);
-                (d, p)
-            }
+        let (diff, presets) = if let Some(info) = info {
+            (list, info)
+        } else {
+            let h = to_u16(app.presets.len()) + 10;
+            let [p, _, d] = Layout::vertical([
+                Constraint::Length(h),
+                Constraint::Length(1),
+                Constraint::Min(3),
+            ])
+            .areas(area);
+            (d, p)
         };
         return crate::settings_page::keymap_presets::draw_browse(
             f,
@@ -82,14 +82,7 @@ pub(super) fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
         if clickable && app.hits.add(r, Target::SettingsRow(i)) && !on {
             // only the name is underlined
             style = hover_row(style);
-            line = hover_line(
-                line,
-                if matches!(row, KmRow::Header(_)) {
-                    1
-                } else {
-                    0
-                },
-            );
+            line = hover_line(line, usize::from(matches!(row, KmRow::Header(_))));
         }
         // the cursor covers the text, not padding or swatches
         let (line, style) = if on {

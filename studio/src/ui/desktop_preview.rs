@@ -13,6 +13,8 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
+use super::widgets::{f64_to_u16, to_u16};
+use crate::model::color::Rgb;
 use crate::model::palette::Palette;
 use crate::model::store::TerminalMap;
 use crate::preview_term::pane::TermColors;
@@ -21,18 +23,17 @@ use crate::preview_term::{PaneId, Preview};
 impl Preview {
     /// Draws the model desktop: two tiled windows with i3 borders, the bar,
     /// and optionally the rofi menu on top.
+    // Long function: the order of the drawing calls is the order on screen: desk, bar, windows, errors, rofi on top.
     pub fn draw_desktop(
         &mut self,
         f: &mut Frame,
         area: Rect,
-        p: &Palette,
+        palette: &Palette,
         map: Option<&TerminalMap>,
         name: &str,
         windows: Windows,
     ) {
-        let colors = TermColors::new(p, map);
-        let roles = self.roles.clone();
-        let role = |r: &str, i: usize| roles.get(p, r, i);
+        let colors = TermColors::new(palette, map);
 
         // Desktop and bar
         let bar_area = Rect {
@@ -45,10 +46,10 @@ impl Preview {
             ..area
         };
         f.render_widget(
-            Block::new().style(Style::new().bg(p.get("bg_dim").color())),
+            Block::new().style(Style::new().bg(palette.get("bg_dim").color())),
             desk,
         );
-        self.draw_bar(f, bar_area, p);
+        self.draw_bar(f, bar_area, palette);
 
         // Two windows: side by side when wide enough, else stacked
         let right_id = if self.show_yazi {
@@ -56,111 +57,127 @@ impl Preview {
         } else {
             PaneId::Shell
         };
-        let (a, b) = split_windows(desk, windows.stack, windows.split).0;
+        let (left_rect, right_rect) = split_windows(desk, windows.stack, windows.split).0;
         self.rects.clear();
         // The window with the keyboard looks focused; otherwise nvim does.
         let focused = self.focus.unwrap_or(PaneId::Nvim);
-        for (id, r) in [(PaneId::Nvim, a), (right_id, b)] {
-            if r.width < 4 || r.height < 3 {
+        for (id, rect) in [(PaneId::Nvim, left_rect), (right_id, right_rect)] {
+            if rect.width < 4 || rect.height < 3 {
                 continue;
             }
-            // column 4 is child_border, what a `border pixel` window shows
-            let border = if id == focused {
-                role("client.focused", 4)
-            } else {
-                role("client.unfocused", 4)
-            };
-            // Number and name on the border: 6 / 7 jump here (i3 itself shows no
-            // title with `border pixel`; this is studio chrome).
-            let (n, label) = match id {
-                PaneId::Nvim => (6, "nvim"),
-                PaneId::Shell => (7, "shell"),
-                PaneId::Yazi => (7, "yazi"),
-            };
-            let label_fg = if id == focused {
-                border
-            } else {
-                p.get("grey1")
-            };
-            let block = Block::bordered()
-                .title(Line::from(vec![
-                    crate::ui::widgets::panel_number(n),
-                    Span::styled(format!("{label} "), Style::new().fg(label_fg.color())),
-                ]))
-                .border_style(Style::new().fg(border.color()).bg(p.get("bg_dim").color()));
-            let inner = block.inner(r);
-            f.render_widget(block, r);
-            self.ensure(id, inner.height, inner.width);
-            if let Some(pane) = self.pane_mut(id) {
-                pane.flush_pending();
-            }
-            f.render_widget(
-                Block::new().style(Style::new().bg(colors.bg.color()).fg(colors.fg.color())),
-                inner,
-            );
-            if let Some(pane) = match id {
-                PaneId::Nvim => self.nvim.as_ref(),
-                PaneId::Shell => self.shell.as_ref(),
-                PaneId::Yazi => self.yazi.as_ref(),
-            } {
-                pane.render(f.buffer_mut(), inner, &colors, id == focused);
-            } else if self.headless {
-                f.render_widget(Paragraph::new(format!("{id:?}")), inner);
-            }
-            self.rects.push((id, r));
+            self.draw_window(f, (id, rect), id == focused, palette, &colors);
+            self.rects.push((id, rect));
         }
         if !self.errors.is_empty() {
-            let r = Rect {
-                height: (self.errors.len() as u16).min(desk.height),
+            let rect = Rect {
+                height: to_u16(self.errors.len()).min(desk.height),
                 ..desk
             };
             let lines: Vec<Line> = self
                 .errors
                 .iter()
-                .map(|e| Line::styled(e.clone(), Style::new().fg(p.get("red").color())))
+                .map(|e| Line::styled(e.clone(), Style::new().fg(palette.get("red").color())))
                 .collect();
-            f.render_widget(Paragraph::new(lines), r);
+            f.render_widget(Paragraph::new(lines), rect);
         }
         if self.show_rofi {
-            self.draw_rofi(f, desk, p, name);
+            self.draw_rofi(f, desk, palette, name);
         }
     }
 
-    fn draw_bar(&self, f: &mut Frame, area: Rect, p: &Palette) {
-        let role = |r: &str, i: usize| self.roles.get(p, r, i);
-        let bg = role("background", 0);
-        let mut left = vec![
-            Span::styled(
-                " 1 ",
+    /// Draws one window (`id` in `rect`): the i3 border with its number and
+    /// name, then the screen of the hidden terminal inside it.
+    // Long function: the border, the terminal screen and the placeholder are drawn in this order into the same rectangle.
+    fn draw_window(
+        &mut self,
+        f: &mut Frame,
+        (id, rect): (PaneId, Rect),
+        focused: bool,
+        palette: &Palette,
+        colors: &TermColors,
+    ) {
+        // column 4 is child_border, what a `border pixel` window shows
+        let border = if focused {
+            self.roles.get(palette, "client.focused", 4)
+        } else {
+            self.roles.get(palette, "client.unfocused", 4)
+        };
+        // Number and name on the border: 6 / 7 jump here (i3 itself shows no
+        // title with `border pixel`; this is studio chrome).
+        let (number, label) = match id {
+            PaneId::Nvim => (6, "nvim"),
+            PaneId::Shell => (7, "shell"),
+            PaneId::Yazi => (7, "yazi"),
+        };
+        let label_fg = if focused {
+            border
+        } else {
+            palette.get("grey1")
+        };
+        let block = Block::bordered()
+            .title(Line::from(vec![
+                crate::ui::widgets::panel_number(number),
+                Span::styled(format!("{label} "), Style::new().fg(label_fg.color())),
+            ]))
+            .border_style(
                 Style::new()
-                    .bg(role("focused_workspace", 1).color())
-                    .fg(role("focused_workspace", 2).color()),
-            ),
+                    .fg(border.color())
+                    .bg(palette.get("bg_dim").color()),
+            );
+        let inner = block.inner(rect);
+        f.render_widget(block, rect);
+        self.ensure(id, inner.height, inner.width);
+        if let Some(pane) = self.pane_mut(id) {
+            pane.flush_pending();
+        }
+        f.render_widget(
+            Block::new().style(Style::new().bg(colors.bg.color()).fg(colors.fg.color())),
+            inner,
+        );
+        if let Some(pane) = match id {
+            PaneId::Nvim => self.nvim.as_ref(),
+            PaneId::Shell => self.shell.as_ref(),
+            PaneId::Yazi => self.yazi.as_ref(),
+        } {
+            pane.render(f.buffer_mut(), inner, colors, focused);
+        } else if self.headless {
+            f.render_widget(Paragraph::new(format!("{id:?}")), inner);
+        }
+    }
+
+    /// The workspace buttons at the left end of the bar.
+    fn bar_workspaces(&self, palette: &Palette) -> Vec<Span<'static>> {
+        let role = |r: &str, i: usize| self.roles.get(palette, r, i);
+        let button = |text: &'static str, kind: &str| {
             Span::styled(
-                " 2 ",
+                text,
                 Style::new()
-                    .bg(role("inactive_workspace", 1).color())
-                    .fg(role("inactive_workspace", 2).color()),
-            ),
-            Span::styled(
-                " 3 ",
-                Style::new()
-                    .bg(role("inactive_workspace", 1).color())
-                    .fg(role("inactive_workspace", 2).color()),
-            ),
-        ];
+                    .bg(role(kind, 1).color())
+                    .fg(role(kind, 2).color()),
+            )
+        };
+        vec![
+            button(" 1 ", "focused_workspace"),
+            button(" 2 ", "inactive_workspace"),
+            button(" 3 ", "inactive_workspace"),
+        ]
+    }
+
+    /// The i3blocks status blocks at the right end of the bar.
+    fn bar_blocks(&self, palette: &Palette) -> Vec<Span<'static>> {
+        let role = |r: &str, i: usize| self.roles.get(palette, r, i);
         let statusline = role("statusline", 0);
         let sep = Span::styled(" │ ", Style::new().fg(role("separator", 0).color()));
         let mut right: Vec<Span> = Vec::new();
         match &*self.bar.lock().unwrap() {
             Some(blocks) => {
-                for (i, b) in blocks.iter().enumerate() {
+                for (i, block) in blocks.iter().enumerate() {
                     if i > 0 {
                         right.push(sep.clone());
                     }
                     right.push(Span::styled(
-                        b.text.clone(),
-                        Style::new().fg(b.color.unwrap_or(statusline).color()),
+                        block.text.clone(),
+                        Style::new().fg(block.color.unwrap_or(statusline).color()),
                     ));
                 }
             }
@@ -170,9 +187,17 @@ impl Preview {
             )),
         }
         right.push(" ".into());
-        let used: usize = left.iter().chain(&right).map(|s| s.width()).sum();
+        right
+    }
+
+    fn draw_bar(&self, f: &mut Frame, area: Rect, palette: &Palette) {
+        let bg = self.roles.get(palette, "background", 0);
+        let statusline = self.roles.get(palette, "statusline", 0);
+        let mut left = self.bar_workspaces(palette);
+        let right = self.bar_blocks(palette);
+        let used: usize = left.iter().chain(&right).map(Span::width).sum();
         left.push(
-            " ".repeat((area.width as usize).saturating_sub(used))
+            " ".repeat(usize::from(area.width).saturating_sub(used))
                 .into(),
         );
         left.extend(right);
@@ -185,41 +210,23 @@ impl Preview {
 
     /// A rofi window with a neutral list of entries, drawn with this palette's rofi roles.
     // Long function (reason verified, phase 1): one linear drawing sequence (window, swatches, row, lines) that shares the role colours.
-    fn draw_rofi(&self, f: &mut Frame, area: Rect, p: &Palette, name: &str) {
-        let role = |r: &str| self.roles.get(p, &format!("rofi.{r}"), 0);
-        let w = 54.min(area.width);
-        let h = 8.min(area.height);
-        let r = Rect {
-            x: area.x + (area.width - w) / 2,
-            y: area.y + (area.height - h) / 2,
-            width: w,
-            height: h,
+    fn draw_rofi(&self, f: &mut Frame, area: Rect, palette: &Palette, name: &str) {
+        let role = |r: &str| self.roles.get(palette, &format!("rofi.{r}"), 0);
+        let width = 54.min(area.width);
+        let height = 8.min(area.height);
+        let rect = Rect {
+            x: area.x + (area.width - width) / 2,
+            y: area.y + (area.height - height) / 2,
+            width,
+            height,
         };
         let (bg, fg) = (role("background"), role("foreground"));
-        f.render_widget(Clear, r);
+        f.render_widget(Clear, rect);
         let block = Block::bordered()
             .border_style(Style::new().fg(role("border-color").color()).bg(bg.color()))
             .style(Style::new().bg(bg.color()).fg(fg.color()));
-        let inner = block.inner(r);
-        f.render_widget(block, r);
-        let swatches = |sel: bool| -> Vec<Span<'static>> {
-            [
-                "bg0", "fg0", "red", "orange", "yellow", "green", "aqua", "blue", "purple",
-            ]
-            .iter()
-            .map(|k| {
-                Span::styled(
-                    "██",
-                    Style::new().fg(p.get(k).color()).bg(if sel {
-                        role("selected-normal-background")
-                    } else {
-                        bg
-                    }
-                    .color()),
-                )
-            })
-            .collect()
-        };
+        let inner = block.inner(rect);
+        f.render_widget(block, rect);
         let row = |label: &str, sel: bool| {
             let style = if sel {
                 Style::new()
@@ -235,9 +242,9 @@ impl Preview {
             // only the palette being edited has known colours; the other
             // rows are just names
             if sel {
-                spans.extend(swatches(sel));
+                spans.extend(rofi_swatches(palette, role("selected-normal-background")));
             }
-            spans.push(Span::styled(" ".repeat(inner.width as usize), style));
+            spans.push(Span::styled(" ".repeat(usize::from(inner.width)), style));
             Line::from(spans)
         };
         let lines = vec![
@@ -246,7 +253,7 @@ impl Preview {
                 Span::styled("▏", Style::new().fg(fg.color())),
             ]),
             Line::styled(
-                "─".repeat(inner.width as usize),
+                "─".repeat(usize::from(inner.width)),
                 Style::new().fg(role("separatorcolor").color()),
             ),
             row(name, true),
@@ -256,6 +263,23 @@ impl Preview {
         ];
         f.render_widget(Paragraph::new(lines), inner);
     }
+}
+
+/// The palette's colours as swatches on the selected rofi row (`selected_bg`).
+fn rofi_swatches(palette: &Palette, selected_bg: Rgb) -> Vec<Span<'static>> {
+    [
+        "bg0", "fg0", "red", "orange", "yellow", "green", "aqua", "blue", "purple",
+    ]
+    .iter()
+    .map(|k| {
+        Span::styled(
+            "██",
+            Style::new()
+                .fg(palette.get(k).color())
+                .bg(selected_bg.color()),
+        )
+    })
+    .collect()
 }
 
 /// How nvim and the shell share the preview.
@@ -284,34 +308,44 @@ pub fn desk_area(area: Rect) -> Rect {
 pub fn split_windows(desk: Rect, stack: bool, share: f64) -> ((Rect, Rect), bool) {
     let share = share.clamp(0.0, 1.0);
     if !stack && desk.width >= 2 * 30 {
-        let w = ((desk.width as f64 * share) as u16).clamp(10, desk.width - 10);
-        (
-            (
-                Rect { width: w, ..desk },
-                Rect {
-                    x: desk.x + w,
-                    width: desk.width - w,
-                    ..desk
-                },
-            ),
-            false,
-        )
+        (side_by_side(desk, share), false)
     } else {
-        let h = if desk.height >= 6 {
-            ((desk.height as f64 * share) as u16).clamp(3, desk.height - 3)
-        } else {
-            desk.height / 2
-        };
-        (
-            (
-                Rect { height: h, ..desk },
-                Rect {
-                    y: desk.y + h,
-                    height: desk.height - h,
-                    ..desk
-                },
-            ),
-            true,
-        )
+        (stacked(desk, share), true)
     }
+}
+
+/// `desk` cut into a left window of `share` of the width and a right window.
+fn side_by_side(desk: Rect, share: f64) -> (Rect, Rect) {
+    let left_w = f64_to_u16(f64::from(desk.width) * share).clamp(10, desk.width - 10);
+    (
+        Rect {
+            width: left_w,
+            ..desk
+        },
+        Rect {
+            x: desk.x + left_w,
+            width: desk.width - left_w,
+            ..desk
+        },
+    )
+}
+
+/// `desk` cut into a top window of `share` of the height and a bottom window.
+fn stacked(desk: Rect, share: f64) -> (Rect, Rect) {
+    let top_h = if desk.height >= 6 {
+        f64_to_u16(f64::from(desk.height) * share).clamp(3, desk.height - 3)
+    } else {
+        desk.height / 2
+    };
+    (
+        Rect {
+            height: top_h,
+            ..desk
+        },
+        Rect {
+            y: desk.y + top_h,
+            height: desk.height - top_h,
+            ..desk
+        },
+    )
 }
