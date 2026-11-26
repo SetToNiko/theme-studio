@@ -11,11 +11,17 @@
 //!   `font-switch`), else the scripts beside the share folder;
 //! - the **desktop configs** the preview reads (i3, rofi, i3blocks, nvim):
 //!   `$XDG_CONFIG_HOME`.
+//!
+//! The scripts write some of the same folders (the colours and fonts that the
+//! switch scripts keep under `~/.config`). `scripts/lib/paths.sh` is the
+//! script side of this file: when you change a path here, change it there
+//! too, so both agree.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-fn home() -> PathBuf {
+/// The user's home folder (`$HOME`); an empty path when `$HOME` is not set.
+pub fn home() -> PathBuf {
     std::env::var_os("HOME")
         .map(PathBuf::from)
         .unwrap_or_default()
@@ -30,6 +36,26 @@ fn env_dir(var: &str) -> Option<PathBuf> {
 /// `$XDG_CONFIG_HOME`, default `~/.config`.
 pub fn config_home() -> PathBuf {
     env_dir("XDG_CONFIG_HOME").unwrap_or_else(|| home().join(".config"))
+}
+
+/// The system fontconfig file (`/etc/fonts/fonts.conf`) that the generated
+/// preview fontconfig files include, so previews still see the system fonts.
+pub const SYSTEM_FONTCONFIG: &str = "/etc/fonts/fonts.conf";
+
+/// The colour state the switch scripts keep: `~/.config/colors`
+/// (the `current` and `theme` files).
+pub fn colors_dir() -> PathBuf {
+    home().join(".config/colors")
+}
+
+/// The font state the switch scripts keep: `~/.config/fonts` (the `current` file).
+pub fn fonts_dir() -> PathBuf {
+    home().join(".config/fonts")
+}
+
+/// This machine's font size offsets: `~/.config/host/fonts.json`.
+pub fn host_fonts_file() -> PathBuf {
+    home().join(".config/host/fonts.json")
 }
 
 /// Your palettes, font presets and themes.

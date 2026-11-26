@@ -64,12 +64,6 @@ pub struct ThemeStore {
     pub dir: PathBuf,
 }
 
-fn home() -> PathBuf {
-    std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_default()
-}
-
 impl ThemeStore {
     pub fn path(&self) -> PathBuf {
         self.dir.join("themes.json")
@@ -157,7 +151,7 @@ impl ThemeStore {
 
     /// The theme applied last (themes-switch.sh or the studio).
     pub fn active_name() -> Option<String> {
-        let s = std::fs::read_to_string(home().join(".config/colors/theme")).ok()?;
+        let s = std::fs::read_to_string(crate::paths::colors_dir().join("theme")).ok()?;
         Some(s.trim().to_string()).filter(|s| !s.is_empty())
     }
 
@@ -166,7 +160,7 @@ impl ThemeStore {
         if cfg!(test) {
             return Ok(());
         }
-        let dir = home().join(".config/colors");
+        let dir = crate::paths::colors_dir();
         std::fs::create_dir_all(&dir)?;
         std::fs::write(dir.join("theme"), format!("{name}\n"))?;
         Ok(())

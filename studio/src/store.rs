@@ -27,12 +27,6 @@ pub struct TerminalMap {
     pub ansi: Vec<String>,
 }
 
-fn home() -> PathBuf {
-    std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_default()
-}
-
 /// palettes.json is formatted exactly like `jq .` output, which is what
 /// serde_json's pretty printer produces plus a final newline.
 pub fn to_jq_string(v: &Value) -> String {
@@ -178,7 +172,7 @@ impl Store {
 
     /// The palette theme-switch.sh last applied.
     pub fn active_name(&self) -> Option<String> {
-        let s = std::fs::read_to_string(home().join(".config/colors/current")).ok()?;
+        let s = std::fs::read_to_string(crate::paths::colors_dir().join("current")).ok()?;
         Some(s.trim().to_string()).filter(|s| !s.is_empty())
     }
 

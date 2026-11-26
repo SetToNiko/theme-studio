@@ -173,12 +173,6 @@ pub struct FontStore {
     pub share: PathBuf,
 }
 
-fn home() -> PathBuf {
-    std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_default()
-}
-
 impl FontStore {
     fn path(&self) -> PathBuf {
         self.dir.join("fonts.json")
@@ -288,7 +282,7 @@ impl FontStore {
 
     /// The preset font-switch.sh last applied.
     pub fn active_name(&self) -> Option<String> {
-        let s = std::fs::read_to_string(home().join(".config/fonts/current")).ok()?;
+        let s = std::fs::read_to_string(crate::paths::fonts_dir().join("current")).ok()?;
         Some(s.trim().to_string()).filter(|s| !s.is_empty())
     }
 
@@ -296,11 +290,10 @@ impl FontStore {
     /// names); Icons falls back to the Proportional offset, like
     /// font-switch.sh.
     pub fn offsets() -> [i32; 3] {
-        let obj: Map<String, Value> =
-            std::fs::read_to_string(home().join(".config/host/fonts.json"))
-                .ok()
-                .and_then(|t| serde_json::from_str(&t).ok())
-                .unwrap_or_default();
+        let obj: Map<String, Value> = std::fs::read_to_string(crate::paths::host_fonts_file())
+            .ok()
+            .and_then(|t| serde_json::from_str(&t).ok())
+            .unwrap_or_default();
         let get = |r: usize| {
             role_entry(&obj, r)
                 .and_then(Value::as_i64)

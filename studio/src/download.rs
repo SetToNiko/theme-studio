@@ -15,6 +15,8 @@ use std::time::{Duration, SystemTime};
 use anyhow::{Context, Result, anyhow, bail};
 use serde_json::{Map, Value, json};
 
+use crate::paths::{SYSTEM_FONTCONFIG, home};
+
 /// Where a font comes from.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Source {
@@ -83,12 +85,6 @@ pub enum Msg {
     },
     /// The space the preview fonts take (measured on a thread).
     PreviewsSize(u64),
-}
-
-fn home() -> PathBuf {
-    std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_default()
 }
 
 fn xdg(var: &str, fallback: &str) -> PathBuf {
@@ -541,8 +537,9 @@ pub fn preview_fontconfig_for(id: &str) -> PathBuf {
     let path = dir.join(format!("{id}.conf"));
     let conf = format!(
         "<?xml version=\"1.0\"?>\n<!DOCTYPE fontconfig SYSTEM \"fonts.dtd\">\n<fontconfig>\n  \
-         <include ignore_missing=\"yes\">/etc/fonts/fonts.conf</include>\n  <dir>{}</dir>\n  \
+         <include ignore_missing=\"yes\">{}</include>\n  <dir>{}</dir>\n  \
          <cachedir>{}</cachedir>\n</fontconfig>\n",
+        SYSTEM_FONTCONFIG,
         preview_dir().join(id).display(),
         cache_dir().join("fontconfig").display()
     );
