@@ -175,12 +175,12 @@ impl Action {
     /// Looks up a name that an earlier version used.
     ///
     /// - `None`: `id` is not an old name.
-    /// - `Some(None)`: the old action was dropped (no warning is needed).
-    /// - `Some(Some(a))`: the old action was renamed to `a`.
-    pub fn legacy(id: &str) -> Option<Option<Action>> {
+    /// - `Some(LegacyId::Dropped)`: the old action was dropped (no warning is needed).
+    /// - `Some(LegacyId::Renamed(a))`: the old action was renamed to `a`.
+    pub fn legacy(id: &str) -> Option<LegacyId> {
         match id {
-            "tab-colours" => Some(Some(Action::PageMain)),
-            "tab-fonts" => Some(None),
+            "tab-colours" => Some(LegacyId::Renamed(Action::PageMain)),
+            "tab-fonts" => Some(LegacyId::Dropped),
             _ => None,
         }
     }
@@ -198,6 +198,15 @@ impl Action {
             _ => self.row().map_or(ActionGroup::Column, |r| r.group),
         }
     }
+}
+
+/// What became of an action name that an earlier version used (see [`Action::legacy`]).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum LegacyId {
+    /// The old action now has another name: use this action instead.
+    Renamed(Action),
+    /// The old action no longer exists: ignore it without a warning.
+    Dropped,
 }
 
 /// Which part of the app handles an action (see [`Action::group`]).

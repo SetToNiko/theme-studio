@@ -221,7 +221,7 @@ Completes: none (cycle count decreases, measured)
 - [x] P5.15 (N2) model/history: local time with the `chrono` crate (default-features off, `clock`), not the `date` program; same text format | Files: `model/history.rs`, `Cargo.toml`, `Cargo.lock`, `packaging/nix/package.nix` (dependency hash) | Target: layers | Check: tests; history shows the same local time
 - [x] P5.16 (N3) fonts/types: `kind()` returns an enum, not strings | Files: `fonts/types.rs`, users | Target: T2 | Check: tests
 - [x] P5.17 (N4) keymap: one table with id, label and group for each action; a new action is one entry | Files: `keymap/action.rs`, `keymap/labels.rs`, users | Target: T2 | Check: tests; every id, label and group the same as before
-- [ ] P5.18 (N5) `Action::legacy` returns an enum (`Renamed(Action)`, `Dropped`) | Files: `keymap/action.rs`, `keymap/mod.rs` | Target: T1 | Check: tests
+- [x] P5.18 (N5) `Action::legacy` returns an enum (`Renamed(Action)`, `Dropped`) | Files: `keymap/action.rs`, `keymap/mod.rs` | Target: T1 | Check: tests
 Removed: the old "settings: tabs into separate files" step (Phase 4 moved the impl App blocks out; settings.rs is under 500).
 Completes: criterion 5 (with the docs action), no dependency cycles
 
@@ -308,7 +308,7 @@ Completes: criterion 6
 | Phase 3 review | done |
 | Phase 4 steps | done |
 | Phase 4 review | done |
-| Phase 5 steps | open (P5.15-P5.18 from the revise action) |
+| Phase 5 steps | done |
 | Phase 5 review | done (3 reviewers in parallel; no bugs; fixes applied; notes N1-N5 pending) |
 | Phase 6 steps | open |
 | Phase 6 review | open |

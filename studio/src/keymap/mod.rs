@@ -18,7 +18,7 @@ mod defaults;
 pub mod key;
 mod table;
 
-use action::{Action, all_actions};
+use action::{Action, LegacyId, all_actions};
 use key::{Key, display_seq};
 
 /// Where a binding applies. Panes look in their own context first, then
@@ -265,8 +265,8 @@ impl Keymap {
                 for (aid, seqs) in actions {
                     let action = match (Action::from_id(aid), Action::legacy(aid)) {
                         (Some(a), _) => a,
-                        (None, Some(Some(renamed))) => renamed,
-                        (None, Some(None)) => continue, // no longer exists
+                        (None, Some(LegacyId::Renamed(renamed))) => renamed,
+                        (None, Some(LegacyId::Dropped)) => continue, // no longer exists
                         (None, None) => {
                             warnings.push(format!("{name}: unknown action \"{aid}\""));
                             continue;
