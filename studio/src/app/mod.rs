@@ -110,7 +110,7 @@ pub struct App {
     pub config_dir: std::path::PathBuf,
     /// Every keymap preset (listed on the Settings page).
     pub presets: Vec<Keymap>,
-    pub settings: crate::config::Settings,
+    pub settings: crate::config::settings::Settings,
     /// The Download fonts page.
     pub dl: crate::fonts_dl::DlPage,
     /// The Fonts page's Tournament tab (made on first use).

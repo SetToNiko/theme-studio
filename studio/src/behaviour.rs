@@ -81,7 +81,7 @@ pub fn behaviour_rows() -> Vec<BhRow> {
     ]);
     v.push(R::Header("Fonts page previews (fetched ahead of time)"));
     v.push(R::Prefetch);
-    v.extend((0..crate::config::PREFETCH_CATEGORIES.len()).map(R::PrefetchCategory));
+    v.extend((0..crate::config::settings::PREFETCH_CATEGORIES.len()).map(R::PrefetchCategory));
     v.push(R::ClearPreviews);
     // a blank line before each group's title but the first
     let mut out = Vec::new();
@@ -132,7 +132,7 @@ mod tests {
     use crate::app::Start;
     use crate::app::nav::{Capture, Overlay};
     use crate::color::Rgb;
-    use crate::config::{LookSettings, Settings};
+    use crate::config::settings::{LookSettings, Settings};
     use crate::hit::Underline;
     use crate::keymap::Keymap;
     use crate::keymap::{Action, Key, display_seq};
@@ -211,7 +211,7 @@ mod tests {
         for i in 0..GROUPS.len() {
             assert!(rows.contains(&BhRow::GroupOpen(i)));
         }
-        for i in 0..crate::config::PREFETCH_CATEGORIES.len() {
+        for i in 0..crate::config::settings::PREFETCH_CATEGORIES.len() {
             assert!(rows.contains(&BhRow::PrefetchCategory(i)));
         }
     }
@@ -636,7 +636,7 @@ mod tests {
         run(&mut app, BhRow::ResetSizes, Action::Confirm);
         assert_eq!(
             app.show_draft(|a| a.settings.layout.sizes.clone()),
-            crate::config::Sizes::default()
+            crate::config::settings::Sizes::default()
         );
         // the running layout keeps its sizes until saved
         assert_eq!(app.layout.sizes.fonts_width, 0.31);

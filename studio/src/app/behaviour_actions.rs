@@ -11,7 +11,7 @@ use ratatui::style::{Color, Modifier};
 use super::App;
 use super::nav::{BhRow, Capture, LookId, Overlay};
 use crate::behaviour::{selectable_ends, theme_keys, visible_behaviour_rows};
-use crate::config::{LookSettings, Settings};
+use crate::config::settings::{LookSettings, Settings};
 use crate::hit::{Look, Looks, Underline};
 use crate::keymap::{Action, Key, display_seq};
 use crate::palette::GROUPS;
@@ -194,7 +194,7 @@ impl App {
     /// A prefetch category's value: "yes" or "no", and with the catalogue
     /// loaded, how many fonts it has and about how much space they take.
     fn prefetch_category_value(&self, i: usize) -> String {
-        let (cat, _) = crate::config::PREFETCH_CATEGORIES[i];
+        let (cat, _) = crate::config::settings::PREFETCH_CATEGORIES[i];
         let on = if self.settings.fonts_page.prefetches(cat) {
             "yes"
         } else {
@@ -253,7 +253,9 @@ impl App {
             BhRow::Spacing => "Spacing filter at start".into(),
             BhRow::NerdFont => "Nerd Font filter at start".into(),
             BhRow::Prefetch => "Fetch previews ahead of time, a few at a time".into(),
-            BhRow::PrefetchCategory(i) => format!("  {}", crate::config::PREFETCH_CATEGORIES[i].1),
+            BhRow::PrefetchCategory(i) => {
+                format!("  {}", crate::config::settings::PREFETCH_CATEGORIES[i].1)
+            }
             BhRow::ClearPreviews => "Delete the preview fonts (fetched again when needed)".into(),
         }
     }
@@ -388,7 +390,7 @@ impl App {
                 };
             }
             BhRow::ResetSizes => {
-                self.settings.layout.sizes = crate::config::Sizes::default();
+                self.settings.layout.sizes = crate::config::settings::Sizes::default();
                 self.messages
                     .info("Default pane sizes back to the shipped ones (applied when saved)");
             }
@@ -403,7 +405,7 @@ impl App {
         match row {
             BhRow::Tabs => s.layout.tabs = cycle(&s.layout.tabs, &["bottom", "top"], d),
             BhRow::MessageSeconds => {
-                let opts = crate::config::MessageSettings::SECONDS;
+                let opts = crate::config::settings::MessageSettings::SECONDS;
                 let i = opts
                     .iter()
                     .position(|n| *n == s.messages.seconds)
@@ -473,7 +475,7 @@ impl App {
             }
             BhRow::Prefetch => s.fonts_page.prefetch = !s.fonts_page.prefetch,
             BhRow::PrefetchCategory(i) => {
-                let cat = crate::config::PREFETCH_CATEGORIES[i].0;
+                let cat = crate::config::settings::PREFETCH_CATEGORIES[i].0;
                 let on = s.fonts_page.prefetches(cat);
                 let cats = &mut s.fonts_page.prefetch_categories;
                 if on {

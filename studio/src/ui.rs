@@ -12,7 +12,7 @@ use ratatui::widgets::{Block, Clear, Paragraph};
 use crate::app::nav::{ColourRow, Focus, Overlay, Page, Side};
 use crate::app::{App, open_matches};
 use crate::color::{self, Rgb};
-use crate::config::Sizes;
+use crate::config::settings::Sizes;
 use crate::hit::{Border, BorderId, Target, hover};
 use crate::keymap::{Action, Context};
 use crate::palette::{self, GROUPS, TEXT_KEYS};
