@@ -4,14 +4,14 @@ Colour palettes and fonts for a Linux desktop, edited in a terminal with a
 live preview of the desktop, and switched from rofi menus. A **theme** is a
 palette plus a font preset (and the fonts' sizes); switching one rewrites
 the files each program reads (Ghostty, i3 and its bar, rofi, GTK,
-fontconfig, nvim, the lock and login screens) and reloads what can be
+fontconfig, nvim, the lock screen) and reloads what can be
 reloaded.
 
 ```
 studio/           the studio (Rust, ratatui)
 scripts/          theme-switch, themes-switch, font-switch (bash, jq, rofi)
 share/            files the studio and scripts read
-packaging/nix/    the Nix package, a home-manager module, a NixOS module
+packaging/nix/    the Nix package, a home-manager module
 docs/             theme-studio.md: the guide (also the studio's README tab)
                   plan.md: how it was built; migration.md: how it became a
                   project of its own, and what still ties it to one setup
@@ -36,7 +36,6 @@ inputs.theme-studio = {
 };
 # home-manager:  imports = [ theme-studio.homeManagerModules.default ];
 #                programs.theme-studio.enable = true;
-# NixOS:         imports = [ theme-studio.nixosModules.default ];
 ```
 
 Your palettes, font presets and themes aren't part of the project: they're

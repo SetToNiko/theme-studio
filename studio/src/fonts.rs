@@ -30,7 +30,7 @@ pub const ROLE_NAMES: [&str; 3] = ["Monospace", "Proportional", "Icons"];
 pub const ROLE_NEEDS: [&str; 3] = ["a Nerd Font Mono", "proportional", "a Nerd Font Propo"];
 /// What each role is used for (font-switch.sh).
 pub const ROLE_USE: [&str; 3] = [
-    "terminal, nvim, lock and login screen",
+    "terminal, nvim, lock screen",
     "rofi, GTK apps, sans-serif text",
     "i3 window titles and the bar",
 ];

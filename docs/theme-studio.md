@@ -25,7 +25,7 @@ them.
 
   | Role         | Needs             | Used for                                                  |
   | ------------ | ----------------- | --------------------------------------------------------- |
-  | Monospace    | a Nerd Font Mono  | terminal (so nvim, yazi), lock and login screen, "monospace" |
+  | Monospace    | a Nerd Font Mono  | terminal (so nvim, yazi), lock screen, "monospace" |
   | Proportional | proportional      | rofi, GTK apps, "sans-serif" (web pages, Electron)        |
   | Icons        | a Nerd Font Propo | i3 window titles and the bar                              |
 
@@ -50,8 +50,8 @@ In the pickers, Alt+BackSpace deletes the highlighted entry. The scripts
 behind them also take a name: `themes-switch.sh <name>`,
 `theme-switch.sh <name>`, `font-switch.sh <name>`. They write the files
 the apps read (`~/.config/colors/`, `~/.config/fonts/`, GTK and fontconfig
-settings) and reload Ghostty and i3; rofi, GTK apps and the lock and login
-screens pick the change up next time they start.
+settings) and reload Ghostty and i3; rofi, GTK apps and the lock
+screen pick the change up next time they start.
 
 ## The studio
 
@@ -109,7 +109,6 @@ Three pages, on `F1`–`F3`:
 | `~/.local/share/fonts/theme-studio/`    | downloaded fonts until that rebuild                    |
 | `~/.local/share/theme-studio/previews/` | preview files of fonts that aren't installed           |
 | `~/.local/state/theme-studio/`          | config history and tournaments                         |
-| `/var/lib/ascii-boot/`                  | the login screen's font and config (from `font-switch.sh`) |
 
 The JSON files are written exactly as `jq .` would, so a save only changes
 the lines that changed. Each has a `version`; the studio updates older
@@ -118,8 +117,8 @@ files when it starts, keeping the old one in the history.
 ## Building and testing
 
 The package is `packaging/nix/package.nix` (`nix build` in the checkout);
-a NixOS flake takes it as an input (see the README) and sets it up with two
-modules, which the project's flake exports:
+a NixOS flake takes it as an input (see the README) and sets it up with a
+module, which the project's flake exports:
 
 - **home-manager**, `packaging/nix/home-module.nix`, `programs.theme-studio`:
   the studio and the three commands; `live` (a checkout: the commands run
@@ -127,9 +126,6 @@ modules, which the project's flake exports:
   `~/.config/theme-studio`); `fontsList` (downloaded fonts, installed);
   `~/.config/colors` and `~/.config/fonts` regenerated on every switch, with
   `fallbackPalette` / `fallbackFonts` when nothing is current.
-- **NixOS**, `packaging/nix/nixos-module.nix`,
-  `services.theme-studio.loginFont`: the login screen's font (the greeter
-  config `template`, the font folder in the system fontconfig).
 
 To work on it:
 
