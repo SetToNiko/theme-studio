@@ -243,7 +243,7 @@ Completes: criterion 7
 ### Phase 7: [feature] Install without Nix
 - [x] P7.1 [feature] Install script: `install.sh` with PREFIX: cargo build, scripts, share files, desktop entry | Files: `install.sh`, `packaging/theme-studio.desktop` | Target: goal 6 | Check: install into `$(mktemp -d)`, `command -v` finds each command
 - [x] P7.2 [feature] Dependencies and docs: README section with the install command and each runtime dependency | Files: `README.md`, `docs/theme-studio.md` | Target: goal 6 | Check: each program that the code starts is listed
-- [ ] P7.3 [feature] Install test: golden tests against the installed commands, without THEME_STUDIO_SHARE, in flake checks; also an install and an uninstall into a temp PREFIX that holds `share/theme-studio/previews/`: the uninstall leaves it (finding 29) | Files: `tests/scripts/run.sh`, `flake.nix`, a new `tests/install/` script | Target: goal 6 | Check: `nix flake check`; `nix build` still passes
+- [x] P7.3 [feature] Install test: golden tests against the installed commands, without THEME_STUDIO_SHARE, in flake checks; also an install and an uninstall into a temp PREFIX that holds `share/theme-studio/previews/`: the uninstall leaves it (finding 29) | Files: `tests/scripts/run.sh`, `flake.nix`, a new `tests/install/` script | Target: goal 6 | Check: `nix flake check`; `nix build` still passes
 Completes: criterion 6
 
 ## 7. Out of scope
