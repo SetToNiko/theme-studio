@@ -1317,7 +1317,7 @@ mod tests {
 
     #[test]
     fn real_fonts_json_round_trips_byte_for_byte() {
-        let dir = crate::store::Store::locate().dir;
+        let dir = crate::store::test_data_dir();
         let Ok(text) = std::fs::read_to_string(dir.join("fonts.json")) else {
             eprintln!("skipped: no fonts.json");
             return;

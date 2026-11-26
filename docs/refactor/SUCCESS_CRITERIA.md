@@ -52,7 +52,7 @@ The constraint "All current functionality of the project must continue to work a
 |---|---|---|---|---|
 | All checks run with one command. | `nix flake check` | Does not exist. The flake has no `checks` output. | Exists and passes | |
 | The Rust unit tests pass. | `cd studio && nix develop .. --command cargo test` | 119 tests: 115 pass, 4 ignored | All pass. 115 or more pass. The number of ignored tests does not increase. | |
-| The tests that skip do not increase. Fixtures let the data tests run in the Nix sandbox. | `cargo test -- --nocapture 2>&1 \| grep -c '^skipped:'` | 15 locations in the code can print "skipped:". Number at run time: 1 | 0 in the Nix sandbox | |
+| The tests that skip do not increase. Fixtures let the data tests run in the Nix sandbox. | `cargo test -- --nocapture 2>&1 \| grep -c '^skipped:'` | 15 locations in the code can print "skipped:". Number at run time: 1. Nix sandbox: 13 before P0.5, 10 after (fixtures) | 0 in the Nix sandbox | |
 | The package builds. | `nix build` | Passes | Passes after each step | |
 | The switch scripts have golden-file tests. | Count the scripts that have a golden-file test (refer to docs/refactor/GOAL.md, Verification, item 3). | 0 of 3 | 3 of 3. The font-switch test also covers the login screen part. | |
 | The characterization tests and golden files pass without changes from the start to the end. | No commit changes the expected values. Examine `git log -p` on the test files and the golden files. | — | 0 changes, except in `[feature]` steps | |

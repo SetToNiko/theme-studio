@@ -99,11 +99,13 @@ Advanced techniques that the refactor adds:
 | 13 | `paths.rs:196` | Not rustfmt-formatted | readability | L |
 | 14 | `scripts/*` | 14 shellcheck findings, no tests | rule 3, goal 4 | M |
 | 15 | `samples/code/go.go:49` | Old dotfiles path in sample text | success criteria | L |
+| 16 | `desktop.rs` test `real_configs_parse` | Looks for `i3/theme` in the data folder (`store.dir`), but the desktop configs are in `store.desktop`. The test never runs since the data moved (found in P0.5, not fixed) | correctness of tests | M |
 
 ## 5. Test coverage
 - Rust: 119 tests in 25 modules (115 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
 - No tests: `behaviour`, `draft`, `fonts_dl`, `fonts_dl_ui`, `fonts_preview`, `fonts_ui`, `settings_ui`, `tour_page`, `tour_ui`, `main`.
 - Scripts: no tests → golden-file tests in Phase 0.
+- Nix sandbox: data tests use `studio/tests/fixtures/data` (P0.5). Sandbox skips: 13 before, 10 after. The remaining skips need jq, ImageMagick, fontconfig, a pty, or the checkout (docs, share).
 - Before Phase 5 changes a module without tests, the revise action adds a safety-net step for it.
 
 ## 6. Plan
@@ -116,7 +118,7 @@ Step format (one line for each step):
 - [x] P0.2 Phase 0 baselines: measure cycles, dependency direction, coverage, and duplicates. Record them | Files: `docs/refactor/SUCCESS_CRITERIA.md`, `docs/refactor/PLAN.md` (section 2 numbers) | Target: baselines | Check: no "Phase 0" left in the baselines
 - [x] P0.3 Lint configuration: `[lints.clippy]` pedantic, fix rustfmt at `paths.rs:196` | Files: `studio/Cargo.toml`, `studio/src/paths.rs` | Target: goal 7 | Check: `cargo fmt --check` passes, clippy count = 490
 - [x] P0.4 Flake checks: `checks.x86_64-linux` with build, tests, fmt, and ratchet counts for clippy (490) and shellcheck (14) | Files: `flake.nix`, `scripts/dev/lint-counts.sh`, `docs/refactor/lint-baseline.txt` | Target: goal 4, 7 | Check: `nix flake check` passes
-- [ ] P0.5 Test fixtures: small palettes.json, fonts.json, themes.json, configs, so the data tests run in the sandbox | Files: `studio/tests/fixtures/`, `studio/src/store.rs`, `studio/src/palette.rs`, `studio/src/paths.rs` | Target: goal 4 | Check: skip count does not increase, sandbox runs the data tests
+- [x] P0.5 Test fixtures: small palettes.json, fonts.json, themes.json, configs, so the data tests run in the sandbox | Files: `studio/tests/fixtures/`, `studio/src/store.rs`, `studio/src/palette.rs`, `studio/src/paths.rs` | Target: goal 4 | Check: skip count does not increase, sandbox runs the data tests
 - [ ] P0.6 Golden tests, theme-switch: test runner with stub commands (pkill, i3-msg, rofi, fc-cache, pywalfox, ghostty), fixture data, golden files | Files: `tests/scripts/run.sh`, `tests/scripts/fixtures/`, `tests/scripts/golden/theme-switch/` | Target: goal 4 | Check: golden test passes on unchanged code
 - [ ] P0.7 Golden tests, font-switch: fonts, sizes, offsets. The login-screen part skips, and the skip is recorded | Files: `tests/scripts/run.sh`, `tests/scripts/golden/font-switch/`, `tests/scripts/fixtures/` | Target: goal 4 | Check: golden test passes on unchanged code
 - [ ] P0.8 Golden tests, themes-switch, and the scripts in flake checks | Files: `tests/scripts/run.sh`, `tests/scripts/golden/themes-switch/`, `flake.nix` | Target: goal 4 | Check: `nix flake check` runs the golden tests

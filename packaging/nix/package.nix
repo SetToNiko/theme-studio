@@ -36,10 +36,12 @@ let
         (studio + "/Cargo.toml")
         (studio + "/Cargo.lock")
         (studio + "/src")
+        (studio + "/tests/fixtures")
       ];
     };
     cargoLock.lockFile = studio + "/Cargo.lock";
-    # Tests that need the real data or jq skip themselves in the sandbox.
+    # The data tests use studio/tests/fixtures in the sandbox. Tests that need
+    # jq, ImageMagick, fontconfig, or a pty skip themselves there.
     meta.mainProgram = "theme-studio";
   };
 

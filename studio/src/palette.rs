@@ -334,7 +334,7 @@ mod tests {
     use std::process::Command;
 
     fn configs() -> Option<PathBuf> {
-        let dir = crate::store::Store::locate().dir;
+        let dir = crate::store::test_data_dir();
         dir.join("palettes.json").exists().then_some(dir)
     }
 

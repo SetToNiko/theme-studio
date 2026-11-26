@@ -238,6 +238,18 @@ impl Store {
     }
 }
 
+/// The data folder for tests: the real one if it has palettes.json, else the
+/// small copies in `studio/tests/fixtures/data` (the Nix build sandbox has no
+/// real data, so the data tests would skip there).
+#[cfg(test)]
+pub fn test_data_dir() -> PathBuf {
+    let real = crate::paths::data_dir();
+    if real.join("palettes.json").exists() {
+        return real;
+    }
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/data")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -246,7 +258,7 @@ mod tests {
     /// so saving one palette doesn't reformat the rest of the file.
     #[test]
     fn palettes_json_round_trips_byte_for_byte() {
-        let store = Store::locate();
+        let store = Store::at(test_data_dir());
         let Ok(text) = std::fs::read_to_string(store.palettes_path()) else {
             eprintln!("skipped: no palettes.json");
             return;
