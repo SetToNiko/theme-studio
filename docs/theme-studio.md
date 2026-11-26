@@ -159,17 +159,18 @@ Notes:
 
 A switch command writes all its files first and reloads the apps last. A
 missing program never stops the files from being written. The reloads run
-in the order of `share/integrations.json`, and a failed reload does not
-stop the next one. The exit code of the switch command is the exit code of
-the last reload that ran. For `theme-switch` that is Pywalfox: without
-`pywalfox` it prints nothing (the output of that reload is hidden), writes
-every file, and exits with status 127. For `font-switch` the last reload is
-`i3-msg`: without i3 it prints "command not found" and exits with status
-127. `themes-switch` stops when `theme-switch` fails, so in that case it does
-not write `~/.config/colors/theme`. If Ghostty is not running, `pkill` exits
-with status 1; this matters only when it is the last reload. A caller that
-checks the exit code, for example a key binding, can see a failed switch
-although the files are correct. In the studio, a missing `nvim` or `yazi`
+in the order of `share/integrations.json`. Before each reload, the command
+checks that the program exists. If it does not, the command skips that
+reload and prints one line on stderr, for example `theme-switch: skipped the
+pywalfox reload: pywalfox is not installed`. If a reload runs and fails, the
+command prints a warning with the app and the exit code, and goes on with
+the next reload. In both cases the exit code of the switch command is 0,
+because the files are written. An error that means the files were not
+written, for example an unknown name, still gives a non-zero exit code.
+`themes-switch` stops when `theme-switch` fails for such an error, so then
+it does not write `~/.config/colors/theme`. If Ghostty is not running,
+`pkill` exits with status 1 and the switch prints a warning. In the studio,
+a missing `nvim` or `yazi`
 shows an error for that pane only. A missing `xrdb` makes the font preview
 use 96 DPI. A missing `magick` makes each preview render report an
 ImageMagick error. A missing `jq`, `curl` or `nice` makes the switch or the

@@ -1,0 +1,19 @@
+theme = CRT Amber
+background = #1a1005
+foreground = #fff3c4
+palette = 0=#251b0f
+palette = 1=#ef4444
+palette = 2=#84cc16
+palette = 3=#fde68a
+palette = 4=#c084fc
+palette = 5=#f97316
+palette = 6=#f59e0b
+palette = 7=#fff3c4
+palette = 8=#7c7257
+palette = 9=#ef4444
+palette = 10=#84cc16
+palette = 11=#fde68a
+palette = 12=#c084fc
+palette = 13=#f97316
+palette = 14=#f59e0b
+palette = 15=#fff3c4
