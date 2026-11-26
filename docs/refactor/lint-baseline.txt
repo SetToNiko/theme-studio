@@ -1,4 +1,4 @@
-# Ratchet baselines (scripts/dev/lint-counts.sh): clippy and shellcheck warnings, and the modules in dependency cycles. Lower a number when the count goes down. Never raise it.
+# Baselines for scripts/dev/lint-counts.sh, which shows the counts while you work. All are 0: `nix flake check` fails on any clippy or shellcheck warning (P6.7) and on any dependency cycle. Never raise a number.
 clippy 0
 shellcheck 0
 cycles 0

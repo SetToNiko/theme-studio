@@ -29,19 +29,16 @@
           touch $out
         '';
 
-        # Clippy ratchet: the warning count must not go above the baseline in
-        # docs/refactor/lint-baseline.txt. It reuses the package's build setup,
-        # so the crate's dependencies are already there (no network needed).
+        # Clippy gate: any warning (pedantic, style, correctness; see Cargo.toml)
+        # fails the check. An allowed lint needs #[expect(..., reason = "...")].
+        # It reuses the package's build setup, so the crate's dependencies are
+        # already there (no network needed).
         clippy = theme-studio.bin.overrideAttrs (old: {
           pname = "theme-studio-clippy";
           nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.clippy ];
           buildPhase = ''
             runHook preBuild
-            output=$(cargo clippy --all-targets 2>&1) || { printf '%s\n' "$output"; exit 1; }
-            # No warnings: there is no "generated" line, so grep fails. That is a count of 0.
-            count=$(printf '%s\n' "$output" | grep -aoE '\(bin "theme-studio"\) generated [0-9]+ warning' | grep -oE '[0-9]+' | head -1 || true)
-            LINT_BASELINE=${./docs/refactor/lint-baseline.txt} \
-              bash ${./scripts/dev/lint-counts.sh} compare clippy "''${count:-0}"
+            cargo clippy --all-targets -- -D warnings
             runHook postBuild
           '';
           doCheck = false;
@@ -61,11 +58,10 @@
           installPhase = "touch $out";
         });
 
-        # Shellcheck ratchet, the same way.
+        # Shellcheck gate: any finding in a script fails the check. A disabled
+        # finding needs a comment with the reason on the line before.
         shellcheck = pkgs.runCommand "theme-studio-shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-          count=$( (shellcheck -f gcc ${./scripts}/*.sh ${./scripts}/lib/*.sh || true) | wc -l)
-          LINT_BASELINE=${./docs/refactor/lint-baseline.txt} \
-            bash ${./scripts/dev/lint-counts.sh} compare shellcheck "$count"
+          shellcheck ${./scripts}/*.sh ${./scripts}/lib/*.sh ${./scripts}/dev/*.sh ${./tests/scripts}/run.sh
           touch $out
         '';
 
