@@ -1,9 +1,8 @@
 //! The data and rules of the studio. No screen code here: nothing in `model`
 //! depends on `app` or `ui`. Some modules read or write the studio's own data
 //! files (palettes, themes, history, saved tournaments). None uses the network.
-//! Only `store` starts a program: `Store::apply` runs `theme-switch` (the
-//! command comes from `paths::switch_command`) and waits for it. In the
-//! tests, `paths::switch_command` gives a harmless command instead.
+//! No module here starts a program: `system::switch` runs the switch scripts.
+//! Nothing in `model` depends on `fonts`, `system` or `settings_page`.
 //!
 //! - `color`: colour type and conversions (hex, HSV, HSL, WCAG contrast).
 //! - `encoding`: base64 encoding.

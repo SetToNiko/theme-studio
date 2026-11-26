@@ -5,8 +5,10 @@
 //! - `download/`: downloads fonts (curl, tar, fc-cache) for the Download page.
 //! - `prefetch.rs`: fetches font previews ahead of time, in background threads.
 //! - `out.rs`: the terminal output of each frame.
+//! - `switch.rs`: runs `theme-switch` and `font-switch` (the only place that does).
 
 pub mod desktop;
 pub mod download;
 pub mod out;
 pub mod prefetch;
+pub mod switch;

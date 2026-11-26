@@ -10,7 +10,19 @@ use std::path::PathBuf;
 use anyhow::Result;
 use serde_json::{Map, Value, json};
 
-use crate::fonts::types::ROLES;
+/// The three font roles' keys in fonts.json (version 3), the host offset
+/// files and the `sizes` of a theme. Each is named after what its font has to be.
+pub const ROLES: [&str; 3] = ["monospace", "proportional", "icons"];
+
+/// What a theme migration needs from the fonts feature: the base sizes of a
+/// font preset. A trait (a set of functions that a type promises to have)
+/// keeps `model` free of the `fonts` module: `fonts::presets::FontStore`
+/// implements it, and the caller passes the store in.
+pub trait PresetSizes {
+    /// The sizes of the preset called `name`, or the default sizes when
+    /// there is no such preset.
+    fn sizes_of(&self, name: &str) -> [u32; 3];
+}
 
 /// themes.json's version. 2: each theme has its fonts' sizes.
 pub const THEMES_VERSION: u64 = 2;
@@ -88,10 +100,14 @@ impl ThemeStore {
     }
 
     /// Version 1 themes get sizes: their font preset's (fonts.json before
-    /// version 4 has them), else the defaults. Run before fonts.json's
-    /// migration drops them from the presets. The version it now has, if it
-    /// did.
-    pub fn migrate(&self, fonts: &crate::fonts::presets::FontStore) -> Result<Option<u64>> {
+    /// version 4 has them), else the defaults. `fonts` tells the sizes of a
+    /// preset by name (model does not know the fonts feature).
+    /// Run before fonts.json's migration drops them from the presets. The
+    /// version it now has, if it did.
+    ///
+    /// # Errors
+    /// Returns an error if themes.json is not valid JSON or cannot be written.
+    pub fn migrate(&self, fonts: &dyn PresetSizes) -> Result<Option<u64>> {
         let Ok(text) = std::fs::read_to_string(self.path()) else {
             return Ok(None);
         };
@@ -102,11 +118,7 @@ impl ThemeStore {
         let mut m = Map::new();
         for (n, mut t) in self.load_all() {
             if t.sizes.is_none() {
-                t.sizes = Some(
-                    fonts
-                        .load(&t.fonts)
-                        .map_or(crate::fonts::presets::DEFAULT_SIZES, |p| p.sizes()),
-                );
+                t.sizes = Some(fonts.sizes_of(&t.fonts));
             }
             m.insert(n, t.to_json());
         }

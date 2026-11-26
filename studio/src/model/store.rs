@@ -3,9 +3,8 @@
 //! theme-switch (paths.rs says where each is).
 
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow};
 use serde_json::{Map, Value};
 
 use crate::model::palette::Palette;
@@ -145,13 +144,6 @@ impl Store {
         }
     }
 
-    /// Builds the command for a switch script (`theme-switch`, `font-switch`),
-    /// told where this store's data and share folders are. It does not run
-    /// the command: the caller runs it.
-    pub fn switch_command(&self, name: &str) -> Command {
-        crate::model::paths::switch_command(name, &self.dir, &self.share)
-    }
-
     fn palettes_path(&self) -> PathBuf {
         self.dir.join("palettes.json")
     }
@@ -193,25 +185,6 @@ impl Store {
         let mut all = self.load_all()?;
         all.insert(name.to_string(), Value::Object(palette.to_json()));
         write_json_file(&self.palettes_path(), &data_file("palettes", all))
-    }
-
-    /// Runs theme-switch to make a saved palette the system theme.
-    pub fn apply(&self, name: &str) -> Result<()> {
-        let out = self
-            .switch_command("theme-switch")
-            .arg(name)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped())
-            .output()
-            .context("running theme-switch.sh")?;
-        if !out.status.success() {
-            bail!(
-                "theme-switch.sh: {}",
-                String::from_utf8_lossy(&out.stderr).trim()
-            );
-        }
-        Ok(())
     }
 
     pub fn terminal_map(&self) -> Result<TerminalMap> {

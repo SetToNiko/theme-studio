@@ -1,8 +1,9 @@
 //! Plain data types and constants of the fonts feature; a leaf, so keymap and the font helpers can use them without a cycle.
 
 /// The three font roles' keys in fonts.json (version 3) and the host
-/// offset files. Each is named after what its font has to be.
-pub const ROLES: [&str; 3] = ["monospace", "proportional", "icons"];
+/// offset files. Defined in `model::theme` (a theme stores one size per role);
+/// re-exported here for the fonts feature.
+pub use crate::model::theme::ROLES;
 
 /// The roles on screen.
 pub const ROLE_NAMES: [&str; 3] = ["Monospace", "Proportional", "Icons"];
