@@ -4,8 +4,9 @@
 Usage: python3 scripts/dev/module-cycles.py [studio/src]
 
 Each .rs file under the folder (also in subfolders) is a module, named by its
-file name (mod.rs: its folder's name). A module depends on another module when
-its code names `crate::...::<other>`. The test module (from `#[cfg(test)]` followed by `mod tests`) and files named
+full module path (app/state/nav.rs: app::state::nav; mod.rs: its folder's
+path). A module depends on another module when its code names that path after
+`crate::`. The test module (from `#[cfg(test)]` followed by `mod tests`) and files named
 tests.rs do not count.
 A cycle group is a set of modules that all depend on each other, directly
 or through other modules in the group. The refactor wants zero groups.
@@ -22,18 +23,19 @@ import re
 import sys
 
 
-def module_name(path, src_dir):
-    """The module name of a .rs file: its file name, or the folder name for mod.rs.
+def module_path(path, src_dir):
+    """The module path of a .rs file, as the code writes it after `crate::`.
 
-    Example: app/mod.rs -> app, app/layout.rs -> layout, core/color.rs -> color.
-    Folders do not count, so the names stay the same when files move into
-    folders (and `crate::color` through a re-export still finds `color`).
+    Example: main.rs -> "" (the crate root), color.rs -> color,
+    app/mod.rs -> app, app/state/nav.rs -> app::state::nav.
+    The full path keeps two files with the same name apart, for example
+    app/pages/settings/mod.rs (app::pages::settings) and settings.rs (settings).
     """
-    relative = os.path.relpath(path, src_dir)
-    folder, file_name = os.path.split(relative)
-    if file_name == "mod.rs":
-        return os.path.basename(folder)
-    return file_name[: -len(".rs")]
+    relative = os.path.relpath(path, src_dir)[: -len(".rs")]
+    parts = relative.split(os.sep)
+    if parts[-1] in ("mod", "main"):
+        parts = parts[:-1]
+    return "::".join(parts)
 
 
 def without_test_module(text):
@@ -52,9 +54,10 @@ def without_test_module(text):
 def read_dependencies(src_dir):
     """Return {module: set of modules that it names}, for each .rs file.
 
-    Files named tests.rs hold only tests and do not count.
-    A path such as `crate::app::layout::Layout` counts for the deepest module
-    in it (here: layout).
+    Files named tests.rs hold only tests and do not count; neither does the
+    crate root (main.rs), which names every module.
+    A path such as `crate::app::state::nav::Page` counts for the longest
+    module path that it starts with (here: app::state::nav).
     """
     production_code = {}
     for folder, _subfolders, file_names in os.walk(src_dir):
@@ -62,18 +65,24 @@ def read_dependencies(src_dir):
             if not file_name.endswith(".rs") or file_name == "tests.rs":
                 continue
             path = os.path.join(folder, file_name)
+            module = module_path(path, src_dir)
+            if module == "":
+                continue
             with open(path, encoding="utf-8") as f:
-                text = f.read()
-            production_code[module_name(path, src_dir)] = without_test_module(text)
+                production_code[module] = without_test_module(f.read())
 
     dependencies = {}
     for module, text in production_code.items():
         named = set()
-        for path in re.findall(r"crate((?:::\w+)+)", text):
+        # `pub(in crate::app)` limits who can use an item; it is not a dependency.
+        code = re.sub(r"pub\(in crate(?:::\w+)+\)", "pub", text)
+        for path in re.findall(r"crate((?:::\w+)+)", code):
             segments = path.strip(":").split("::")
-            known = [segment for segment in segments if segment in production_code]
-            if known:
-                named.add(known[-1])
+            for length in range(len(segments), 0, -1):
+                candidate = "::".join(segments[:length])
+                if candidate in production_code:
+                    named.add(candidate)
+                    break
         named.discard(module)
         dependencies[module] = named
     return dependencies

@@ -197,7 +197,7 @@ For P4.5 to P4.13: one module per step; the app/mod.rs map (its `//!`) is update
 Completes: none (cycle count decreases, measured)
 
 ### Phase 5: Large files and folders (revised after Phase 4)
-- [ ] P5.0 app/ sub-folders: `app/state/` (palette_editor, layout, messages, nav), `app/input/` (actions, focus, mouse, overlay, colours), `app/pages/settings/`, `app/pages/fonts/`, `app/pages/themes/` (the *_actions files, without the suffix inside their folder); persist.rs and tests.rs stay at the top. Mostly `git mv` and mod lines; the app/mod.rs map follows | Files: app/ (moves) | Target: T5, audience | Check: tests; each folder 10 files or fewer
+- [x] P5.0 app/ sub-folders: `app/state/` (palette_editor, layout, messages, nav), `app/input/` (actions, focus, mouse, overlay, colours), `app/pages/settings/`, `app/pages/fonts/`, `app/pages/themes/` (the *_actions files, without the suffix inside their folder); persist.rs and tests.rs stay at the top. Mostly `git mv` and mod lines; the app/mod.rs map follows | Files: app/ (moves) | Target: T5, audience | Check: tests; each folder 10 files or fewer
 - [ ] P5.1 `ui/widgets.rs` as a leaf: the shared drawing helpers (pane_border, pane_title, friendly, accent, panel_number from widgets.rs) move there; ui.rs becomes ui/mod.rs | Files: `ui.rs` -> `ui/mod.rs`, `ui/widgets.rs`, `widgets.rs`, users (access paths) | Target: T5 | Check: tests; the {ui, settings_ui, fonts_ui} cycle is gone
 - [ ] P5.2 ui: page drawing into `ui/pages.rs` | Files: `ui/mod.rs`, `ui/pages.rs` | Target: limits | Check: tests
 - [ ] P5.3 ui: pane and overlay drawing into `ui/panes.rs` and `ui/overlays.rs` | Files: `ui/mod.rs`, `ui/panes.rs`, `ui/overlays.rs` | Target: limits | Check: tests, ui/mod.rs under 500
