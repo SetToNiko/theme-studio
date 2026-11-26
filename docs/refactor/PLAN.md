@@ -253,7 +253,7 @@ Wave 1 (parallel): F1, F2, F3, F4, F7. Wave 2: F8. Wave 3 (parallel): F5, F6.
 - [x] F3 `system/switch.rs`: the only place that starts theme-switch and font-switch; model/ starts no program and does not import fonts/ | Files: `model/store.rs`, `model/theme.rs`, `fonts/presets.rs`, `system/switch.rs`, callers | Target: layers | Check: tests; grep
 - [x] F4 [behavior] Finding 23: reload_apps skips an app whose program is missing (a warning on stderr), and reload errors are warnings: the switch exits 0 when the files are written | Files: `scripts/lib/integrations.sh`, golden files | Target: T7 | Check: golden tests (changed expected values only for this)
 - [x] F7 Findings 21 and 22: no one-line path wrappers; XDG_RUNTIME_DIR through model/paths.rs | Files: `config/mod.rs`, `model/history.rs`, `preview_term/mod.rs`, `model/paths.rs`, callers | Target: rule 1 | Check: tests
-- [ ] F8 Divide app/tests.rs by app/ folder (tests unchanged, moved) | Files: `app/tests.rs`, new test files, mod lines | Target: A1 | Check: same test count
+- [x] F8 Divide app/tests.rs by app/ folder (tests unchanged, moved) | Files: `app/tests.rs`, new test files, mod lines | Target: A1 | Check: same test count
 - [ ] F5 `# Errors` on each function that returns Result (criterion 8); a flake check keeps it | Files: many (comments only), `flake.nix`, a script | Target: goal 8 | Check: the new check
 - [ ] F6 ARCHITECTURE.md gaps (split `impl App`, let-chains, chrono, the walk-through details, every file in the module table, system/switch.rs) and the header of share/integrations/i3-colors.jq | Files: `ARCHITECTURE.md`, `share/integrations/i3-colors.jq` | Target: A1 | Check: each named file exists
 

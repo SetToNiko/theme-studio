@@ -469,7 +469,7 @@ When a warning is wrong for one place, `#[expect(lint, reason = "...")]` switche
 there and records why. If the warning goes away later, `expect` itself warns, so
 old switches do not stay.
 Where: `ui/widgets.rs` (`f64_to_u16`), `app/mod.rs` (`App`), `app/pages/fonts/tour_actions.rs`,
-`app/tests.rs`, and others (search for `#[expect(`).
+`app/tests/`, and others (search for `#[expect(`).
 
 ### `pub(in crate::app)` visibility
 Normal `pub` means every module. `pub(in crate::app)` means: only code inside the `app`

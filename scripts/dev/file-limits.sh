@@ -2,7 +2,7 @@
 # Usage: scripts/dev/file-limits.sh [DIR]
 # Prints each .rs file under DIR (default: studio/src) that has more than 500
 # production lines, as "<lines> <path>". Production lines are the lines before
-# the "#[cfg(test)]" line that is followed by "mod tests". Files named tests.rs
+# the "#[cfg(test)]" line that is followed by "mod tests". Files named tests.rs, and files in a tests/ folder,
 # hold only tests and are skipped. Exit status: 1 if a file is over the limit,
 # else 0. The limit is in project-conventions: 500 lines without tests.
 set -euo pipefail
@@ -22,6 +22,6 @@ while IFS= read -r -d '' file; do
         echo "$lines $file"
         over=1
     fi
-done < <(find "$dir" -name '*.rs' ! -name tests.rs -print0 | sort -z)
+done < <(find "$dir" -name '*.rs' ! -name tests.rs ! -path "*/tests/*" -print0 | sort -z)
 
 exit "$over"

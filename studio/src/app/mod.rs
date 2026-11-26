@@ -9,7 +9,7 @@
 //! - `pages/settings/`: `settings_actions.rs` (the page as a whole), `settings_keymaps_actions.rs`, `settings_history_actions.rs`, `draft_actions.rs` (Settings drafts), `behaviour_actions.rs`, `behaviour_colours_actions.rs`, `behaviour_labels_actions.rs` (Behaviour tab)
 //! - `pages/fonts/`: `fonts_dl_actions.rs` (Download fonts), `fonts_preview_actions.rs`, `prefetch_actions.rs`, `tour_actions.rs` and `tour_rounds.rs` (Tournament)
 //! - `pages/themes/`: `theme_actions.rs`, `presets_actions.rs`
-//! - this folder: this file (`App` and its core methods), `run.rs` (the main loop), `persist.rs` (save, open, unsaved-changes prompt), `tests.rs` (tests of the above)
+//! - this folder: this file (`App` and its core methods), `run.rs` (the main loop), `persist.rs` (save, open, unsaved-changes prompt), `tests/` (tests of the above, one file per area)
 //!
 //! The run loop (`App::run`) does not draw by itself: `main.rs` passes in `ui::draw`.
 //!
