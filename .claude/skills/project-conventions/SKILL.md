@@ -16,7 +16,9 @@ description: Gives the stack, commands, refactor settings, coding rules, and doc
 ## Refactor settings
 - Refactor folder: `docs/refactor/` (GOAL.md, PRINCIPLES.md, SUCCESS_CRITERIA.md, PLAN.md)
 - Branch: `refactor/maintainability` · Commits: after each approved action
-- Simplify step: simplifier agent · Documentation: ARCHITECTURE.md + README.md + doc comments · Step size: 5 files or fewer. Do not count: a pure move (`git mv`), new test-data files, and files whose only change is an access path (a field moved into a sub-struct). A larger step is fine if it is atomic: one `git revert` of its commit undoes it completely and leaves a working project (tests pass).
+- Simplify step: simplifier agent · Documentation: ARCHITECTURE.md + README.md + doc comments
+- Atomic steps (the rule): one `git revert` of a step's commit undoes it completely and leaves a working project (tests pass). If one commit is not possible: a change group (`Change-Group: <name> (n/total)` trailers, ", first" and ", last" on the outer commits).
+- Step size (a guideline): 5 files or fewer. Not counted: a pure move (`git mv`), new test-data files, files whose only change is an access path.
 
 ## Audience: A1 Beginner (junior developer)
 The reader knows Rust and bash basics. The reader possibly does not know design patterns, trait objects, advanced generics, macros, or this project.
