@@ -231,7 +231,7 @@ Wave 1 (parallel, one folder group each; no two steps change the same file). Eac
 - [ ] P6.2 fonts/, settings_page/, system/, preview_term/ (114) | Files: those folders | Target: goal 7, limits | Check: same
 - [ ] P6.3 app/ (144), and TopFocus if both flags are never true at once | Files: app/ | Target: goal 7, limits | Check: same
 - [ ] P6.4 ui/ (126) | Files: ui/ | Target: goal 7, limits | Check: same
-- [ ] P6.6 Shellcheck to zero | Files: `scripts/*.sh`, `scripts/lib/*.sh` | Target: rule 3 | Check: count = 0
+- [x] P6.6 Shellcheck to zero | Files: `scripts/*.sh`, `scripts/lib/*.sh` | Target: rule 3 | Check: count = 0
 Wave 2:
 - [ ] P6.5 Errors in system/download/: handle or report the 18 ignored results | Files: `system/download/*` | Target: T7 | Check: tests, each `let _ =` has a reason or is gone
 - [ ] P6.7 Gate: `-D warnings` in the clippy flake check, baseline line removed; shellcheck gate the same | Files: `flake.nix`, `scripts/dev/lint-counts.sh`, `docs/refactor/lint-baseline.txt` | Target: goal 7 | Check: `nix flake check` fails on any warning
