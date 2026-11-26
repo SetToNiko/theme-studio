@@ -76,7 +76,7 @@ fn main() -> Result<()> {
             };
             if !themes.exists()
                 && let (Some(p), Some(f)) = (
-                    store.active_name(),
+                    Store::active_name(),
                     fonts::presets::FontStore::active_name(),
                 )
             {

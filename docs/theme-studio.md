@@ -130,9 +130,10 @@ install the programs yourself.
 | `mktemp`, `cat`, `dirname`, `readlink`, `nice`, `sha256sum` (coreutils) | the switch commands; the studio (`nice`, `sha256sum` in the font download) | required | yes |
 | `kill` | the studio (stops a bar block) | required | yes (procps) |
 | `fc-list`, `fc-cache`, `fc-scan` (fontconfig) | the studio (font list, install, preview); `font-switch`, `fontconfig-font.sh` | required | yes |
-| `magick` (ImageMagick) | the studio (font and text previews) | required | no |
-| `curl` | the studio (font download) | required | no |
-| `tar` | the studio (font download) | required | no |
+| `magick` (ImageMagick) | the studio (font and text previews) | required | yes |
+| `curl` | the studio (font download) | required | yes |
+| `tar` | the studio (font download) | required | yes |
+| `xz` | `tar` unpacks the Nerd Fonts archives (`.tar.xz`) | required | yes |
 | `pkill` (procps) | the Ghostty reload in `share/integrations.json` | optional: Ghostty | yes |
 | `ghostty` | `ghostty-colors.sh` (finds the built-in theme folder) | optional: Ghostty | yes |
 | `i3-msg` (i3) | the i3 reload in `share/integrations.json` | optional: i3 | yes |
@@ -145,10 +146,9 @@ install the programs yourself.
 Notes:
 
 - The Nix package puts the programs of the "yes" rows in the `PATH` of the
-  three switch commands only. The `theme-studio` command gets the system
-  `PATH` plus its own folder. Programs that the studio itself starts
-  (`magick`, `curl`, `tar`, `nvim`, `yazi`, `xrdb`, `fc-list`, `nice` and the
-  others) must come from the system.
+  three switch commands and of the studio. The studio also gets ImageMagick,
+  curl, tar and xz. Optional programs (`xrdb`, `nvim`, `yazi` and the desktop
+  programs) come from the system.
 - Each program that a `reload` entry of `share/integrations.json` runs is
   optional. If you add an app with a `reload` command, that program is
   optional too.

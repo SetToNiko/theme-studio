@@ -147,7 +147,7 @@ impl App {
     /// Fails when a palette named on the command line cannot be loaded and no
     /// theme has that name either.
     pub fn with_config(store: Store, start: Start, config: crate::config::Loaded) -> Result<App> {
-        let active = store.active_name();
+        let active = Store::active_name();
         let system_palette = active.as_ref().and_then(|n| store.load(n).ok());
         // a name on the command line: a theme, or a palette
         let named = match &start {

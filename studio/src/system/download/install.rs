@@ -251,13 +251,15 @@ pub fn remove_files(root: &Path, id: &str) -> Result<Option<String>> {
     Ok(None)
 }
 
-/// The warning text when the cache refresh fails, else `None`. The files are
-/// fine in that case: fontconfig rescans a changed font folder by itself, and
-/// fc-cache can fail because of an unrelated broken font.
+/// The details when the cache refresh fails (for example
+/// `fc-cache failed for <folder>: <its error>`), else `None`. The caller words
+/// the message. The files are fine in that case: fontconfig rescans a changed
+/// font folder by itself, and fc-cache can fail because of an unrelated broken
+/// font.
 fn refresh_warning(program: &str, root: &Path) -> Option<String> {
     refresh_font_cache(program, root)
         .err()
-        .map(|e| format!("the font cache was not refreshed: {e:#}"))
+        .map(|e| format!("{e:#}"))
 }
 
 /// Runs `program` (fc-cache) on `root` so that fontconfig sees the changed fonts.
@@ -316,10 +318,7 @@ mod tests {
         let root = std::env::temp_dir().join(format!("theme-studio-warn-{}", std::process::id()));
         std::fs::create_dir_all(&root).unwrap();
         let warning = refresh_warning("false", &root).unwrap();
-        assert!(
-            warning.contains("font cache was not refreshed"),
-            "{warning}"
-        );
+        assert!(warning.starts_with("false failed for "), "{warning}");
         assert!(root.exists());
         assert_eq!(refresh_warning("true", &root), None);
         // a remove with a missing folder is fine and has no warning

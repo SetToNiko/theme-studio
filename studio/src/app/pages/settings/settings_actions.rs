@@ -393,8 +393,8 @@ impl App {
                 }
             }
             Deferred::DeleteVersion(path) => {
-                if let Some(h) = History::current() {
-                    match h.delete(&path) {
+                if History::current().is_some() {
+                    match History::delete(&path) {
                         Ok(()) => self.messages.info("Deleted that version"),
                         Err(e) => self.messages.error(format!("{e:#}")),
                     }

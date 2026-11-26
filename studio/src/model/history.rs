@@ -207,11 +207,7 @@ impl History {
             .collect()
     }
 
-    #[expect(
-        clippy::unused_self,
-        reason = "NEEDS app/ change: the caller in app/pages/settings/settings_actions.rs uses `h.delete(&path)`; make it an associated function once it changes"
-    )]
-    pub fn delete(&self, path: &Path) -> Result<()> {
+    pub fn delete(path: &Path) -> Result<()> {
         bump();
         std::fs::remove_file(path).with_context(|| format!("removing {}", path.display()))
     }
@@ -433,7 +429,7 @@ mod tests {
                 .all(|(_, s)| s.name.is_some() || s.content["n"].as_u64().unwrap() >= 5),
             "oldest pruned"
         );
-        h.delete(&list[0].0).unwrap();
+        History::delete(&list[0].0).unwrap();
         assert_eq!(h.list("palettes.json").len(), KEEP);
         assert_eq!(h.list("fonts.json").len(), 0);
         std::fs::remove_dir_all(d).unwrap();

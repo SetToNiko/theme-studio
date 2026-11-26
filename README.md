@@ -36,7 +36,7 @@ inputs.theme-studio = {
 #                programs.theme-studio.enable = true;
 ```
 
-The Nix package brings most of its programs with it. The studio itself still needs `magick`, `curl`, `tar` and fontconfig from the system (see [Runtime dependencies](docs/theme-studio.md#runtime-dependencies)). Your palettes, font
+The Nix package brings the programs that it needs with it. Only the optional ones come from the system (see [Runtime dependencies](docs/theme-studio.md#runtime-dependencies)). Your palettes, font
 presets and themes are not part of the project: they are read from
 `$THEME_STUDIO_DATA`, by default `~/.config/theme-studio/`.
 
@@ -63,7 +63,7 @@ programs:
 | `awk`, `sed`, `grep`, coreutils | the switch commands                  |
 | fontconfig (`fc-list`, ...)     | fonts                                |
 | ImageMagick (`magick`)          | font previews in the studio          |
-| `curl`, `tar`                   | the font download page               |
+| `curl`, `tar`, `xz`             | the font download page               |
 | `ghostty`, `i3`, `pywalfox`     | optional: only the apps that you use |
 | `nvim`, `yazi`, `git`, `xrdb`   | optional: preview panes, screen DPI  |
 

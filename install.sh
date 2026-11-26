@@ -91,7 +91,7 @@ install_all() {
 warn_missing() {
   local tool
   local required=(bash jq awk sed grep mktemp cat dirname readlink nice sha256sum kill
-    fc-list fc-cache fc-scan magick curl tar)
+    fc-list fc-cache fc-scan magick curl tar xz)
   local -A optional=(
     [pkill]="the Ghostty reload" [ghostty]="Ghostty" [i3-msg]="the i3 reload"
     [pywalfox]="the Firefox reload" [nvim]="the preview pane" [yazi]="the preview pane"

@@ -179,11 +179,7 @@ impl Store {
     }
 
     /// The palette theme-switch.sh last applied.
-    #[expect(
-        clippy::unused_self,
-        reason = "NEEDS app/ change: the caller in app/mod.rs uses `store.active_name()`; make it an associated function once they change"
-    )]
-    pub fn active_name(&self) -> Option<String> {
+    pub fn active_name() -> Option<String> {
         read_name_file(&crate::model::paths::colors_dir().join("current"))
     }
 
