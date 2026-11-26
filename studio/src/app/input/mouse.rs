@@ -270,31 +270,31 @@ impl App {
     }
 
     /// A click on a row of the open pop-up (key chooser, open list, or dropdown menu).
-    fn click_overlay_row(&mut self, i: usize) {
+    fn click_overlay_row(&mut self, index: usize) {
         if let Overlay::ChooseKey { row, sel, original } = &self.overlay {
             let (row, sel, original) = (*row, *sel, original.clone());
             // a click previews the key; a second click keeps it
-            let key = crate::settings_page::behaviour::theme_keys()[i];
-            if sel == i {
+            let key = crate::settings_page::behaviour::theme_keys()[index];
+            if sel == index {
                 self.overlay = Overlay::None;
             } else {
                 self.overlay = Overlay::ChooseKey {
                     row,
-                    sel: i,
+                    sel: index,
                     original,
                 };
             }
             self.with_draft(|app| app.set_colour_setting(row, key));
         } else if let Overlay::Open { sel, .. } = &mut self.overlay {
-            if *sel == i {
+            if *sel == index {
                 // a second click opens it, like Enter
                 self.on_overlay_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
             } else {
-                *sel = i;
+                *sel = index;
             }
         } else if let Overlay::Menu { menu, .. } = self.overlay {
             // one click chooses
-            self.choose_menu(menu, i);
+            self.choose_menu(menu, index);
         }
     }
 }

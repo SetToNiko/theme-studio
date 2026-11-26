@@ -74,7 +74,6 @@ impl App {
 
     /// Each loop: fetch the highlighted font after a pause, render it, pick
     /// up a finished image. True when something changed.
-    // Long function: one ordered sequence (note the highlight, fetch, render, finish) where each step needs the one before.
     pub fn poll_preview(&mut self) -> bool {
         if self.page != Page::Downloads || !self.layout.fonts_preview_visible {
             return false;
@@ -82,6 +81,22 @@ impl App {
         let Some(e) = self.preview_entry() else {
             return false;
         };
+        self.start_preview_fetch(&e);
+        let Some(Ok(family)) = self.pv().families.get(&e.id).cloned() else {
+            return false;
+        };
+        self.render_preview(&e, &family);
+        // the preview exists here (`self.pv()` made it above)
+        let picker = self.picker.as_ref(); // a field of its own, so `dl` can be borrowed too
+        let Some(pv) = self.dl.preview.as_mut() else {
+            return false;
+        };
+        pv.finish_render(picker)
+    }
+
+    /// Notes the highlighted font `e` and starts the background work that gets
+    /// its family: a scan of its files (installed) or a fetch (after a pause).
+    fn start_preview_fetch(&mut self, e: &Entry) {
         let installed = self.dl.tab == DlTab::Installed;
         let pv = self.pv();
         pv.note_highlight(&e.id);
@@ -100,16 +115,6 @@ impl App {
             pv.fetching.insert(e.id.clone());
             download::preview::fetch_preview(e.clone(), self.dl_sender());
         }
-        let Some(Ok(family)) = self.pv().families.get(&e.id).cloned() else {
-            return false;
-        };
-        self.render_preview(&e, &family);
-        // the preview exists here (`self.pv()` made it above)
-        let picker = self.picker.as_ref(); // a field of its own, so `dl` can be borrowed too
-        let Some(pv) = self.dl.preview.as_mut() else {
-            return false;
-        };
-        pv.finish_render(picker)
     }
 
     /// Asks for the preview image (the renderer skips unchanged requests).

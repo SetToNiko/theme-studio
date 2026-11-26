@@ -15,7 +15,6 @@ use crate::system::download;
 
 impl App {
     /// Asks pane `i` to show entrant `who`, and picks up a finished image.
-    // Long function: one ordered sequence (find the font, size the sample, request the render) where each step needs the one before.
     pub(in crate::app) fn tour_draw_pane(&mut self, i: usize, who: Option<usize>) -> bool {
         let Some(who) = who else {
             let p = &mut self.tour().panes[i];
@@ -31,10 +30,24 @@ impl App {
             Some(Ok(f)) => f.clone(),
             _ => return false,
         };
-        let (cell_w, cell_h) = self.picker.as_ref().map_or((8, 16), |p| {
+        let cell = self.picker.as_ref().map_or((8, 16), |p| {
             let s = p.font_size();
             (u32::from(s.width), u32::from(s.height))
         });
+        self.request_pane_render(i, who, &e, &family, cell);
+        self.take_pane_image(i)
+    }
+
+    /// Sizes the sample text for pane `i` (a terminal cell is `cell` pixels
+    /// wide and high) and asks the renderer for entrant `who`'s image.
+    fn request_pane_render(
+        &mut self,
+        i: usize,
+        who: usize,
+        e: &tournament::Entrant,
+        family: &str,
+        (cell_w, cell_h): (u32, u32),
+    ) {
         let dpi = self.fonts.dpi;
         let palette = self.editor.palette.clone();
         let bg = palette.get("bg0");
@@ -46,24 +59,18 @@ impl App {
         let (cols, rows) = (u32::from(t.panes[i].area.0), u32::from(t.panes[i].area.1));
         let width = (cols * cell_w).saturating_sub(24).max(100);
         let st = samples::Style {
-            family: &family,
+            family,
             size: t.pt,
             palette: &palette,
         };
         let px = (t.pt * dpi / 72).max(6);
         let lines = ((rows * cell_h) / (px * 12 / 10).max(1)) as usize;
-        let markup = match t.kind {
-            Kind::Prose => {
-                let per_line = width / (px * 55 / 100).max(1);
-                samples::prose_page(&st, 0, (per_line as usize * lines * 85 / 100).max(200)).0
-            }
-            _ => samples::code(&st, t.lang, 0, lines + 1),
-        };
+        let markup = sample_text(&st, t.kind, t.lang, (width, px, lines));
         let fontconfig = (!e.installed).then(|| download::preview::preview_fontconfig_for(&e.id));
         let wrap = (t.kind == Kind::Prose).then_some(width);
-        let p = &mut t.panes[i];
-        p.renderer.request_with(markup, bg, dpi, fontconfig, wrap);
-        self.take_pane_image(i)
+        t.panes[i]
+            .renderer
+            .request_with(markup, bg, dpi, fontconfig, wrap);
     }
 
     /// Picks up pane `i`'s finished image (or error). True when it changed.
@@ -302,5 +309,19 @@ impl App {
         } else {
             t.sel = row;
         }
+    }
+}
+
+/// The sample text of one pane: prose or code in `st`'s font. `(width, px,
+/// lines)` are the pane's width in pixels, the line height in pixels and the
+/// number of lines that fit.
+fn sample_text(st: &samples::Style, kind: Kind, lang: usize, size: (u32, u32, usize)) -> String {
+    let (width, px, lines) = size;
+    match kind {
+        Kind::Prose => {
+            let per_line = width / (px * 55 / 100).max(1);
+            samples::prose_page(st, 0, (per_line as usize * lines * 85 / 100).max(200)).0
+        }
+        _ => samples::code(st, lang, 0, lines + 1),
     }
 }

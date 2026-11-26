@@ -177,10 +177,16 @@ impl App {
                 } => {
                     changed = true;
                     let installed = result.is_ok();
+                    let family = self
+                        .dl
+                        .jobs
+                        .get(&id)
+                        .map_or_else(|| id.clone(), |job| job.0.clone());
                     self.finish_install(id, result);
                     if let (true, Some(w)) = (installed, warning) {
-                        self.messages
-                            .error(format!("Installed, but {w} (it may show up late)"));
+                        self.messages.error(format!(
+                            "Installed {family}, but the font cache refresh failed, so the font may show up late. Details: {w}"
+                        ));
                     }
                 }
             }
@@ -332,16 +338,19 @@ impl App {
         }
     }
 
+    /// The list name of the highlighted row, or `None` when no row is highlighted.
+    fn dl_selected_name(&mut self) -> Option<String> {
+        match self.dl_rows().get(self.dl.sel) {
+            Some(DlRow::Listed(n)) => Some(n.clone()),
+            Some(DlRow::Entry(i)) => self.dl_entries().get(*i).map(Self::list_name),
+            None => None,
+        }
+    }
+
     /// Removes a font from the list and its downloaded files.
-    // Long function: one straight sequence: find the name, drop it from the list, delete the files, refresh.
     pub fn dl_remove(&mut self) {
-        let name = match self.dl_rows().get(self.dl.sel) {
-            Some(DlRow::Listed(n)) => n.clone(),
-            Some(DlRow::Entry(i)) => match self.dl_entries().get(*i) {
-                Some(e) => Self::list_name(e),
-                None => return,
-            },
-            None => return,
+        let Some(name) = self.dl_selected_name() else {
+            return;
         };
         let path = self.installed_list_path();
         let mut list = download::list::read_list(&path);
@@ -359,16 +368,24 @@ impl App {
             download::install::remove_files(&crate::model::paths::installed_fonts_dir(), &id)
                 .and_then(|w| download::list::write_list(&path, list).map(|()| w));
         self.dl.listed = None;
+        self.report_removal(&name, result);
+        self.fonts.refresh_installed();
+        let n = self.dl_rows().len();
+        self.dl.sel = self.dl.sel.min(n.saturating_sub(1));
+    }
+
+    /// Tells the user how removing font `name` went: done, done with a font
+    /// cache warning, or failed.
+    fn report_removal(&mut self, name: &str, result: anyhow::Result<Option<String>>) {
         match result {
             Ok(None) => self
                 .messages
                 .info(format!("Removed {name} (a rebuild drops it from Nix too)")),
-            Ok(Some(w)) => self.messages.error(format!("Removed {name}, but {w}")),
+            Ok(Some(w)) => self.messages.error(format!(
+                "Removed {name} (a rebuild drops it from Nix too), but the font cache refresh failed, so the font may show up for a while. Details: {w}"
+            )),
             Err(e) => self.messages.error(format!("{e:#}")),
         }
-        self.fonts.refresh_installed();
-        let n = self.dl_rows().len();
-        self.dl.sel = self.dl.sel.min(n.saturating_sub(1));
     }
 
     fn dl_switch(&mut self, d: i32) {

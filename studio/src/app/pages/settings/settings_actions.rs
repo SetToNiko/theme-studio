@@ -28,9 +28,9 @@ impl App {
 
     /// Moves a list cursor `sel` over `n` rows for a movement action (up,
     /// down, page, top, bottom). False when `a` is not a movement.
-    pub(crate) fn move_sel(sel: &mut usize, n: usize, a: Action) -> bool {
+    pub(crate) fn move_sel(sel: &mut usize, n: usize, action: Action) -> bool {
         let last = to_i32(n.saturating_sub(1));
-        let d: i32 = match a {
+        let delta: i32 = match action {
             Action::Up => -1,
             Action::Down => 1,
             Action::PageUp => -10,
@@ -39,7 +39,7 @@ impl App {
             Action::Bottom => last - to_i32(*sel),
             _ => return false,
         };
-        *sel = offset(*sel, d).min(n.saturating_sub(1));
+        *sel = offset(*sel, delta).min(n.saturating_sub(1));
         true
     }
 
@@ -119,40 +119,40 @@ impl App {
     /// A click on the Settings page: selects; on the selected row, acts
     /// like Enter.
     // Long function: one match over the click targets of the Settings page.
-    pub fn settings_click(&mut self, t: crate::app::state::hit::Target) {
+    pub fn settings_click(&mut self, target: crate::app::state::hit::Target) {
         use crate::app::state::hit::Target as T;
-        if let T::PresetRow(i) = t {
-            return self.with_draft(|app| app.preset_click(i));
+        if let T::PresetRow(index) = target {
+            return self.with_draft(|app| app.preset_click(index));
         }
         let p = &mut self.settings_page;
-        if !matches!(t, T::SettingsTab(_)) {
+        if !matches!(target, T::SettingsTab(_)) {
             p.tabs_focused = false;
         }
-        match t {
-            T::SettingsTab(i) => p.tab = TABS[i as usize].0,
-            T::HistFile(i) => {
+        match target {
+            T::SettingsTab(index) => p.tab = TABS[index as usize].0,
+            T::HistFile(index) => {
                 p.hist_focus = HistFocus::Files;
-                if p.hist_file != i {
-                    p.hist_file = i;
+                if p.hist_file != index {
+                    p.hist_file = index;
                     p.hist_sel = 0;
                     p.diff_scroll = 0;
                 }
             }
-            T::SettingsRow(i) => {
+            T::SettingsRow(index) => {
                 let sel = match p.tab {
                     Tab::Keymaps => &mut p.km_sel,
                     Tab::Behaviour => &mut p.bh_sel,
                     Tab::History => {
                         p.hist_focus = HistFocus::Versions;
-                        if p.hist_sel != i {
+                        if p.hist_sel != index {
                             p.diff_scroll = 0;
                         }
                         &mut p.hist_sel
                     }
                     Tab::Readme => return,
                 };
-                let again = *sel == i;
-                *sel = i;
+                let again = *sel == index;
+                *sel = index;
                 if again {
                     self.run_settings(Action::Confirm);
                 }
@@ -331,21 +331,19 @@ impl App {
     /// The prompt's text, confirmed.
     // Long function: one match over the kinds of name or text prompt.
     pub fn finish_prompt(&mut self, purpose: Naming, input: &str) {
-        let text = input.trim().to_string();
+        let text = input.trim();
         if text.is_empty() {
             return;
         }
         match purpose {
-            Naming::PresetFrom(from) => self.new_preset_from(&from, &text),
+            Naming::PresetFrom(from) => self.new_preset_from(&from, text),
             Naming::Preset => {
                 if self.presets.iter().any(|p| p.name == text) {
                     return self
                         .messages
                         .error(format!("There's already a preset \"{text}\""));
                 }
-                let mut km = self.keymap.clone();
-                km.name.clone_from(&text);
-                self.keymap = km;
+                self.keymap.name = text.to_string();
                 self.sync_preset();
                 self.messages
                     .info(format!("New preset \"{text}\", now active (unsaved)"));
@@ -355,7 +353,7 @@ impl App {
                     .ok()
                     .and_then(|t| serde_json::from_str(&t).ok());
                 match (History::current(), now) {
-                    (Some(h), Some(content)) => match h.save_named(file, &text, &content) {
+                    (Some(h), Some(content)) => match h.save_named(file, text, &content) {
                         Ok(_) => self.notify_saved(format!("Saved {file} as \"{text}\"")),
                         Err(e) => self.messages.error(format!("{e:#}")),
                     },
