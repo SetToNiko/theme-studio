@@ -9,7 +9,7 @@ use anyhow::{Context, Result, anyhow, bail};
 use serde_json::{Value, json};
 
 use super::net::{fetch, get};
-use super::{Entry, Msg, Source, low};
+use super::{Entry, Msg, Source, low, notify, remove_dir_if_present, remove_file_if_present};
 
 /// The google/fonts folders to look in: the license's first.
 pub fn google_dirs(e: &Entry) -> Vec<String> {
@@ -57,11 +57,14 @@ fn fetch_all(
     let mut before = 0;
     for (name, url, size) in files {
         fetch(url, &dir.join(name), |n| {
-            let _ = tx.send(Msg::Progress {
-                id: id.to_string(),
-                done: before + n,
-                total,
-            });
+            notify(
+                tx,
+                Msg::Progress {
+                    id: id.to_string(),
+                    done: before + n,
+                    total,
+                },
+            );
         })?;
         before += size;
     }
@@ -189,7 +192,7 @@ pub(super) fn install_nerd(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<Va
         .arg("-C")
         .arg(dir)
         .output()?;
-    let _ = std::fs::remove_file(&archive);
+    remove_file_if_present(&archive);
     if !out.status.success() {
         bail!(
             "unpacking {asset}: {}",
@@ -204,6 +207,7 @@ pub(super) fn install_nerd(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<Va
 pub fn install(e: Entry, root: PathBuf, tx: Sender<Msg>) {
     std::thread::spawn(move || {
         let dir = root.join(&e.id);
+        let mut warning = None;
         let result = (|| -> Result<(String, Value)> {
             std::fs::create_dir_all(&dir)?;
             let entry = match e.source {
@@ -211,7 +215,7 @@ pub fn install(e: Entry, root: PathBuf, tx: Sender<Msg>) {
                 Source::Fontsource => install_fontsource(&e, &dir, &tx)?,
                 Source::Nerd { .. } => install_nerd(&e, &dir, &tx)?,
             };
-            let _ = low("fc-cache").arg(&root).output();
+            warning = refresh_warning("fc-cache", &root);
             let name = match &e.source {
                 Source::Nerd { asset, .. } => asset.clone(),
                 _ => e.family.clone(),
@@ -219,21 +223,55 @@ pub fn install(e: Entry, root: PathBuf, tx: Sender<Msg>) {
             Ok((name, entry))
         })();
         if result.is_err() {
-            let _ = std::fs::remove_dir_all(&dir);
+            remove_dir_if_present(&dir);
         }
-        let _ = tx.send(Msg::Installed {
-            id: e.id.clone(),
-            result: result.map_err(|e| format!("{e:#}")),
-        });
+        notify(
+            &tx,
+            Msg::Installed {
+                id: e.id.clone(),
+                result: result.map_err(|e| format!("{e:#}")),
+                warning,
+            },
+        );
     });
 }
 
 /// Removes a downloaded font's files and refreshes fontconfig's cache.
-pub fn remove_files(root: &Path, id: &str) -> Result<()> {
+///
+/// # Errors
+/// Fails when the files cannot be removed. A failed cache refresh is not an
+/// error (fontconfig rescans changed folders by itself): the text of the
+/// warning is returned in `Ok(Some(..))`.
+pub fn remove_files(root: &Path, id: &str) -> Result<Option<String>> {
     let dir = root.join(id);
     if dir.exists() {
         std::fs::remove_dir_all(&dir).with_context(|| format!("removing {}", dir.display()))?;
-        let _ = low("fc-cache").arg(root).output();
+        return Ok(refresh_warning("fc-cache", root));
+    }
+    Ok(None)
+}
+
+/// The warning text when the cache refresh fails, else `None`. The files are
+/// fine in that case: fontconfig rescans a changed font folder by itself, and
+/// fc-cache can fail because of an unrelated broken font.
+fn refresh_warning(program: &str, root: &Path) -> Option<String> {
+    refresh_font_cache(program, root)
+        .err()
+        .map(|e| format!("the font cache was not refreshed: {e:#}"))
+}
+
+/// Runs `program` (fc-cache) on `root` so that fontconfig sees the changed fonts.
+fn refresh_font_cache(program: &str, root: &Path) -> Result<()> {
+    let out = low(program)
+        .arg(root)
+        .output()
+        .with_context(|| format!("running {program}: is it installed?"))?;
+    if !out.status.success() {
+        bail!(
+            "{program} failed for {}: {}",
+            root.display(),
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
     }
     Ok(())
 }
@@ -261,6 +299,35 @@ mod tests {
     }
 
     #[test]
+    fn a_failed_font_cache_refresh_is_reported() {
+        let root = std::env::temp_dir();
+        let err = refresh_font_cache("false", &root).unwrap_err();
+        assert!(format!("{err:#}").contains("false failed"), "{err:#}");
+        let err = refresh_font_cache("theme-studio-no-such-program", &root).unwrap_err();
+        assert!(
+            format!("{err:#}").contains("theme-studio-no-such-program failed"),
+            "{err:#}"
+        );
+        refresh_font_cache("true", &root).unwrap();
+    }
+
+    #[test]
+    fn a_failed_cache_refresh_is_a_warning_and_the_files_stay() {
+        let root = std::env::temp_dir().join(format!("theme-studio-warn-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let warning = refresh_warning("false", &root).unwrap();
+        assert!(
+            warning.contains("font cache was not refreshed"),
+            "{warning}"
+        );
+        assert!(root.exists());
+        assert_eq!(refresh_warning("true", &root), None);
+        // a remove with a missing folder is fine and has no warning
+        assert_eq!(remove_files(&root, "no-such-font").unwrap(), None);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn sri_hashes_in_the_form_nix_expects() {
         let d = std::env::temp_dir().join(format!("theme-studio-sri-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
@@ -279,7 +346,7 @@ mod tests {
     // Long function: an ignored test that installs from the network in order (download, check, remove); each step needs the files of the step before.
     fn live_installs() {
         let root = std::env::temp_dir().join(format!("theme-studio-live-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&root);
+        remove_dir_if_present(&root);
         let (tx, rx) = channel_pair();
         let fs = cached("fontsource.json", "https://api.fontsource.org/v1/fonts").unwrap();
         let all = parse_fontsource(&fs);

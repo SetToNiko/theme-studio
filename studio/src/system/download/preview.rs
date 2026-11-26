@@ -9,7 +9,7 @@ use anyhow::{Context, Result, anyhow};
 
 use super::install::install_nerd;
 use super::net::fetch;
-use super::{Entry, Msg, Source, low};
+use super::{Entry, Msg, Source, low, notify, remove_dir_if_present, remove_file_if_present};
 use crate::model::paths::{
     SYSTEM_FONTCONFIG, download_cache_dir, installed_fonts_dir, preview_cache_dir,
 };
@@ -22,6 +22,7 @@ pub fn migrate_previews() {
         return;
     }
     if let Some(parent) = new.parent() {
+        // Ignored on purpose: if the folder is missing, the rename below fails and the old previews stay.
         let _ = std::fs::create_dir_all(parent);
     }
     // on another file system the old ones stay (and are fetched again)
@@ -49,6 +50,8 @@ pub fn preview_fontconfig_for(id: &str) -> PathBuf {
         download_cache_dir().join("fontconfig").display()
     );
     if std::fs::read_to_string(&path).ok().as_deref() != Some(conf.as_str()) {
+        // Ignored on purpose: the callers take the path either way, and a font
+        // that does not draw falls back to the default font in the preview.
         let _ = std::fs::create_dir_all(&dir);
         let _ = std::fs::write(&path, conf);
     }
@@ -78,7 +81,8 @@ pub fn previews_size() -> u64 {
 
 /// Deletes every preview font (they're fetched again when needed).
 pub fn clear_previews() -> Result<()> {
-    let _ = std::fs::remove_dir_all(download_cache_dir().join("fontconfig-confs"));
+    // The setups are made again when a preview needs one.
+    remove_dir_if_present(&download_cache_dir().join("fontconfig-confs"));
     let dir = preview_cache_dir();
     if dir.exists() {
         std::fs::remove_dir_all(&dir).with_context(|| format!("removing {}", dir.display()))?;
@@ -96,11 +100,12 @@ fn keep_regular_only(dir: &Path) {
         for e in entries.flatten() {
             let p = e.path();
             if p != keep {
-                let _ = if p.is_dir() {
-                    std::fs::remove_dir_all(&p)
+                // A file that stays only takes disk space.
+                if p.is_dir() {
+                    remove_dir_if_present(&p);
                 } else {
-                    std::fs::remove_file(&p)
-                };
+                    remove_file_if_present(&p);
+                }
             }
         }
     }
@@ -147,12 +152,15 @@ pub fn fetch_preview(e: Entry, tx: Sender<Msg>) {
         let dir = preview_cache_dir().join(&e.id);
         let result = fetch_preview_family(&e, &dir, &tx);
         if result.is_err() {
-            let _ = std::fs::remove_dir_all(&dir);
+            remove_dir_if_present(&dir);
         }
-        let _ = tx.send(Msg::Preview {
-            id: e.id.clone(),
-            result: result.map_err(|e| format!("{e:#}")),
-        });
+        notify(
+            &tx,
+            Msg::Preview {
+                id: e.id.clone(),
+                result: result.map_err(|e| format!("{e:#}")),
+            },
+        );
     });
 }
 
@@ -194,7 +202,7 @@ pub fn scan_installed(id: String, tx: Sender<Msg>) {
             .and_then(|f| {
                 family_of(&f).ok_or_else(|| format!("no family name in {}", f.display()))
             });
-        let _ = tx.send(Msg::Preview { id, result });
+        notify(&tx, Msg::Preview { id, result });
     });
 }
 

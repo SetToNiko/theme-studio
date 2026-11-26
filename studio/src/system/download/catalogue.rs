@@ -6,7 +6,7 @@ use std::sync::mpsc::Sender;
 use serde_json::Value;
 
 use super::net::cached;
-use super::{Catalogue, Entry, Msg, Source};
+use super::{Catalogue, Entry, Msg, Source, notify};
 
 /// Fontsource's font list.
 pub fn parse_fontsource(v: &Value) -> Vec<Entry> {
@@ -106,7 +106,7 @@ pub fn load_catalogue(tx: Sender<Msg>) {
                 })
             }
         };
-        let _ = tx.send(Msg::Catalogue(result));
+        notify(&tx, Msg::Catalogue(result));
     });
 }
 
