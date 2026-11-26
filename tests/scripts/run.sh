@@ -88,7 +88,9 @@ EOF
 # Runs one case. Arguments: case name, then the command line (env assignments
 # first are allowed, as in "FONT_SIZES=16 font-switch.sh name").
 # A function setup_<case> (with "-" changed to "_") runs first, if it exists.
-# It gets HOME (the case's home folder) and DATA (the case's data folder).
+# It gets HOME (the case's home folder), DATA (the case's data folder), and
+# CASE_DIR (the case's own folder). Programs that it puts in $CASE_DIR/bin come
+# first in the PATH of that case only.
 run_case() {
   local name=$1
   shift
@@ -100,7 +102,7 @@ run_case() {
 
   local setup="setup_${name//-/_}"
   if declare -F "$setup" > /dev/null; then
-    HOME="$home" DATA="$dir/data" "$setup"
+    HOME="$home" DATA="$dir/data" CASE_DIR="$dir" "$setup"
   fi
 
   # Wait for background jobs too (a script may start a command with &):
@@ -110,7 +112,7 @@ run_case() {
   (
     status=0
     env -i HOME="$home" XDG_CONFIG_HOME="$home/.config" TMPDIR="$work" \
-      PATH="$work/stubs:$work/tools" CALLS_LOG="$dir/calls.log" \
+      PATH="$dir/bin:$work/stubs:$work/tools" CALLS_LOG="$dir/calls.log" \
       THEME_STUDIO_DATA="$dir/data" THEME_STUDIO_SHARE="$share" \
       "$@" > "$dir/stdout" 2> "$dir/stderr" || status=$?
     echo "$status" > "$dir/status"
@@ -134,10 +136,34 @@ run_case() {
 # ---- Cases ------------------------------------------------------------------
 # Each case: a name and the command. Add new cases here.
 
+# Ghostty installed (a stub in this case's PATH only), with a Ghostty theme
+# of the palette's name: theme-switch keeps the `theme = NAME` line.
+setup_theme_switch_ghostty_theme() {
+  make_ghostty_stub
+  mkdir -p "$CASE_DIR/share/ghostty/themes"
+  echo "# a Ghostty theme" > "$CASE_DIR/share/ghostty/themes/CRT Amber"
+}
+
+# Ghostty installed, but no theme of that name: the palette sets the cursor
+# and selection colours too (terminal-colors.json, "without_theme").
+setup_theme_switch_ghostty_no_theme() {
+  make_ghostty_stub
+}
+
+# A ghostty stub in $CASE_DIR/bin. The scripts find its themes folder
+# beside it: $CASE_DIR/share/ghostty/themes.
+make_ghostty_stub() {
+  mkdir -p "$CASE_DIR/bin"
+  printf '#!%s\necho "ghostty $*" >> "$CALLS_LOG"\n' "$(command -v bash)" > "$CASE_DIR/bin/ghostty"
+  chmod +x "$CASE_DIR/bin/ghostty"
+}
+
 cases_theme_switch() {
   run_case theme-switch-palette bash "$scripts/theme-switch.sh" "CRT Amber"
   run_case theme-switch-no-restart env NO_RESTART=1 bash "$scripts/theme-switch.sh" "0x96f"
   run_case theme-switch-unknown bash "$scripts/theme-switch.sh" "No Such Palette"
+  run_case theme-switch-ghostty-theme bash "$scripts/theme-switch.sh" "CRT Amber"
+  run_case theme-switch-ghostty-no-theme bash "$scripts/theme-switch.sh" "0x96f"
   run_case theme-switch-no-name bash "$scripts/theme-switch.sh"
 }
 

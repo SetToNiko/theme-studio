@@ -63,7 +63,7 @@ Theme Studio has a 25k-line Rust TUI (35 modules in one flat folder) and 4 bash 
 | `scripts/themes-switch.sh` | Switch theme | picker, runs font-switch then theme-switch | lib/paths.sh, lib/rofi-picker.sh |
 | `scripts/lib/paths.sh` | Where scripts find things | data_file, share_file | none |
 | `scripts/lib/rofi-picker.sh` | Shared rofi menu | json_picker, json_data, delete | none |
-| `share/` | Data for scripts and studio | terminal-colors.json, palette-derive.jq, pywalfox-colors.jq | none |
+| `share/` | Data for scripts and studio | terminal-colors.json, palette-derive.jq, integrations.json, integrations/ (generators) | none |
 | `packaging/nix/` | Nix package and modules | package, home-manager module, NixOS module, fonts | none |
 
 Cycles: app ↔ {behaviour, draft, fonts_dl, fonts_preview, hit, prefetch, presets, settings, theme, tour_page, ui, …}; ui ↔ settings_ui, fonts_ui; fonts ↔ keymap, fonts_pick, font_tree; fonts_dl ↔ fonts_preview; paths ↔ store (tests only).
@@ -151,7 +151,7 @@ Completes: criterion 3 for the Rust code. For the scripts, the per-app paths (GT
 
 ### Phase 2: App integrations as data
 - [x] P2.1 Runner and list format: `integrations.json` with the i3 and rofi theme outputs. theme-switch uses the runner | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `scripts/theme-switch.sh`, `share/integrations/i3-colors.jq`, `share/integrations/rofi-colors.jq` | Target: goal 2, T2 | Check: golden tests unchanged
-- [ ] P2.2 colors.sh, Ghostty, and Pywalfox theme outputs in the list (Ghostty theme-line check as a hook; `share/pywalfox-colors.jq` moves to `share/integrations/` with `git mv`) | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `share/integrations/shell-colors.jq`, `share/integrations/ghostty-colors.sh`, `scripts/theme-switch.sh` | Target: goal 2 | Check: golden tests unchanged
+- [x] P2.2 colors.sh, Ghostty, and Pywalfox theme outputs in the list (Ghostty theme-line check as a hook; `share/pywalfox-colors.jq` moves to `share/integrations/` with `git mv`) | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `share/integrations/shell-colors.jq`, `share/integrations/ghostty-colors.sh`, `scripts/theme-switch.sh` | Target: goal 2 | Check: golden tests unchanged
 - [ ] P2.3 Ghostty, i3, and rofi font outputs in the list | Files: `share/integrations.json`, `scripts/font-switch.sh`, `share/integrations/ghostty-font.tmpl`, `i3-font.tmpl`, `rofi-font.tmpl` | Target: goal 2 | Check: golden tests unchanged
 - [ ] P2.4 Lock screen, GTK, and fontconfig font outputs as hooks | Files: `share/integrations.json`, `scripts/font-switch.sh`, `share/integrations/lock-font.tmpl`, `gtk-font.sh`, `fontconfig-font.sh` | Target: goal 2 | Check: golden tests unchanged
 - [ ] P2.6 One reload location: reload commands come from the list, `reload_apps` runs them one time. themes-switch reloads once for both | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: rule 2 | Check: golden reload logs unchanged

@@ -12,6 +12,24 @@
       "outputs": [
         { "kind": "jq", "dir": "colors_dir", "file": "rofi.rasi", "generator": "rofi-colors.jq" }
       ]
+    },
+    {
+      "name": "shell",
+      "outputs": [
+        { "kind": "jq", "dir": "colors_dir", "file": "colors.sh", "generator": "shell-colors.jq" }
+      ]
+    },
+    {
+      "name": "ghostty",
+      "outputs": [
+        { "kind": "hook", "dir": "colors_dir", "file": "ghostty", "generator": "ghostty-colors.sh" }
+      ]
+    },
+    {
+      "name": "pywalfox",
+      "outputs": [
+        { "kind": "jq", "dir": "cache_dir", "file": "colors.json", "generator": "pywalfox-colors.jq" }
+      ]
     }
   ]
 }
