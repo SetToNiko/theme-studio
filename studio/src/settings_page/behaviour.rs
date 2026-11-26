@@ -2,7 +2,7 @@
 //! (Keys, Layout, Messages, Hover, Palette pane, Derived colours, Fonts pane).
 //!
 //! The test module below also tests the `App` methods of
-//! `app/behaviour_actions.rs` (it builds an `App`).
+//! `app/pages/settings/behaviour_*actions.rs` (it builds an `App`).
 
 use crate::app::state::nav::{BhRow, LookId};
 use crate::model::palette::GROUPS;
