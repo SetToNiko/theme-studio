@@ -213,6 +213,12 @@ Completes: criterion 6
 - `set -euo pipefail` in the scripts: it changes behavior.
 - Splitting `settings_ui.rs`, `download.rs`, `tour_page.rs`, `behaviour.rs`, `fonts_dl.rs`, `samples.rs` (finding 7): a later plan revision decides.
 
+**Future refactors** (not in this refactor; noted on 2026-11-26):
+- **Terminal independence:** Theme Studio should work with terminals other than Ghostty. Isolate the terminal from the utility:
+  - Configured terminals: after Phase 2, a terminal is one entry in `share/integrations.json` plus a generator. Check that nothing outside the list names Ghostty: `share/terminal-colors.json` (shared by the scripts and the preview, built around Ghostty's 16 colours and theme names), the Ghostty theme-folder check (`share/integrations/ghostty-colors.sh`), and the `pkill -USR2 ghostty` reload (P2.6 moves it into the list).
+  - The terminal that the studio runs in: the studio uses the kitty graphics protocol for font previews (half blocks otherwise) and the terminal's own colours. Put this behind one small interface, so the studio does not assume the terminal that it runs in.
+  - The preview draws a Ghostty-style terminal: part of the "preview per app" feature.
+
 **Handover** (goal change, Phase R). After the removals, the dotfiles must provide these. No dotfiles change in this refactor.
 - Wallpaper border colour (R.1): run `wallpaper-rotate refresh` after a theme switch, for example in a dotfiles wrapper around `theme-switch`, or a watch on `~/.config/colors/current`.
 - Login screen (R.2, R.3): remove `services.theme-studio.loginFont` from the NixOS configuration. Set the greeter font in the dotfiles.
