@@ -26,6 +26,7 @@ pub mod pick;
 pub mod presets;
 pub mod preview_page;
 pub mod render;
+pub mod tournament_page;
 pub mod tree;
 pub mod types;
 

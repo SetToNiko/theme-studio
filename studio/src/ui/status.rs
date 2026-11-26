@@ -223,7 +223,7 @@ fn downloads_hints(app: &App) -> Vec<String> {
 /// The tournament rows: one list per stage, or the bracket view.
 // Long function: one match over the 4 tournament stages plus the bracket view.
 fn tournament_rows(app: &App) -> Rows<'static> {
-    use crate::tour_page::Stage;
+    use crate::fonts::tournament_page::Stage;
     let stage = app.tour_page.as_ref().map_or(Stage::Setup, |t| t.stage);
     let bracket = app.tour_page.as_ref().is_some_and(|t| t.bracket);
     match stage {
@@ -283,7 +283,7 @@ fn settings_hints(app: &App) -> Vec<String> {
 /// The settings rows for the current tab.
 // Long function: one match over the 5 settings tabs, each arm a row table.
 fn settings_rows(app: &App) -> Rows<'static> {
-    use crate::settings::Tab;
+    use crate::settings_page::Tab;
     match app.settings_page.tab {
         Tab::Keymaps if app.settings_page.browse.is_some() => vec![
             (&[A::Down, A::Up], "presets"),

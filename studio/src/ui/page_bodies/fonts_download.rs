@@ -9,9 +9,9 @@ use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use serde_json::Value;
 
 use crate::app::App;
+use crate::app::state::hit::{Target, hover, hover_line, hover_row};
 use crate::download::Source;
 use crate::fonts::download_page::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb};
-use crate::hit::{Target, hover, hover_line, hover_row};
 
 fn status_span(s: &DlStatus) -> Span<'static> {
     match s {
@@ -346,7 +346,10 @@ fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {
         }
         // the cursor covers the text, not padding or swatches
         let (line, style) = if on {
-            (crate::hit::cursor_line(line, style), Style::new())
+            (
+                crate::app::state::hit::cursor_line(line, style),
+                Style::new(),
+            )
         } else {
             (line, style)
         };

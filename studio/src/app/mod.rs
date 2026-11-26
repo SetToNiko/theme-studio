@@ -67,7 +67,7 @@ pub struct App {
     pub messages: Messages,
     pub overlay: Overlay,
     /// What's clickable where (from the last draw), and where the mouse is.
-    pub hits: crate::hit::HitMap,
+    pub hits: crate::app::state::hit::HitMap,
     /// The pointer is currently the hand (OSC 22).
     pointer_hand: bool,
     pub preview: Preview,
@@ -97,9 +97,9 @@ pub struct App {
     /// The Download fonts page.
     pub dl: crate::fonts::download_page::DlPage,
     /// The Fonts page's Tournament tab (made on first use).
-    pub tour_page: Option<crate::tour_page::TourPage>,
+    pub tour_page: Option<crate::fonts::tournament_page::TourPage>,
     /// The Settings page's tabs and selections.
-    pub settings_page: crate::settings::SettingsPage,
+    pub settings_page: crate::settings_page::SettingsPage,
     /// Keys of a sequence typed so far (e.g. the leader), waiting for the rest.
     pub pending_keys: Vec<Key>,
     /// What the Open / Save as pop-up is for.

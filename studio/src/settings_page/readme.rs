@@ -1,4 +1,4 @@
-//! The Settings page's README tab: docs/theme-studio.md (found by
+//! The Settings page's README tab (`settings_page/`): docs/theme-studio.md (found by
 //! model/paths.rs `guide`, read when the tab opens), rendered from Markdown into
 //! styled lines wrapped to the pane: headings, paragraphs, lists, block
 //! quotes, code, tables and rules. Headings are remembered so `}` / `{` can

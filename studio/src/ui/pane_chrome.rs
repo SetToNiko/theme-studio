@@ -11,7 +11,7 @@ use ratatui::style::Style;
 use ratatui::text::Line;
 
 use crate::app::App;
-use crate::hit::{Target, hover};
+use crate::app::state::hit::{Target, hover};
 
 /// A pane's border: yellow when it has the keyboard, the hover colour when
 /// the mouse is over it, else grey.
@@ -19,7 +19,7 @@ pub fn pane_border(app: &App, area: Rect, focused: bool) -> Style {
     if focused {
         Style::new().yellow()
     } else if app.pane_hovered(area) {
-        Style::new().fg(crate::hit::looks().pane)
+        Style::new().fg(crate::app::state::hit::looks().pane)
     } else {
         Style::new().dark_gray()
     }

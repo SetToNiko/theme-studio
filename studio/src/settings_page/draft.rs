@@ -1,4 +1,4 @@
-//! Unsaved Settings page changes. Keymap and Behaviour edits go to a draft;
+//! Unsaved Settings page changes (`settings_page/`). Keymap and Behaviour edits go to a draft;
 //! nothing is written or takes effect until Save (the preset's Save key, or
 //! the button). Discard drops the draft; quitting with one asks first.
 //!

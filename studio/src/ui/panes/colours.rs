@@ -10,8 +10,8 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
 use crate::app::App;
+use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
-use crate::hit::{Target, hover};
 use crate::model::color::{self, Rgb};
 use crate::model::palette::{self, GROUPS, TEXT_KEYS};
 use crate::ui::pane_chrome::pane_title;
@@ -118,7 +118,7 @@ fn group_line(
     ]);
     // a closed group stands in for its related keys
     if !expanded && keys.iter().any(|k| related.contains(k)) {
-        line.patch_style(crate::hit::derived(Style::new()))
+        line.patch_style(crate::app::state::hit::derived(Style::new()))
     } else {
         line
     }
@@ -154,7 +154,7 @@ fn key_line(
     };
     let mut spans = vec!["  ".into(), marker, " ".into()];
     // the cursor on the name, not the padding before the swatch
-    spans.extend(crate::hit::cursor_spans(
+    spans.extend(crate::app::state::hit::cursor_spans(
         format!("{key:<16}"),
         Style::new(),
         name_style,
@@ -174,7 +174,7 @@ fn key_line(
         spans.push(contrast_span(c, app.editor.palette.get("bg0")));
     }
     if related.contains(&key) {
-        Line::from(spans).patch_style(crate::hit::derived(Style::new()))
+        Line::from(spans).patch_style(crate::app::state::hit::derived(Style::new()))
     } else {
         Line::from(spans)
     }
@@ -225,7 +225,7 @@ fn add_row_hits<'a>(
                     Some(ColourRow::Group { .. }) => 1,
                     _ => 3,
                 };
-                crate::hit::hover_line(line, name)
+                crate::app::state::hit::hover_line(line, name)
             } else {
                 line
             }
@@ -241,7 +241,7 @@ fn draw_palette_menu(f: &mut Frame, app: &mut App, area: Rect, cursor: bool) {
     let hit = Rect { width: w, ..area };
     let base = Style::new().yellow().bold();
     let mut spans = if cursor {
-        crate::hit::cursor_spans(text, base, Style::new().reversed())
+        crate::app::state::hit::cursor_spans(text, base, Style::new().reversed())
     } else {
         vec![Span::styled(text, base)]
     };

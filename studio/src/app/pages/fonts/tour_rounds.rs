@@ -4,14 +4,14 @@
 //!
 //! This is another `impl App { ... }` block (see `fonts_preview_actions.rs`
 //! for the same style). The set-up and fetching are in `tour_actions.rs`;
-//! `tour_page.rs` keeps the tab's own data and the bracket is in `model/tournament.rs`.
+//! `fonts/tournament_page.rs` keeps the tab's own data and the bracket is in `model/tournament.rs`.
 
 use crate::app::App;
 use crate::download;
+use crate::fonts::tournament_page::Stage;
 use crate::keymap::action::Action;
 use crate::model::samples::{self, Kind};
 use crate::model::tournament::{self, Tournament};
-use crate::tour_page::Stage;
 
 impl App {
     /// Asks pane `i` to show entrant `who`, and picks up a finished image.

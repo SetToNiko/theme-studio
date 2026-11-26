@@ -8,12 +8,12 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use crate::app::App;
+use crate::app::state::hit::{Target, hover, hover_line, hover_row};
 use crate::app::state::nav::{BhRow, LookId};
-use crate::hit::{Target, hover, hover_line, hover_row};
 use crate::keymap::Keymap;
 use crate::keymap::key::display_seq;
 use crate::model::color::Rgb;
-use crate::settings::{DiffLine, FILES, HistFocus, KmRow, TABS, Tab};
+use crate::settings_page::{DiffLine, FILES, HistFocus, KmRow, TABS, Tab};
 
 /// Keeps `sel` on screen in a list `height` rows tall.
 fn follow(scroll: &mut usize, sel: usize, height: usize) {
@@ -145,7 +145,7 @@ fn draw_readme(f: &mut Frame, app: &mut App, area: Rect) {
     };
     let width = area.width.saturating_sub(3).min(100);
     if p.readme_doc.as_ref().is_none_or(|(w, _)| *w != width) {
-        p.readme_doc = Some((width, crate::docs::render(text, width)));
+        p.readme_doc = Some((width, crate::settings_page::readme::render(text, width)));
     }
     let doc = &p.readme_doc.as_ref().unwrap().1;
     let last = doc.lines.len().saturating_sub(1);
@@ -210,9 +210,9 @@ fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
                 (d, p)
             }
         };
-        return crate::presets::draw_browse(
+        return crate::settings_page::keymap_presets::draw_browse(
             f,
-            crate::presets::BrowseParts {
+            crate::settings_page::keymap_presets::BrowseParts {
                 hits: &mut app.hits,
                 presets: &app.presets,
                 keymap: &app.keymap,
@@ -322,7 +322,10 @@ fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
         }
         // the cursor covers the text, not padding or swatches
         let (line, style) = if on {
-            (crate::hit::cursor_line(line, style), Style::new())
+            (
+                crate::app::state::hit::cursor_line(line, style),
+                Style::new(),
+            )
         } else {
             (line, style)
         };
@@ -402,10 +405,11 @@ fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
 const VALUE_W: usize = 20;
 
 fn draw_behaviour(f: &mut Frame, app: &mut App, area: Rect) {
-    let rows = crate::behaviour::visible_behaviour_rows(&app.settings_page.bh_closed);
+    let rows =
+        crate::settings_page::behaviour::visible_behaviour_rows(&app.settings_page.bh_closed);
     // the cursor never rests on a blank line or a sample
     if !rows[app.settings_page.bh_sel.min(rows.len() - 1)].selectable() {
-        app.settings_page.bh_sel = crate::behaviour::selectable_ends(&rows).0;
+        app.settings_page.bh_sel = crate::settings_page::behaviour::selectable_ends(&rows).0;
     }
     let sel = app.settings_page.bh_sel.min(rows.len() - 1);
     // the list scrolls; a note stays below it
@@ -530,7 +534,10 @@ fn draw_behaviour(f: &mut Frame, app: &mut App, area: Rect) {
         }
         // the cursor covers the text, not padding or swatches
         let (line, style) = if on {
-            (crate::hit::cursor_line(line, style), Style::new())
+            (
+                crate::app::state::hit::cursor_line(line, style),
+                Style::new(),
+            )
         } else {
             (line, style)
         };
@@ -586,7 +593,10 @@ fn draw_history(f: &mut Frame, app: &mut App, area: Rect) {
         }
         // the cursor covers the text, not padding or swatches
         let (line, style) = if on {
-            (crate::hit::cursor_line(line, style), Style::new())
+            (
+                crate::app::state::hit::cursor_line(line, style),
+                Style::new(),
+            )
         } else {
             (line, style)
         };
@@ -650,7 +660,10 @@ fn draw_history(f: &mut Frame, app: &mut App, area: Rect) {
         }
         // the cursor covers the text, not padding or swatches
         let (line, style) = if on {
-            (crate::hit::cursor_line(line, style), Style::new())
+            (
+                crate::app::state::hit::cursor_line(line, style),
+                Style::new(),
+            )
         } else {
             (line, style)
         };

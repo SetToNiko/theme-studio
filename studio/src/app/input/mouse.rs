@@ -8,16 +8,16 @@
 //! `handle_mouse`, which checks the notice box and the pop-ups first, then
 //! sends the event by kind: scroll, left button down, drag, or button up. A
 //! click goes to `click`, which looks at the target under the pointer
-//! ([`crate::hit::Target`]) and calls one method for that kind of target.
+//! ([`crate::app::state::hit::Target`]) and calls one method for that kind of target.
 
 use ratatui::crossterm::event::{
     KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
 };
 use ratatui::layout::Rect;
 
+use crate::app::state::hit::Target as T;
 use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
 use crate::app::{App, PreviewMode};
-use crate::hit::Target as T;
 use crate::keymap::action::Action;
 
 /// Where `v` lies between `start` and the end of a control that is `len` cells long (0.0 to 1.0).
@@ -275,7 +275,7 @@ impl App {
         if let Overlay::ChooseKey { row, sel, original } = &self.overlay {
             let (row, sel, original) = (*row, *sel, original.clone());
             // a click previews the key; a second click keeps it
-            let key = crate::behaviour::theme_keys()[i];
+            let key = crate::settings_page::behaviour::theme_keys()[i];
             if sel == i {
                 self.overlay = Overlay::None;
             } else {

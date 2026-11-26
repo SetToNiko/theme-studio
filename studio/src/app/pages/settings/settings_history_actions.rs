@@ -3,7 +3,7 @@
 //!
 //! This is another `impl App { ... }` block (see `settings_actions.rs`). The
 //! history types (`HistFocus`, `DiffView`, `DiffLine`, `diff_lines`) stay in
-//! `settings.rs`; this file only holds the methods that need the whole `App`.
+//! `settings_page/mod.rs`; this file only holds the methods that need the whole `App`.
 
 use std::path::PathBuf;
 
@@ -14,7 +14,7 @@ use crate::app::state::nav::{Deferred, Naming};
 use crate::keymap::action::Action;
 use crate::model::color::Rgb;
 use crate::model::history::{History, SnapshotInfo};
-use crate::settings::{Colours, DiffView, FILES, HistFocus, diff_lines};
+use crate::settings_page::{Colours, DiffView, FILES, HistFocus, diff_lines};
 
 impl App {
     /// The selected file's versions (named first, then newest first);

@@ -572,7 +572,7 @@ fn mouse(app: &mut App, kind: MouseEventKind, x: u16, y: u16) {
 }
 
 /// Clicks the middle of wherever `t` was last drawn.
-fn click_on(app: &mut App, t: crate::hit::Target) {
+fn click_on(app: &mut App, t: crate::app::state::hit::Target) {
     let r = app
         .hits
         .rect_of(t)
@@ -585,7 +585,7 @@ fn click_on(app: &mut App, t: crate::hit::Target) {
 
 #[test]
 fn hover_highlights_and_clicks_through_the_click_map() {
-    use crate::hit::Target as T;
+    use crate::app::state::hit::Target as T;
     let mut app = test_app(temp_store("mouse"), Start::Named("One".into()));
     let mut t = Terminal::new(TestBackend::new(200, 50)).unwrap();
     let mut draw = |app: &mut App| {
@@ -670,7 +670,7 @@ fn hover_highlights_and_clicks_through_the_click_map() {
 
 #[test]
 fn borders_drag_and_resize_mode_moves_edges() {
-    use crate::hit::{BorderId as B, Target as T};
+    use crate::app::state::hit::{BorderId as B, Target as T};
     let mut app = test_app(temp_store("resize"), Start::Named("One".into()));
     render(&mut app, 200, 50);
     // drag the border between fonts and colours 10 columns right
@@ -886,7 +886,7 @@ fn every_window_size_renders() {
 
 #[test]
 fn settings_changes_wait_for_save() {
-    use crate::settings::KmRow;
+    use crate::settings_page::KmRow;
     let store = temp_store("settings-keys");
     let dir = store.dir.clone();
     crate::model::history::init_for_test(dir.join("history"));
@@ -990,14 +990,14 @@ fn settings_changes_wait_for_save() {
 #[test]
 fn settings_behaviour_tab_edits_then_saves() {
     use crate::app::state::nav::BhRow;
-    use crate::behaviour::behaviour_rows;
+    use crate::settings_page::behaviour::behaviour_rows;
     let store = temp_store("settings-behaviour");
     let dir = store.dir.clone();
     crate::model::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
     app.page = Page::Settings;
     render(&mut app, 160, 45);
-    click_on(&mut app, crate::hit::Target::SettingsTab(1));
+    click_on(&mut app, crate::app::state::hit::Target::SettingsTab(1));
     let screen = render(&mut app, 160, 45);
     assert!(
         screen.contains("Page tabs") && screen.contains("‹ bottom ›"),
@@ -1012,12 +1012,15 @@ fn settings_behaviour_tab_edits_then_saves() {
     // changing it back leaves nothing unsaved
     render(&mut app, 160, 45);
     let i = app.settings_page.bh_sel;
-    click_on(&mut app, crate::hit::Target::SettingsRow(i));
+    click_on(&mut app, crate::app::state::hit::Target::SettingsRow(i));
     assert!(app.settings_page.draft.is_none());
     // again, then the Save button
     press(&mut app, "l");
     render(&mut app, 160, 45);
-    click_on(&mut app, crate::hit::Target::SettingsButton('s'));
+    click_on(
+        &mut app,
+        crate::app::state::hit::Target::SettingsButton('s'),
+    );
     assert_eq!(app.settings.layout.tabs, "top");
     assert_eq!(on_disk(&dir).settings.layout.tabs, "top");
     // the current pane sizes become the default when saved
@@ -1029,7 +1032,10 @@ fn settings_behaviour_tab_edits_then_saves() {
     app.settings_page.bh_sel = rows.iter().position(|r| *r == BhRow::Tabs).unwrap();
     press(&mut app, "l");
     render(&mut app, 160, 45);
-    click_on(&mut app, crate::hit::Target::SettingsButton('d'));
+    click_on(
+        &mut app,
+        crate::app::state::hit::Target::SettingsButton('d'),
+    );
     assert!(app.settings_page.draft.is_none());
     assert_eq!(app.settings.layout.tabs, "top");
     std::fs::remove_dir_all(dir).unwrap();
@@ -1037,7 +1043,7 @@ fn settings_behaviour_tab_edits_then_saves() {
 
 #[test]
 fn settings_history_tab_previews_restores_and_names_versions() {
-    use crate::settings::DiffLine;
+    use crate::settings_page::DiffLine;
     let store = temp_store("settings-history");
     let dir = store.dir.clone();
     crate::model::history::init_for_test(dir.join("history"));
@@ -1047,13 +1053,13 @@ fn settings_history_tab_previews_restores_and_names_versions() {
     app.save(false);
     app.page = Page::Settings;
     render(&mut app, 160, 45);
-    click_on(&mut app, crate::hit::Target::SettingsTab(2));
+    click_on(&mut app, crate::app::state::hit::Target::SettingsTab(2));
     // palettes.json in the file list
-    app.settings_page.hist_file = crate::settings::FILES
+    app.settings_page.hist_file = crate::settings_page::FILES
         .iter()
         .position(|f| *f == "palettes.json")
         .unwrap();
-    assert_eq!(app.settings_page.tab, crate::settings::Tab::History);
+    assert_eq!(app.settings_page.tab, crate::settings_page::Tab::History);
     let versions = app.versions();
     assert_eq!(versions.len(), 1);
     // red, and the colours derived from it
@@ -1081,7 +1087,7 @@ fn settings_history_tab_previews_restores_and_names_versions() {
     press(&mut app, "r");
     assert!(matches!(app.overlay, Overlay::Ask { .. }));
     render(&mut app, 160, 45);
-    click_on(&mut app, crate::hit::Target::ConfirmChoice('y'));
+    click_on(&mut app, crate::app::state::hit::Target::ConfirmChoice('y'));
     assert_eq!(app.editor.palette.get("red"), before);
     assert!(!app.dirty());
     assert_eq!(
@@ -1110,7 +1116,7 @@ fn settings_history_tab_previews_restores_and_names_versions() {
     // other files: the list follows
     press(&mut app, "hj");
     assert_eq!(
-        crate::settings::FILES[app.settings_page.hist_file],
+        crate::settings_page::FILES[app.settings_page.hist_file],
         "fonts.json"
     );
     assert!(app.versions().is_empty());
@@ -1147,9 +1153,9 @@ fn ctrl_c_quits_unless_the_keymap_uses_it() {
 
 #[test]
 fn hover_look_is_configurable_and_pane_borders_light_up() {
+    use crate::app::state::hit::{Target as T, Underline};
     use crate::app::state::nav::{BhRow, LookId};
-    use crate::behaviour::behaviour_rows;
-    use crate::hit::{Target as T, Underline};
+    use crate::settings_page::behaviour::behaviour_rows;
     use ratatui::style::{Color, Modifier};
     let store = temp_store("hover-look");
     let dir = store.dir.clone();
@@ -1178,7 +1184,7 @@ fn hover_look_is_configurable_and_pane_borders_light_up() {
     );
     // Behaviour tab: highlight on, in bg3; curly underline; bold text
     app.page = Page::Settings;
-    app.settings_page.tab = crate::settings::Tab::Behaviour;
+    app.settings_page.tab = crate::settings_page::Tab::Behaviour;
     let rows = behaviour_rows();
     let at = |r: BhRow| rows.iter().position(|x| *x == r).unwrap();
     app.settings_page.bh_sel = at(BhRow::Highlight(LookId::Hover));
@@ -1189,7 +1195,7 @@ fn hover_look_is_configurable_and_pane_borders_light_up() {
     let screen = render(&mut app, 160, 45);
     assert!(screen.contains("Colour from the active theme"), "{screen}");
     // the list: move to bg3 and choose it
-    let target = crate::behaviour::theme_keys()
+    let target = crate::settings_page::behaviour::theme_keys()
         .iter()
         .position(|k| *k == "bg3")
         .unwrap();
@@ -1208,7 +1214,7 @@ fn hover_look_is_configurable_and_pane_borders_light_up() {
     let before = app.show_draft(|a| a.settings.hover.look.highlight_colour.clone());
     press(&mut app, "\n");
     // move to bg3 with the keys, Enter keeps it
-    let at_now = crate::behaviour::theme_keys()
+    let at_now = crate::settings_page::behaviour::theme_keys()
         .iter()
         .position(|k| *k == before)
         .unwrap();
@@ -1241,8 +1247,8 @@ fn hover_look_is_configurable_and_pane_borders_light_up() {
     );
     assert_eq!(looks.preview, Color::Rgb(7, 8, 9));
     // drawn: the marker that out::Out turns into a double underline
-    crate::hit::set_looks(looks);
-    let s = crate::hit::hover(ratatui::style::Style::new());
+    crate::app::state::hit::set_looks(looks);
+    let s = crate::app::state::hit::hover(ratatui::style::Style::new());
     assert!(
         s.add_modifier
             .contains(Modifier::RAPID_BLINK | Modifier::BOLD)
@@ -1256,13 +1262,13 @@ fn hover_look_is_configurable_and_pane_borders_light_up() {
     let saved = crate::config::load(&dir.join("studio-config"), false);
     assert_eq!(saved.settings.hover.look.underline, "double");
     assert_eq!(saved.settings.colours.derived_highlight.underline, "single");
-    crate::hit::set_looks(Default::default());
+    crate::app::state::hit::set_looks(Default::default());
     std::fs::remove_dir_all(dir).unwrap();
 }
 
 #[test]
 fn selecting_a_colour_lights_up_its_derivation_relatives() {
-    use crate::hit::Target as T;
+    use crate::app::state::hit::Target as T;
     let mut app = test_app(temp_store("related"), Start::Named("One".into()));
     let lit = |app: &mut App, key: &str| -> bool {
         let mut t = Terminal::new(TestBackend::new(200, 60)).unwrap();
@@ -1326,13 +1332,13 @@ fn settings_tabs_take_the_keyboard_at_the_list_edge() {
     press(&mut app, "k");
     assert!(app.settings_page.tabs_focused);
     press(&mut app, "l");
-    assert_eq!(app.settings_page.tab, crate::settings::Tab::Behaviour);
+    assert_eq!(app.settings_page.tab, crate::settings_page::Tab::Behaviour);
     assert!(render(&mut app, 160, 45).contains("back to the list"));
     press(&mut app, "j");
     assert!(!app.settings_page.tabs_focused);
     // the first row is the first group's title (groups fold open / shut)
     assert_eq!(
-        crate::behaviour::behaviour_rows()[app.settings_page.bh_sel],
+        crate::settings_page::behaviour::behaviour_rows()[app.settings_page.bh_sel],
         crate::app::state::nav::BhRow::Header("Keys")
     );
     press(&mut app, "jk");
@@ -1344,7 +1350,7 @@ fn settings_tabs_take_the_keyboard_at_the_list_edge() {
     press(&mut app, "j");
     assert!(app.settings_page.tabs_focused);
     press(&mut app, "l");
-    assert_eq!(app.settings_page.tab, crate::settings::Tab::History);
+    assert_eq!(app.settings_page.tab, crate::settings_page::Tab::History);
     press(&mut app, "k");
     assert!(!app.settings_page.tabs_focused);
     let screen = render(&mut app, 160, 45);
@@ -1381,7 +1387,7 @@ fn editing_a_base_colour_moves_its_unpinned_derived_colours_live() {
 
 #[test]
 fn preset_browser_previews_loads_creates_and_deletes() {
-    use crate::hit::Target as T;
+    use crate::app::state::hit::Target as T;
     let store = temp_store("presets");
     let dir = store.dir.clone();
     crate::model::history::init_for_test(dir.join("history"));
@@ -1480,10 +1486,10 @@ fn preset_browser_previews_loads_creates_and_deletes() {
 
 #[test]
 fn settings_groups_fold_and_only_names_are_underlined() {
+    use crate::app::state::hit::Target as T;
     use crate::app::state::nav::BhRow;
-    use crate::behaviour::visible_behaviour_rows;
-    use crate::hit::Target as T;
-    use crate::settings::KmRow;
+    use crate::settings_page::KmRow;
+    use crate::settings_page::behaviour::visible_behaviour_rows;
     let mut app = test_app(temp_store("fold"), Start::Named("One".into()));
     app.page = Page::Settings;
     // Keymaps: Enter on a group's title closes it, again opens it
@@ -1503,7 +1509,7 @@ fn settings_groups_fold_and_only_names_are_underlined() {
     press(&mut app, "k");
     assert_eq!(app.keymap_rows()[app.settings_page.km_sel], KmRow::Preset);
     // Behaviour: a click on the selected title folds it
-    app.settings_page.tab = crate::settings::Tab::Behaviour;
+    app.settings_page.tab = crate::settings_page::Tab::Behaviour;
     render(&mut app, 160, 45);
     let rows = visible_behaviour_rows(&app.settings_page.bh_closed);
     let hover = rows
@@ -1549,9 +1555,9 @@ fn settings_groups_fold_and_only_names_are_underlined() {
 
 #[test]
 fn download_page_lists_searches_and_removes() {
+    use crate::app::state::hit::Target as T;
     use crate::download::{Catalogue, Entry, Source};
     use crate::fonts::download_page::{DlRow, DlStatus, DlTab};
-    use crate::hit::Target as T;
     let store = temp_store("dl");
     let dir = store.dir.clone();
     crate::model::history::init_for_test(dir.join("history"));
@@ -1616,12 +1622,15 @@ fn download_page_lists_searches_and_removes() {
     assert_eq!(app.dl.preview.as_ref().unwrap().page, 0);
     // the wheel over the preview moves three lines
     render(&mut app, 160, 45);
-    let r = app.hits.rect_of(crate::hit::Target::DlPreview).unwrap();
+    let r = app
+        .hits
+        .rect_of(crate::app::state::hit::Target::DlPreview)
+        .unwrap();
     mouse(&mut app, MouseEventKind::ScrollDown, r.x + 2, r.y + 2);
     assert_eq!(app.dl.preview.as_ref().unwrap().page, 3);
     // the language dropdown: a click opens it on the current one,
     // a click on a row chooses (and starts at the top)
-    click_on(&mut app, crate::hit::Target::PreviewMenu(1));
+    click_on(&mut app, crate::app::state::hit::Target::PreviewMenu(1));
     assert!(matches!(
         app.overlay,
         Overlay::Menu {
@@ -1631,16 +1640,16 @@ fn download_page_lists_searches_and_removes() {
         }
     ));
     assert!(render(&mut app, 160, 45).contains(" Haskell "));
-    click_on(&mut app, crate::hit::Target::OverlayRow(10));
+    click_on(&mut app, crate::app::state::hit::Target::OverlayRow(10));
     assert_eq!(app.dl.preview.as_ref().unwrap().lang, 10);
     assert_eq!(app.dl.preview.as_ref().unwrap().page, 0);
     assert!(render(&mut app, 160, 45).contains("Code ▾  Haskell ▾"));
     // the kind dropdown: keys move, Enter chooses; a click outside closes
-    click_on(&mut app, crate::hit::Target::PreviewMenu(0));
+    click_on(&mut app, crate::app::state::hit::Target::PreviewMenu(0));
     press(&mut app, "j\n");
     assert!(matches!(app.overlay, Overlay::None));
     assert!(render(&mut app, 160, 45).contains("Preview  Icons ▾  13pt"));
-    click_on(&mut app, crate::hit::Target::PreviewMenu(0));
+    click_on(&mut app, crate::app::state::hit::Target::PreviewMenu(0));
     mouse(&mut app, MouseEventKind::Down(MouseButton::Left), 1, 1);
     assert!(matches!(app.overlay, Overlay::None));
     app.dl.preview.as_mut().unwrap().kind = Some(crate::model::samples::Kind::Code);
@@ -1913,7 +1922,7 @@ fn the_readme_tab_renders_scrolls_and_jumps_between_headings() {
     app.settings_page.readme = Some((None, Ok(md)));
     app.page = Page::Settings;
     press(&mut app, "]]]");
-    assert_eq!(app.settings_page.tab, crate::settings::Tab::Readme);
+    assert_eq!(app.settings_page.tab, crate::settings_page::Tab::Readme);
     let screen = render(&mut app, 120, 30);
     assert!(
         screen.contains("README") && screen.contains("Guide") && screen.contains("• line 0"),
@@ -2020,7 +2029,7 @@ fn status_line_hints_sit_at_the_right() {
 
 #[test]
 fn palette_list_hangs_from_its_row_and_previews() {
-    use crate::hit::Target as T;
+    use crate::app::state::hit::Target as T;
     let store = temp_store("palette-menu");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
@@ -2070,7 +2079,7 @@ fn palette_list_hangs_from_its_row_and_previews() {
 #[test]
 fn behaviour_tab_sets_up_prefetching() {
     use crate::app::state::nav::BhRow;
-    use crate::behaviour::behaviour_rows;
+    use crate::settings_page::behaviour::behaviour_rows;
     let store = temp_store("prefetch-rows");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
@@ -2195,13 +2204,13 @@ fn hints_and_previews_toggle_per_page() {
 #[test]
 fn behaviour_cursor_keeps_the_swatch() {
     use crate::app::state::nav::{BhRow, LookId};
-    use crate::behaviour::visible_behaviour_rows;
+    use crate::settings_page::behaviour::visible_behaviour_rows;
     use ratatui::style::Modifier;
     let store = temp_store("cursor-swatch");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
     app.page = Page::Settings;
-    app.settings_page.tab = crate::settings::Tab::Behaviour;
+    app.settings_page.tab = crate::settings_page::Tab::Behaviour;
     app.settings_page.bh_closed.clear();
     let row = BhRow::HighlightColour(LookId::Hover);
     app.settings_page.bh_sel = visible_behaviour_rows(&app.settings_page.bh_closed)
@@ -2414,7 +2423,7 @@ fn prefetching_keeps_the_main_loop_quick() {
 
 #[test]
 fn a_tournament_of_installed_fonts_from_setup_to_results() {
-    use crate::tour_page::Stage;
+    use crate::fonts::tournament_page::Stage;
     let store = temp_store("tournament");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));

@@ -9,9 +9,9 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
 use super::{centered, popup};
+use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::{Capture, Overlay, Pending};
 use crate::app::{App, open_matches};
-use crate::hit::{Target, hover};
 use crate::keymap::Context;
 use crate::keymap::action::Action;
 use crate::keymap::key::Key;
@@ -268,7 +268,7 @@ fn draw_capture(f: &mut Frame, app: &App, area: Rect, what: &Capture, keys: &[Ke
 /// The list of theme keys for a hover colour, at the right edge of the screen.
 // Long function: the box size, the scroll window and the clickable rows use the same values.
 fn draw_choose_key(f: &mut Frame, app: &mut App, area: Rect, sel: usize, original: &str) {
-    let keys = crate::behaviour::theme_keys();
+    let keys = crate::settings_page::behaviour::theme_keys();
     // at the right edge, so the rows it previews stay in view
     let mut r = centered(
         area,
@@ -300,10 +300,10 @@ fn draw_choose_key(f: &mut Frame, app: &mut App, area: Rect, sel: usize, origina
         ]);
         if i == sel {
             // the cursor on the text, not the swatch or padding
-            line = crate::hit::cursor_line(line, Style::new().reversed());
+            line = crate::app::state::hit::cursor_line(line, Style::new().reversed());
         }
         if app.hits.add(rr, Target::OverlayRow(i)) && i != sel {
-            line = crate::hit::hover_line(line, 1);
+            line = crate::app::state::hit::hover_line(line, 1);
         }
         lines.push(line);
     }
@@ -376,10 +376,10 @@ fn draw_menu(f: &mut Frame, app: &mut App, area: Rect, menu: u8, sel: usize, at:
         let rr = Rect::new(r.x + 1, r.y + 1 + i as u16, r.width.saturating_sub(2), 1);
         let mut line = Line::raw(format!(" {item:<width$} ", width = w as usize - 4));
         if i == sel {
-            line = crate::hit::cursor_line(line, Style::new().reversed());
+            line = crate::app::state::hit::cursor_line(line, Style::new().reversed());
         }
         lines.push(if app.hits.add(rr, Target::OverlayRow(i)) {
-            crate::hit::hover_line(line, 0)
+            crate::app::state::hit::hover_line(line, 0)
         } else {
             line
         });
@@ -460,10 +460,10 @@ fn draw_open(
         let mut line = Line::from(spans);
         if row == sel {
             // the cursor on the text, not the padding or swatches
-            line = crate::hit::cursor_line(line, Style::new().reversed());
+            line = crate::app::state::hit::cursor_line(line, Style::new().reversed());
         }
         lines.push(if app.hits.add(rr, Target::OverlayRow(row)) {
-            crate::hit::hover_line(line, 0)
+            crate::app::state::hit::hover_line(line, 0)
         } else {
             line
         });

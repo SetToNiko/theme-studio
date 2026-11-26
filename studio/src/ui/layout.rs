@@ -7,9 +7,9 @@
 
 use ratatui::layout::{Constraint, Layout, Rect};
 
+use crate::app::state::hit::{Border, BorderId};
 use crate::app::state::nav::Page;
 use crate::config::settings::Sizes;
-use crate::hit::{Border, BorderId};
 
 /// Narrowest the fonts column, the colour column and the preview can be.
 const FONTS_W: u16 = 46;

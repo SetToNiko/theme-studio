@@ -1,6 +1,19 @@
-//! The Settings page (F3): Keymaps, Behaviour and History tabs. Keymaps and
-//! Behaviour changes wait in a draft until Save (see draft.rs); History acts
-//! at once. Every write goes through the history, so it can be undone.
+//! The Settings page (F3): Keymaps, Behaviour, History and README tabs.
+//! Keymaps and Behaviour changes wait in a draft until Save (see `draft.rs`);
+//! History acts at once. Every write goes through the history, so it can be
+//! undone.
+//!
+//! Files in this folder:
+//! - `mod.rs` (this file): the page state (`SettingsPage`), the tabs and the rows.
+//! - `behaviour.rs`: the Behaviour tab (settings.json values in groups).
+//! - `draft.rs`: the unsaved changes (`Draft`) of the Keymaps and Behaviour tabs.
+//! - `keymap_presets.rs`: the preset browser of the Keymaps tab.
+//! - `readme.rs`: the README tab (Markdown rendered to styled lines).
+
+pub mod behaviour;
+pub mod draft;
+pub mod keymap_presets;
+pub mod readme;
 
 use std::path::PathBuf;
 
@@ -16,7 +29,7 @@ pub enum Tab {
     Keymaps,
     Behaviour,
     History,
-    /// docs/theme-studio.md, rendered (docs.rs).
+    /// docs/theme-studio.md, rendered (`readme.rs`).
     Readme,
 }
 
@@ -67,7 +80,7 @@ pub struct SettingsPage {
     /// The keyboard is on the tab strip (left/right change tabs).
     pub tabs_focused: bool,
     /// Unsaved Keymaps / Behaviour changes.
-    pub draft: Option<crate::draft::Draft>,
+    pub draft: Option<crate::settings_page::draft::Draft>,
     /// A config file was reloaded during a draft edit (see with_draft).
     pub reloaded: bool,
     /// Keymaps tab: closed groups.
@@ -89,7 +102,7 @@ pub struct SettingsPage {
         Option<std::time::SystemTime>,
         std::result::Result<String, String>,
     )>,
-    pub readme_doc: Option<(u16, crate::docs::Doc)>,
+    pub readme_doc: Option<(u16, crate::settings_page::readme::Doc)>,
     pub readme_scroll: usize,
     /// Cached until something changes (see history::generation).
     versions: Option<(VersionsKey, Vec<(PathBuf, SnapshotInfo)>)>,

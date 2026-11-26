@@ -1,4 +1,4 @@
-//! What's clickable where on screen. Rebuilt on every draw; clicks, hover
+//! What's clickable where on screen (`app/state/`: part of what `App` remembers). Rebuilt on every draw; clicks, hover
 //! highlights and the mouse pointer shape all use it.
 
 use ratatui::layout::Rect;

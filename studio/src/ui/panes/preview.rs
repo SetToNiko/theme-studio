@@ -11,7 +11,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
 use crate::app::App;
-use crate::hit::Target;
+use crate::app::state::hit::Target;
 use crate::keymap::Context;
 use crate::keymap::action::Action;
 use crate::model::palette::{self, GROUPS, Palette};
@@ -89,7 +89,7 @@ fn add_window_hits(f: &mut Frame, app: &mut App) {
     let rects = app.preview.rects.clone();
     for (id, r) in rects {
         if app.hits.add(r, Target::Preview(id)) && app.preview.focus != Some(id) {
-            let frame = crate::hit::looks().preview;
+            let frame = crate::app::state::hit::looks().preview;
             let buf = f.buffer_mut();
             for x in r.x..r.x + r.width {
                 for y in [r.y, r.y + r.height.saturating_sub(1)] {

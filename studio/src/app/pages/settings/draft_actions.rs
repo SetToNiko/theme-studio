@@ -1,14 +1,14 @@
 //! App's methods for the Settings page's unsaved changes (the draft).
 //!
 //! This is a second `impl App { ... }` block (see `persist.rs` for the same
-//! style). The draft data (`Draft`, `keymaps_value`) stays in `draft.rs`. The
-//! tests of these methods are in the test module of `draft.rs` too (it builds
+//! style). The draft data (`Draft`, `keymaps_value`) stays in `settings_page/draft.rs`. The
+//! tests of these methods are in the test module of `settings_page/draft.rs` too (it builds
 //! an `App`); this file only holds the methods that need the whole `App`:
 //! running an edit on the draft, showing it, counting its changes, save and
 //! discard.
 
 use crate::app::App;
-use crate::draft::{Draft, keymaps_value};
+use crate::settings_page::draft::{Draft, keymaps_value};
 
 impl App {
     /// The live settings, keymap and presets as a [`Draft`] (a copy).
@@ -74,15 +74,22 @@ impl App {
             return 0;
         };
         let live = self.live_as_draft();
-        let mut n =
-            crate::settings::diff_lines(&live.files()["settings"], &d.files()["settings"], false)
-                .iter()
-                .filter(|l| !matches!(l, crate::settings::DiffLine::Head { .. }))
-                .count();
-        n += crate::settings::diff_lines(&live.files()["keymaps"], &d.files()["keymaps"], false)
-            .iter()
-            .filter(|l| !matches!(l, crate::settings::DiffLine::Head { .. }))
-            .count();
+        let mut n = crate::settings_page::diff_lines(
+            &live.files()["settings"],
+            &d.files()["settings"],
+            false,
+        )
+        .iter()
+        .filter(|l| !matches!(l, crate::settings_page::DiffLine::Head { .. }))
+        .count();
+        n += crate::settings_page::diff_lines(
+            &live.files()["keymaps"],
+            &d.files()["keymaps"],
+            false,
+        )
+        .iter()
+        .filter(|l| !matches!(l, crate::settings_page::DiffLine::Head { .. }))
+        .count();
         n.max(1)
     }
 

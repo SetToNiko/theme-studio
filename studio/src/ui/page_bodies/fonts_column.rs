@@ -9,10 +9,10 @@ use ratatui::widgets::{Block, Paragraph};
 use ratatui_image::{Resize, StatefulImage};
 
 use crate::app::App;
+use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::Side;
 use crate::fonts::presets::ROLE_USE;
 use crate::fonts::types::{CHIPS, FontFocus, ROLE_NAMES, ROLE_NEEDS, Row};
-use crate::hit::{Target, hover};
 use crate::ui::pane_chrome::pane_title;
 use crate::ui::widgets::panel_number;
 
@@ -168,7 +168,9 @@ pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rec
             role = role
                 .into_iter()
                 .enumerate()
-                .map(|(n, l)| crate::hit::hover_line(l, if n == 0 { 2 } else { usize::MAX }))
+                .map(|(n, l)| {
+                    crate::app::state::hit::hover_line(l, if n == 0 { 2 } else { usize::MAX })
+                })
                 .collect();
         }
         lines.extend(role);
@@ -308,7 +310,7 @@ pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rec
                     Span::raw(indent.clone()),
                 ];
                 // the cursor on the name, not the padding after it
-                spans.extend(crate::hit::cursor_spans(
+                spans.extend(crate::app::state::hit::cursor_spans(
                     format!("{:<width$}", truncate(&font.family, width)),
                     Style::new(),
                     sel_style,
@@ -332,7 +334,7 @@ pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rec
         };
         let line = if app.hits.add(r, Target::FontRow(row_i)) {
             // only the group's or font's name is underlined
-            crate::hit::hover_line(line, 2)
+            crate::app::state::hit::hover_line(line, 2)
         } else {
             line
         };

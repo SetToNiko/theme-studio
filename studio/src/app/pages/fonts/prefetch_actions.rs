@@ -80,7 +80,7 @@ impl App {
     /// thread while it's open, every few seconds.
     fn measure_previews(&mut self) {
         let shown = self.page == Page::Settings
-            && self.settings_page.tab == crate::settings::Tab::Behaviour;
+            && self.settings_page.tab == crate::settings_page::Tab::Behaviour;
         if !self.prefetch.start_measuring_due(shown) {
             return;
         }

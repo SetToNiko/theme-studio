@@ -365,7 +365,7 @@ impl App {
             .iter()
             .position(|(t, _)| *t == self.dl.tab)
             .unwrap_or(0);
-        self.dl.tab = DL_TABS[crate::settings::wrap(i, d, DL_TABS.len())].0;
+        self.dl.tab = DL_TABS[crate::settings_page::wrap(i, d, DL_TABS.len())].0;
         // read the list again (it may have changed outside the studio)
         self.dl.listed = None;
         self.dl.sel = 0;
@@ -421,7 +421,8 @@ impl App {
             Action::TabPrev => self.dl_switch(-1),
             Action::Left | Action::Right if self.dl.tab == DlTab::Google => {
                 let d = if a == Action::Left { -1 } else { 1 };
-                self.dl.category = crate::settings::wrap(self.dl.category, d, CATEGORIES.len());
+                self.dl.category =
+                    crate::settings_page::wrap(self.dl.category, d, CATEGORIES.len());
                 self.dl.sel = 0;
             }
             Action::Search => self.dl.searching = true,
@@ -429,7 +430,7 @@ impl App {
             Action::Delete => self.dl_remove(),
             Action::Back => self.page = Page::Main,
             _ => {
-                crate::settings::move_over(&mut self.dl.sel, &ok, a);
+                crate::settings_page::move_over(&mut self.dl.sel, &ok, a);
             }
         }
     }
@@ -449,8 +450,8 @@ impl App {
     }
 
     /// A click on the page.
-    pub fn dl_click(&mut self, t: crate::hit::Target) {
-        use crate::hit::Target as T;
+    pub fn dl_click(&mut self, t: crate::app::state::hit::Target) {
+        use crate::app::state::hit::Target as T;
         self.dl.tabs_focused = false;
         match t {
             T::DlTab(i) => {

@@ -3,22 +3,16 @@
 //! See docs/theme-studio.md.
 
 mod app;
-mod behaviour;
 mod config;
 mod desktop;
-mod docs;
 mod download;
-mod draft;
 mod fonts;
-mod hit;
 mod keymap;
 mod model;
 mod out;
 mod prefetch;
-mod presets;
 mod preview_term;
-mod settings;
-mod tour_page;
+mod settings_page;
 mod ui;
 
 use std::io::stdout;

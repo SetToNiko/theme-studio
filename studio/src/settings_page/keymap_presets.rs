@@ -1,4 +1,4 @@
-//! The Keymaps tab's preset browser: the preset list in the right column,
+//! The Keymaps tab's preset browser (`settings_page/`; not the font presets of `fonts/presets.rs`): the preset list in the right column,
 //! and on the left the highlighted preset against the current keymap
 //! (only what differs; `A` for everything). Enter loads a preset, `n` makes
 //! a new one from it, `d` deletes one of yours, `R` resets a shipped one.
@@ -10,11 +10,11 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
 
-use crate::hit::{HitMap, Target, hover_line};
+use crate::app::state::hit::{HitMap, Target, hover_line};
 use crate::keymap::action::{Action, all_actions};
 use crate::keymap::key::display_seq;
 use crate::keymap::{Context, Keymap};
-use crate::settings::SettingsPage;
+use crate::settings_page::SettingsPage;
 
 /// A line of the difference between two keymaps.
 #[derive(Clone, Debug, PartialEq)]
@@ -133,7 +133,8 @@ pub fn draw_browse(
         };
         let hovered = hits.add(r, Target::PresetRow(i)) && i != sel;
         // the cursor on the name, not the padding around it
-        let mut spans = crate::hit::cursor_spans(format!(" {:<16}", p.name), Style::new(), style);
+        let mut spans =
+            crate::app::state::hit::cursor_spans(format!(" {:<16}", p.name), Style::new(), style);
         spans.push(Span::styled(
             format!(
                 " {}{}",

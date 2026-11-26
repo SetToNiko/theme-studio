@@ -7,8 +7,8 @@
 
 use ratatui::layout::Rect;
 
+use crate::app::state::hit::{Border, BorderId};
 use crate::config::settings::{Settings, Sizes};
-use crate::hit::{Border, BorderId};
 
 /// Pane sizes, resize and drag state, visibility flags, and where the keyboard is on the page tabs.
 #[expect(

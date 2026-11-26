@@ -63,7 +63,7 @@ impl App {
         let next = match overlay {
             Overlay::Help { page } => Some(help_key(page, k)),
             Overlay::Menu { menu, sel, at } => self.menu_key(menu, sel, at, k),
-            // Settings page pop-ups edit the draft (see draft.rs)
+            // Settings page pop-ups edit the draft (see `settings_page/draft.rs`)
             Overlay::ChooseKey { row, sel, original } => {
                 self.with_draft(|app| app.choose_key_key(row, sel, original, k));
                 None

@@ -2,21 +2,21 @@
 //!
 //! This is another `impl App { ... }` block (see `theme_actions.rs` for the
 //! same style). The tab's own data (the row list, which rows are visible,
-//! `theme_keys`, `BhRow` helpers) stays in `behaviour.rs`. The tests of
-//! these methods are in the test module of `behaviour.rs` too (it builds an
+//! `theme_keys`, `BhRow` helpers) stays in `settings_page/behaviour.rs`. The tests of
+//! these methods are in the test module of `settings_page/behaviour.rs` too (it builds an
 //! `App`); this file only holds the methods that need the whole `App`.
 
 use ratatui::style::{Color, Modifier};
 
 use crate::app::App;
+use crate::app::state::hit::{Look, Looks, Underline};
 use crate::app::state::nav::{BhRow, Capture, LookId, Overlay};
-use crate::behaviour::{selectable_ends, theme_keys, visible_behaviour_rows};
 use crate::config::settings::{LookSettings, Settings};
-use crate::hit::{Look, Looks, Underline};
 use crate::keymap::action::Action;
 use crate::keymap::key::{Key, display_seq};
 use crate::model::palette::GROUPS;
-use crate::settings::wrap;
+use crate::settings_page::behaviour::{selectable_ends, theme_keys, visible_behaviour_rows};
+use crate::settings_page::wrap;
 
 impl App {
     // ----- looks -------------------------------------------------------------
@@ -275,7 +275,7 @@ impl App {
             self.settings_page.bh_sel = selectable_ends(&rows).0;
         }
         let ok: Vec<bool> = rows.iter().map(|r| r.selectable()).collect();
-        if crate::settings::move_over(&mut self.settings_page.bh_sel, &ok, a) {
+        if crate::settings_page::move_over(&mut self.settings_page.bh_sel, &ok, a) {
             return;
         }
         let d = match a {

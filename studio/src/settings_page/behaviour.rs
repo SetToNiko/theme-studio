@@ -1,4 +1,4 @@
-//! The Settings page's Behaviour tab: settings.json's values, in groups
+//! The Settings page's Behaviour tab (`settings_page/`): settings.json's values, in groups
 //! (Keys, Layout, Messages, Hover, Palette pane, Derived colours, Fonts pane).
 //!
 //! The test module below also tests the `App` methods of
@@ -130,9 +130,9 @@ mod tests {
     use super::*;
     use crate::app::App;
     use crate::app::Start;
+    use crate::app::state::hit::Underline;
     use crate::app::state::nav::{Capture, Overlay};
     use crate::config::settings::{LookSettings, Settings};
-    use crate::hit::Underline;
     use crate::keymap::Keymap;
     use crate::keymap::action::Action;
     use crate::keymap::key::{Key, display_seq};

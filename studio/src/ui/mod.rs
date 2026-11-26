@@ -9,8 +9,8 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
 use crate::app::App;
+use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::Page;
-use crate::hit::{Target, hover};
 use crate::keymap::Context;
 use crate::keymap::action::Action;
 use crate::model::color::Rgb;
@@ -37,7 +37,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     // set again if the Palette pane is drawn (the palette list hangs from it)
     app.layout.palette_pane = None;
     app.messages.hover_note = None;
-    crate::hit::set_looks(app.looks(&app.settings));
+    crate::app::state::hit::set_looks(app.looks(&app.settings));
     let full = f.area();
     // tabs on top: their own row; at the bottom they share the status line
     let top = app.settings.layout.tabs_on_top();
@@ -134,7 +134,7 @@ fn draw_tabs(f: &mut Frame, app: &mut App, area: Rect) -> u16 {
             Span::raw(" "),
         ]);
         if app.hits.add(r, Target::ThemeName) {
-            line = crate::hit::hover_line(line, 1);
+            line = crate::app::state::hit::hover_line(line, 1);
         }
         f.render_widget(Paragraph::new(line), r);
         x += w;

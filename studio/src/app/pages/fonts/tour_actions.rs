@@ -3,7 +3,7 @@
 //! can be drawn up.
 //!
 //! This is another `impl App { ... }` block (see `fonts_preview_actions.rs`
-//! for the same style). `tour_page.rs` keeps the tab's own data (`TourPage`,
+//! for the same style). `fonts/tournament_page.rs` keeps the tab's own data (`TourPage`,
 //! its stages and setup rows); `tour_rounds.rs` has the matches and results.
 //! Stages: Setup → Fetching → Playing → Results.
 
@@ -13,9 +13,9 @@ use crate::app::App;
 use crate::app::state::nav::{Deferred, Overlay, Page};
 use crate::download::{self, Entry};
 use crate::fonts::download_page::DlTab;
+use crate::fonts::tournament_page::{POOLS, SIZES, SetupRow, Stage, TourPage};
 use crate::keymap::action::Action;
 use crate::model::tournament::{self, Entrant, Tournament};
-use crate::tour_page::{POOLS, SIZES, SetupRow, Stage, TourPage};
 
 impl App {
     pub fn tour(&mut self) -> &mut TourPage {
@@ -261,7 +261,7 @@ impl App {
             Action::Bottom => t.sel = last,
             Action::Left | Action::Right if row == SetupRow::Size => {
                 let d = if a == Action::Left { -1 } else { 1 };
-                t.size = crate::settings::wrap(t.size, d, SIZES.len());
+                t.size = crate::settings_page::wrap(t.size, d, SIZES.len());
             }
             Action::Confirm => match row {
                 SetupRow::Pool(p) => self.tour_ask(p),

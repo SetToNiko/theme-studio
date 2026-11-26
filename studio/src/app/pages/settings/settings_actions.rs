@@ -6,7 +6,7 @@
 //! for the same style). The tab-specific methods live in
 //! `settings_keymaps_actions.rs` and `settings_history_actions.rs`. The page
 //! data (`SettingsPage`, `Tab`, `KmRow`, the diff types) stays in
-//! `settings.rs`; this file only holds the methods that need the whole `App`.
+//! `settings_page/mod.rs`; this file only holds the methods that need the whole `App`.
 
 use std::path::PathBuf;
 
@@ -15,7 +15,7 @@ use crate::app::state::nav::{Deferred, Naming, Overlay};
 use crate::keymap::action::Action;
 use crate::keymap::key::Key;
 use crate::model::history::History;
-use crate::settings::{FILES, HistFocus, KmRow, SettingsPage, TABS, Tab, ends, wrap};
+use crate::settings_page::{FILES, HistFocus, KmRow, SettingsPage, TABS, Tab, ends, wrap};
 
 impl App {
     // ----- shared ----------------------------------------------------------
@@ -122,8 +122,8 @@ impl App {
     /// A click on the Settings page: selects; on the selected row, acts
     /// like Enter.
     // Long function: one match over the click targets of the Settings page.
-    pub fn settings_click(&mut self, t: crate::hit::Target) {
-        use crate::hit::Target as T;
+    pub fn settings_click(&mut self, t: crate::app::state::hit::Target) {
+        use crate::app::state::hit::Target as T;
         if let T::PresetRow(i) = t {
             return self.with_draft(|app| app.preset_click(i));
         }
@@ -165,8 +165,8 @@ impl App {
     }
 
     /// The wheel over a list moves its selection; over the preview, scrolls.
-    pub fn settings_scroll(&mut self, t: crate::hit::Target, d: i32) {
-        use crate::hit::Target as T;
+    pub fn settings_scroll(&mut self, t: crate::app::state::hit::Target, d: i32) {
+        use crate::app::state::hit::Target as T;
         // the README: three lines a notch (and never up onto the tabs)
         if self.settings_page.tab == Tab::Readme {
             for _ in 0..3 {

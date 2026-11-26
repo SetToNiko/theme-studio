@@ -29,7 +29,7 @@ def module_path(path, src_dir):
     Example: main.rs -> "" (the crate root), color.rs -> color,
     app/mod.rs -> app, app/state/nav.rs -> app::state::nav.
     The full path keeps two files with the same name apart, for example
-    app/pages/settings/mod.rs (app::pages::settings) and settings.rs (settings).
+    app/pages/settings/mod.rs (app::pages::settings) and settings_page/mod.rs (settings_page).
     """
     relative = os.path.relpath(path, src_dir)[: -len(".rs")]
     parts = relative.split(os.sep)

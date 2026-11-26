@@ -15,8 +15,8 @@ use super::panes::colours::draw_list;
 use super::panes::picker::draw_picker;
 use super::panes::preview::draw_preview;
 use crate::app::App;
+use crate::app::state::hit::{BorderId, Target};
 use crate::app::state::nav::Page;
-use crate::hit::{BorderId, Target};
 use crate::preview_term::Mode as PreviewMode;
 
 /// The Main page: fonts, colour list, picker and preview, then the

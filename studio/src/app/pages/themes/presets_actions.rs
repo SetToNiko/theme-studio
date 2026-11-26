@@ -2,7 +2,7 @@
 //!
 //! This is another `impl App { ... }` block (see `persist.rs` for the same
 //! style). The preset types and the drawing (`KmDiff`, `keymap_diff`,
-//! `draw_browse`) stay in `presets.rs`; this file only holds the methods that
+//! `draw_browse`) stay in `settings_page/keymap_presets.rs`; this file only holds the methods that
 //! need the whole `App`: opening the list, its keys, clicks, and making,
 //! deleting and resetting presets.
 
@@ -10,7 +10,7 @@ use crate::app::App;
 use crate::app::state::nav::{Deferred, Naming, Overlay};
 use crate::keymap::Keymap;
 use crate::keymap::action::Action;
-use crate::presets::is_shipped;
+use crate::settings_page::keymap_presets::is_shipped;
 
 impl App {
     /// Opens the preset list, on the active preset.

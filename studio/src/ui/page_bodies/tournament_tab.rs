@@ -1,4 +1,4 @@
-//! Drawing the Fonts page's Tournament tab (tour_page.rs): the setup, the
+//! Drawing the Fonts page's Tournament tab (`fonts/tournament_page.rs`): the setup, the
 //! previews being fetched, a match, the results, and the bracket.
 
 use ratatui::Frame;
@@ -8,8 +8,8 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 
 use crate::app::App;
-use crate::hit::{Target, cursor_line, hover_line};
-use crate::tour_page::{POOLS, SIZES, SetupRow, Stage};
+use crate::app::state::hit::{Target, cursor_line, hover_line};
+use crate::fonts::tournament_page::{POOLS, SIZES, SetupRow, Stage};
 
 pub fn draw_tournament(f: &mut Frame, app: &mut App, area: Rect) {
     match app.tour().stage {

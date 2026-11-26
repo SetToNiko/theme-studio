@@ -2,7 +2,7 @@
 //! keys, setting an action's keys, and recording new keys.
 //!
 //! This is another `impl App { ... }` block (see `settings_actions.rs`). The
-//! row type `KmRow` and the page data stay in `settings.rs`; this file only
+//! row type `KmRow` and the page data stay in `settings_page/mod.rs`; this file only
 //! holds the methods that need the whole `App`.
 
 use crate::app::App;
@@ -10,7 +10,7 @@ use crate::app::state::nav::{Capture, Deferred, Naming, Overlay};
 use crate::keymap::action::{Action, all_actions};
 use crate::keymap::key::{Key, display_seq};
 use crate::keymap::{Context, Keymap};
-use crate::settings::{KmRow, move_over};
+use crate::settings_page::{KmRow, move_over};
 
 impl App {
     /// Keymaps tab rows: the preset, then each context's actions (those it
