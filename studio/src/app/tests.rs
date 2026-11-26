@@ -13,13 +13,6 @@ use ratatui::crossterm::event::{
 };
 use serde_json::{Map, Value};
 
-#[test]
-fn base64_matches_reference() {
-    assert_eq!(base64(b"#9f6434"), "IzlmNjQzNA==");
-    assert_eq!(base64(b"ab"), "YWI=");
-    assert_eq!(base64(b"abc"), "YWJj");
-}
-
 /// A store in a temp folder with palettes "One" and "Two".
 fn temp_store(tag: &str) -> Store {
     let dir = std::env::temp_dir().join(format!("theme-studio-app-{tag}-{}", std::process::id()));

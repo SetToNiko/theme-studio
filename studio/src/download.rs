@@ -316,7 +316,7 @@ fn sri(file: &Path) -> Result<String> {
     let bytes: Vec<u8> = (0..hex.len() / 2)
         .filter_map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).ok())
         .collect();
-    Ok(format!("sha256-{}", crate::app::base64(&bytes)))
+    Ok(format!("sha256-{}", crate::encoding::base64(&bytes)))
 }
 
 /// Downloads `files` (name, url, size) into `dir`, reporting progress.

@@ -10,6 +10,7 @@ mod desktop;
 mod docs;
 mod download;
 mod draft;
+mod encoding;
 mod font_tree;
 mod fonts;
 mod fonts_dl;
