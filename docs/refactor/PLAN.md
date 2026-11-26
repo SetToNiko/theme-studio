@@ -100,6 +100,7 @@ Advanced techniques that the refactor adds:
 | 14 | `scripts/*` | 14 shellcheck findings, no tests | rule 3, goal 4 | M |
 | 15 | `samples/code/go.go:49` | Old dotfiles path in sample text | success criteria | L |
 | 16 | `desktop.rs` test `real_configs_parse` | Looks for `i3/theme` in the data folder (`store.dir`), but the desktop configs are in `store.desktop`. The test never runs since the data moved (found in P0.5, not fixed) | correctness of tests | M |
+| 17 | `scripts/themes-switch.sh` | A theme with a missing palette: the fonts are applied (files and `fonts/current` change), then the palette fails with exit 1, and nothing reloads. The desktop is left half-switched (found in P0.8, recorded in golden case `themes-switch-missing-palette`, not fixed) | correctness, T7 | M |
 
 ## 5. Test coverage
 - Rust: 119 tests in 25 modules (115 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
@@ -122,7 +123,7 @@ Step format (one line for each step):
 - [x] P0.5 Test fixtures: small palettes.json, fonts.json, themes.json, configs, so the data tests run in the sandbox | Files: `studio/tests/fixtures/`, `studio/src/store.rs`, `studio/src/palette.rs`, `studio/src/paths.rs` | Target: goal 4 | Check: skip count does not increase, sandbox runs the data tests
 - [x] P0.6 Golden tests, theme-switch: test runner with stub commands (pkill, i3-msg, rofi, fc-cache, pywalfox, ghostty), fixture data, golden files | Files: `tests/scripts/run.sh`, `tests/scripts/fixtures/`, `tests/scripts/golden/theme-switch/` | Target: goal 4 | Check: golden test passes on unchanged code
 - [x] P0.7 Golden tests, font-switch: fonts, sizes, offsets. The login-screen part skips, and the skip is recorded | Files: `tests/scripts/run.sh`, `tests/scripts/golden/font-switch/`, `tests/scripts/fixtures/` | Target: goal 4 | Check: golden test passes on unchanged code
-- [ ] P0.8 Golden tests, themes-switch, and the scripts in flake checks | Files: `tests/scripts/run.sh`, `tests/scripts/golden/themes-switch/`, `flake.nix` | Target: goal 4 | Check: `nix flake check` runs the golden tests
+- [x] P0.8 Golden tests, themes-switch, and the scripts in flake checks | Files: `tests/scripts/run.sh`, `tests/scripts/golden/themes-switch/`, `flake.nix` | Target: goal 4 | Check: `nix flake check` runs the golden tests
 Completes: criterion 4 (the check command exists)
 
 ### Phase 1: One source for paths
@@ -212,7 +213,7 @@ Completes: criterion 6
 | Item | Status |
 |---|---|
 | Plan | done |
-| Phase 0 safety net | open |
+| Phase 0 safety net | done |
 | Phase 1 steps | open |
 | Phase 1 review | open |
 | Phase 2 steps | open |

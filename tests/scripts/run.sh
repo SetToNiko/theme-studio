@@ -82,16 +82,20 @@ make_tools_dir() {
 }
 
 # Stub commands. Each one appends "<name> <args>" to $CALLS_LOG.
+# The first line names bash by its full path: the Nix build sandbox has no
+# /usr/bin/env.
 make_stubs_dir() {
   mkdir -p "$work/stubs"
+  local bash_path
+  bash_path=$(command -v bash)
   local name
   for name in pkill i3-msg rofi pywalfox wallpaper-rotate fc-cache fc-match; do
-    printf '#!/usr/bin/env bash\necho "%s $*" >> "$CALLS_LOG"\n' "$name" > "$work/stubs/$name"
+    printf '#!%s\necho "%s $*" >> "$CALLS_LOG"\n' "$bash_path" "$name" > "$work/stubs/$name"
   done
   # fc-list: every font is installed (-q succeeds). For a spacing question, a
   # family with "Mono" in its name is monospaced; other families are proportional.
-  cat > "$work/stubs/fc-list" <<'EOF'
-#!/usr/bin/env bash
+  echo "#!$bash_path" > "$work/stubs/fc-list"
+  cat >> "$work/stubs/fc-list" <<'EOF'
 echo "fc-list $*" >> "$CALLS_LOG"
 for arg in "$@"; do
   if [ "$arg" = "spacing" ]; then
@@ -107,6 +111,7 @@ EOF
 # Runs one case. Arguments: case name, then the command line (env assignments
 # first are allowed, as in "FONT_SIZES=16 font-switch.sh name").
 # A function setup_<case> (with "-" changed to "_") runs first, if it exists.
+# It gets HOME (the case's home folder) and DATA (the case's data folder).
 run_case() {
   local name=$1
   shift
@@ -118,7 +123,7 @@ run_case() {
 
   local setup="setup_${name//-/_}"
   if declare -F "$setup" > /dev/null; then
-    HOME="$home" "$setup"
+    HOME="$home" DATA="$dir/data" "$setup"
   fi
 
   # Wait for background jobs too (theme-switch starts wallpaper-rotate with &):
@@ -144,6 +149,9 @@ run_case() {
   sed "s|$home|<HOME>|g; s|$work|<TMP>|g" "$dir/stderr" > "$result/stderr"
   sed "s|$home|<HOME>|g; s|$work|<TMP>|g" "$dir/calls.log" > "$result/calls.log"
   sed "s|$home|<HOME>|g; s|$work|<TMP>|g" "$dir/stdout" > "$result/stdout"
+  # git does not store empty folders, so the golden files have none.
+  # Remove them from the result too, or a case that writes nothing fails.
+  find "$result" -type d -empty -delete
 }
 
 # ---- Cases ------------------------------------------------------------------
@@ -189,6 +197,23 @@ cases_font_switch() {
   run_case font-switch-unknown bash "$scripts/font-switch.sh" "No Such Preset"
 }
 
+# A theme whose palette is not in palettes.json.
+# Looks incorrect (recorded, not fixed: docs/refactor/PLAN.md, finding 17):
+# themes-switch.sh applies the fonts first, then theme-switch.sh fails on the
+# palette. The font files and fonts/current change, nothing reloads, and the
+# exit code is 1. The desktop is left half-switched.
+setup_themes_switch_missing_palette() {
+  jq '.themes["Broken"] = {"palette": "No Such Palette", "fonts": "JetBrains Mono"}' \
+    "$DATA/themes.json" > "$DATA/themes.json.new"
+  mv "$DATA/themes.json.new" "$DATA/themes.json"
+}
+
+cases_themes_switch() {
+  run_case themes-switch-theme bash "$scripts/themes-switch.sh" "CRT Amber"
+  run_case themes-switch-missing-palette bash "$scripts/themes-switch.sh" "Broken"
+  run_case themes-switch-unknown bash "$scripts/themes-switch.sh" "No Such Theme"
+}
+
 # ---- Main -------------------------------------------------------------------
 
 make_tools_dir
@@ -197,6 +222,7 @@ make_stubs_dir
 all_cases() {
   cases_theme_switch
   cases_font_switch
+  cases_themes_switch
 }
 
 all_cases

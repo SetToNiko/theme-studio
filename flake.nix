@@ -54,6 +54,30 @@
             bash ${./scripts/dev/lint-counts.sh} compare shellcheck "$count"
           touch $out
         '';
+
+        # Golden-file tests of the switch scripts (tests/scripts/run.sh).
+        # The tools are the ones that the tests link into their own PATH.
+        scripts =
+          pkgs.runCommand "theme-studio-script-tests"
+            {
+              nativeBuildInputs = [
+                pkgs.bash
+                pkgs.coreutils
+                pkgs.jq
+                pkgs.gawk
+                pkgs.gnused
+                pkgs.gnugrep
+              ];
+            }
+            ''
+              cp -r ${./scripts} scripts
+              cp -r ${./share} share
+              mkdir tests
+              cp -r ${./tests/scripts} tests/scripts
+              chmod -R u+w .
+              bash tests/scripts/run.sh
+              touch $out
+            '';
       };
 
       # programs.theme-studio (home-manager) and services.theme-studio.loginFont
