@@ -753,7 +753,7 @@ fn extreme_sizes_render_at_every_window_size() {
 
 #[test]
 fn layout_three_columns_then_preview_row_then_too_small() {
-    use crate::ui::{Arrangement, arrange};
+    use crate::ui::layout::{Arrangement, arrange};
     let r = |w, h| Rect::new(0, 0, w, h);
     // wide: fonts | colours | preview, the picker hidden, the sample shown
     let Arrangement::Main(l) = arrange(
