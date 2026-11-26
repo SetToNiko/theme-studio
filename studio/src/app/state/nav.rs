@@ -176,7 +176,7 @@ pub enum BhRow {
     NerdFont,
     /// Fetch Fonts page previews ahead of time.
     Prefetch,
-    /// Whether a category (config::settings::PREFETCH_CATEGORIES) is prefetched.
+    /// Whether a category (`config::settings::PREFETCH_CATEGORIES`) is prefetched.
     PrefetchCategory(usize),
     /// Delete the preview fonts.
     ClearPreviews,

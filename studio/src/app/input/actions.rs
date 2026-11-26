@@ -310,13 +310,13 @@ impl App {
                 crate::fonts::types::ROLE_NAMES[role],
                 self.fonts.preset.fonts[role].family
             );
-            self.apply_picked_fonts(what);
+            self.apply_picked_fonts(&what);
         }
     }
 
     /// A font was picked (or a family filled the roles): save the theme's
     /// font preset and apply it straight away.
-    pub(crate) fn apply_picked_fonts(&mut self, what: String) {
+    pub(crate) fn apply_picked_fonts(&mut self, what: &str) {
         self.fonts.picked = false;
         let name = if self.fonts.is_new {
             self.theme.clone()
@@ -326,7 +326,7 @@ impl App {
         let result = self
             .fonts
             .save_as(&name)
-            .and_then(|_| self.fonts.store.apply(&name, self.fonts.preset.sizes()));
+            .and_then(|()| self.fonts.store.apply(&name, self.fonts.preset.sizes()));
         match result {
             Ok(()) => {
                 self.fonts.active = Some(name.clone());
@@ -389,24 +389,24 @@ impl App {
         match self.focus {
             Focus::Square => {
                 let step = if big { 0.1 } else { 0.02 };
-                let (h, s, v) = self.editor.hsv;
-                self.set_hsv(h, s + dx as f64 * step, v - dy as f64 * step);
+                let (hue, sat, val) = self.editor.hsv;
+                self.set_hsv(hue, sat + f64::from(dx) * step, val - f64::from(dy) * step);
             }
             Focus::Hue => {
                 let step = if big { 15.0 } else { 2.0 };
-                let (h, s, v) = self.editor.hsv;
-                self.set_hsv(h + (dy + dx) as f64 * step, s, v);
+                let (hue, sat, val) = self.editor.hsv;
+                self.set_hsv(hue + f64::from(dy + dx) * step, sat, val);
             }
             Focus::SliderH | Focus::SliderS | Focus::SliderL if dx != 0 => {
-                let n = dx as f64 * if big { 10.0 } else { 1.0 };
-                let (s, l) = self.editor.hsl(self.key());
+                let amount = f64::from(dx) * if big { 10.0 } else { 1.0 };
+                let (sat, light) = self.editor.hsl(self.key());
                 match self.focus {
                     Focus::SliderH => {
-                        let (h, s, v) = self.editor.hsv;
-                        self.set_hsv(h + n, s, v);
+                        let (hue, sat, val) = self.editor.hsv;
+                        self.set_hsv(hue + amount, sat, val);
                     }
-                    Focus::SliderS => self.set_hsl(s + n / 100.0, l),
-                    _ => self.set_hsl(s, l + n / 100.0),
+                    Focus::SliderS => self.set_hsl(sat + amount / 100.0, light),
+                    _ => self.set_hsl(sat, light + amount / 100.0),
                 }
             }
             Focus::SliderH | Focus::SliderS | Focus::SliderL => self.cycle_focus(dy),

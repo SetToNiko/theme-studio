@@ -49,7 +49,7 @@ pub enum Target {
     Border(BorderId),
     /// A choice in the unsaved-changes pop-up ('y', 's', or Esc as 'n').
     ConfirmChoice(char),
-    /// Settings page: one of its tabs (index into settings::TABS).
+    /// Settings page: one of its tabs (index into `settings::TABS`).
     SettingsTab(u8),
     /// Settings page: a row of the tab's list (Keymaps, Behaviour, or the
     /// History tab's versions).
@@ -147,11 +147,11 @@ impl Border {
     /// The share the border at `pos` gives its pane.
     pub fn share_at(&self, pos: u16) -> f64 {
         let n = if self.from_end {
-            self.start as f64 - pos as f64 - 1.0
+            f64::from(self.start) - f64::from(pos) - 1.0
         } else {
-            pos as f64 - self.start as f64 + 1.0
+            f64::from(pos) - f64::from(self.start) + 1.0
         };
-        (n / self.total.max(1) as f64).clamp(0.0, 1.0)
+        (n / f64::from(self.total.max(1))).clamp(0.0, 1.0)
     }
 }
 
@@ -362,7 +362,7 @@ pub fn cursor_spans(text: String, base: Style, style: Style) -> Vec<ratatui::tex
     // no cursor: one span, as before (hover_line counts spans)
     let core = text.trim();
     if core.is_empty() || style == Style::new() {
-        return vec![Span::styled(text.clone(), base)];
+        return vec![Span::styled(text, base)];
     }
     let lead = text.len() - text.trim_start().len();
     let end = lead + core.len();

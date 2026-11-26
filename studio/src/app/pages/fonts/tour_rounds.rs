@@ -33,7 +33,7 @@ impl App {
         };
         let (cell_w, cell_h) = self.picker.as_ref().map_or((8, 16), |p| {
             let s = p.font_size();
-            (s.width as u32, s.height as u32)
+            (u32::from(s.width), u32::from(s.height))
         });
         let dpi = self.fonts.dpi;
         let palette = self.editor.palette.clone();
@@ -43,7 +43,7 @@ impl App {
             t.panes[i].shows = Some(who);
             t.panes[i].image = None;
         }
-        let (cols, rows) = (t.panes[i].area.0 as u32, t.panes[i].area.1 as u32);
+        let (cols, rows) = (u32::from(t.panes[i].area.0), u32::from(t.panes[i].area.1));
         let width = (cols * cell_w).saturating_sub(24).max(100);
         let st = samples::Style {
             family: &family,

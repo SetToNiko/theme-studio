@@ -127,32 +127,32 @@ impl App {
         self.layout.move_border(id, if vertical { x } else { y });
     }
 
-    /// A click (or a drag step) on a target at `r`.
+    /// A click (or a drag step) on a target in `area`.
     ///
     /// Picks the method for the kind of target. Short targets are done here.
     // Long function (reason verified, phase 3): one match with one arm per click target kind.
-    fn click(&mut self, r: Rect, t: T, x: u16, y: u16, drag: bool) {
-        match t {
-            T::PageTab(p) => self.page = p,
+    fn click(&mut self, area: Rect, target: T, column: u16, line: u16, drag: bool) {
+        match target {
+            T::PageTab(page) => self.page = page,
             T::Border(id) => self.layout.dragging = Some(id),
-            T::PaneTitle(n) => self.focus_pane(n),
+            T::PaneTitle(pane) => self.focus_pane(pane),
             T::PaneBody(3) => self.focus_pane(3),
-            T::PaneBody(_) => {}
+            T::PaneBody(_) | T::DlPreview => {}
             T::Preview(id) => {
                 self.preview.mode = PreviewMode::Desktop;
                 self.preview.focus = Some(id);
             }
             T::ColourRow(row) => self.click_colour_row(row),
             T::Square | T::Hue | T::SliderH | T::SliderS | T::SliderL | T::Hex => {
-                self.click_picker_control(r, t, x, y, drag);
+                self.click_picker_control(area, target, column, line, drag);
             }
-            T::FontRole(_) | T::FontRow(_) | T::FontSearch | T::Chip(_) => self.click_fonts(t),
-            T::OverlayRow(i) => self.click_overlay_row(i),
+            T::FontRole(_) | T::FontRow(_) | T::FontSearch | T::Chip(_) => self.click_fonts(target),
+            T::OverlayRow(index) => self.click_overlay_row(index),
             T::SettingsTab(_)
             | T::SettingsRow(_)
             | T::HistFile(_)
             | T::SettingsDiff
-            | T::PresetRow(_) => self.settings_click(t),
+            | T::PresetRow(_) => self.settings_click(target),
             T::ThemeName => self.theme_open_overlay(),
             T::PaletteMenu => {
                 self.focus_pane(4);
@@ -160,19 +160,18 @@ impl App {
                 self.open_overlay();
             }
             T::DlTab(_) | T::DlRow(_) | T::DlChip(_) | T::DlSearch | T::DlButton(_) => {
-                self.dl_click(t);
+                self.dl_click(target);
             }
-            T::PreviewMenu(n) => self.open_menu(n, r),
-            T::TourPane(i) => self.tour_click_pane(i),
-            T::TourRow(i) => self.tour_click_row(i),
-            T::DlPreview => {}
+            T::PreviewMenu(menu) => self.open_menu(menu, area),
+            T::TourPane(index) => self.tour_click_pane(index),
+            T::TourRow(index) => self.tour_click_row(index),
             T::SettingsButton('s') => self.settings_save(),
             T::SettingsButton(_) => self.settings_discard(),
-            T::ConfirmChoice(c) => {
-                let code = if c == 'n' {
+            T::ConfirmChoice(choice) => {
+                let code = if choice == 'n' {
                     KeyCode::Esc
                 } else {
-                    KeyCode::Char(c)
+                    KeyCode::Char(choice)
                 };
                 self.on_overlay_key(KeyEvent::new(code, KeyModifiers::NONE));
             }
@@ -203,39 +202,39 @@ impl App {
 
     /// A click or drag step on a picker control: the square, the hue bar, a slider, or the hex box.
     ///
-    /// The position inside the control at `r` sets the colour. `drag` is true for a drag step.
+    /// The position inside the control at `area` sets the colour. `drag` is true for a drag step.
     // Long function (reason verified, phase 3): one match over the five picker controls, which share the focus and colour update.
-    fn click_picker_control(&mut self, r: Rect, t: T, x: u16, y: u16, drag: bool) {
+    fn click_picker_control(&mut self, area: Rect, target: T, column: u16, line: u16, drag: bool) {
         self.side = Side::Colours;
-        match t {
+        match target {
             T::Square => {
                 self.focus = Focus::Square;
-                let s = frac(x, r.x, r.width);
-                let v = 1.0 - frac(y, r.y, r.height.max(2));
-                self.set_hsv(self.editor.hsv.0, s, v);
+                let sat = frac(column, area.x, area.width);
+                let val = 1.0 - frac(line, area.y, area.height.max(2));
+                self.set_hsv(self.editor.hsv.0, sat, val);
             }
             T::Hue => {
                 self.focus = Focus::Hue;
-                let (_, s, v) = self.editor.hsv;
-                self.set_hsv(frac(y, r.y, r.height.max(2)) * 360.0, s, v);
+                let (_, sat, val) = self.editor.hsv;
+                self.set_hsv(frac(line, area.y, area.height.max(2)) * 360.0, sat, val);
             }
             T::SliderH => {
                 self.focus = Focus::SliderH;
-                let (_, s, v) = self.editor.hsv;
-                self.set_hsv(frac(x, r.x, r.width) * 360.0, s, v);
+                let (_, sat, val) = self.editor.hsv;
+                self.set_hsv(frac(column, area.x, area.width) * 360.0, sat, val);
             }
             T::SliderS | T::SliderL => {
-                self.focus = if t == T::SliderS {
+                self.focus = if target == T::SliderS {
                     Focus::SliderS
                 } else {
                     Focus::SliderL
                 };
-                let (s, l) = self.editor.hsl(self.key());
-                let u = frac(x, r.x, r.width);
-                if t == T::SliderS {
-                    self.set_hsl(u, l);
+                let (sat, light) = self.editor.hsl(self.key());
+                let along = frac(column, area.x, area.width);
+                if target == T::SliderS {
+                    self.set_hsl(along, light);
                 } else {
-                    self.set_hsl(s, u);
+                    self.set_hsl(sat, along);
                 }
             }
             T::Hex if !drag => {
@@ -261,7 +260,7 @@ impl App {
                         crate::fonts::types::ROLE_NAMES[role],
                         self.fonts.preset.fonts[role].family
                     );
-                    self.apply_picked_fonts(what);
+                    self.apply_picked_fonts(&what);
                 }
             }
             T::FontSearch => self.fonts.focus = FontFocus::Search,

@@ -12,6 +12,7 @@ use std::path::PathBuf;
 
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Naming, Overlay};
+use crate::app::state::steps::{offset, to_i32};
 use crate::keymap::action::Action;
 use crate::keymap::key::Key;
 use crate::model::history::History;
@@ -28,22 +29,18 @@ impl App {
     /// Moves a list cursor `sel` over `n` rows for a movement action (up,
     /// down, page, top, bottom). False when `a` is not a movement.
     pub(crate) fn move_sel(sel: &mut usize, n: usize, a: Action) -> bool {
-        let last = n.saturating_sub(1) as i32;
+        let last = to_i32(n.saturating_sub(1));
         let d: i32 = match a {
             Action::Up => -1,
             Action::Down => 1,
             Action::PageUp => -10,
             Action::PageDown => 10,
-            Action::Top => -(*sel as i32),
-            Action::Bottom => last - *sel as i32,
+            Action::Top => -to_i32(*sel),
+            Action::Bottom => last - to_i32(*sel),
             _ => return false,
         };
-        *sel = (*sel as i32 + d).clamp(0, last) as usize;
+        *sel = offset(*sel, d).min(n.saturating_sub(1));
         true
-    }
-
-    pub fn history(&self) -> Option<History> {
-        History::current()
     }
 
     /// Where a file with a history lives.
@@ -97,7 +94,7 @@ impl App {
         let Some((file, path)) = crate::model::history::last_write() else {
             return self.messages.info("No config change to undo yet");
         };
-        let Some(h) = self.history() else { return };
+        let Some(h) = History::current() else { return };
         let newest = h
             .list_info(&file)
             .into_iter()
@@ -176,7 +173,7 @@ impl App {
         }
         if t == T::SettingsDiff && self.settings_page.browse.is_some() {
             let p = &mut self.settings_page;
-            p.browse_scroll = (p.browse_scroll as i32 + d * 3).max(0) as usize;
+            p.browse_scroll = offset(p.browse_scroll, d * 3);
             return;
         }
         if let T::PresetRow(_) = t {
@@ -185,7 +182,7 @@ impl App {
         }
         if t == T::SettingsDiff {
             let p = &mut self.settings_page;
-            p.diff_scroll = (p.diff_scroll as i32 + d * 3).max(0) as usize;
+            p.diff_scroll = offset(p.diff_scroll, d * 3);
             return;
         }
         if self.settings_page.tab == Tab::History {
@@ -333,13 +330,13 @@ impl App {
 
     /// The prompt's text, confirmed.
     // Long function: one match over the kinds of name or text prompt.
-    pub fn finish_prompt(&mut self, purpose: Naming, input: String) {
+    pub fn finish_prompt(&mut self, purpose: Naming, input: &str) {
         let text = input.trim().to_string();
         if text.is_empty() {
             return;
         }
         match purpose {
-            Naming::PresetFrom(from) => self.new_preset_from(&from, text),
+            Naming::PresetFrom(from) => self.new_preset_from(&from, &text),
             Naming::Preset => {
                 if self.presets.iter().any(|p| p.name == text) {
                     return self
@@ -347,7 +344,7 @@ impl App {
                         .error(format!("There's already a preset \"{text}\""));
                 }
                 let mut km = self.keymap.clone();
-                km.name = text.clone();
+                km.name.clone_from(&text);
                 self.keymap = km;
                 self.sync_preset();
                 self.messages
@@ -357,7 +354,7 @@ impl App {
                 let now = std::fs::read_to_string(self.file_path(file))
                     .ok()
                     .and_then(|t| serde_json::from_str(&t).ok());
-                match (self.history(), now) {
+                match (History::current(), now) {
                     (Some(h), Some(content)) => match h.save_named(file, &text, &content) {
                         Ok(_) => self.notify_saved(format!("Saved {file} as \"{text}\"")),
                         Err(e) => self.messages.error(format!("{e:#}")),
@@ -398,7 +395,7 @@ impl App {
                 }
             }
             Deferred::DeleteVersion(path) => {
-                if let Some(h) = self.history() {
+                if let Some(h) = History::current() {
                     match h.delete(&path) {
                         Ok(()) => self.messages.info("Deleted that version"),
                         Err(e) => self.messages.error(format!("{e:#}")),
@@ -409,7 +406,7 @@ impl App {
             Deferred::ResetPreset(name) => self.reset_preset(&name),
             Deferred::StartTournament(pool) => self.tour_start(pool),
             Deferred::NerdForRoles { id, group, roles } => {
-                self.install_nerd_for_roles(id, group, roles)
+                self.install_nerd_for_roles(id, group, roles);
             }
             Deferred::ClearPreviews => match crate::system::download::preview::clear_previews() {
                 Ok(()) => {

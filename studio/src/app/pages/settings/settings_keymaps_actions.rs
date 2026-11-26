@@ -70,7 +70,7 @@ impl App {
                 }
             }
             (_, Action::SaveNamed) => {
-                self.prompt("Save the keymap as a new preset", Naming::Preset, "")
+                self.prompt("Save the keymap as a new preset", Naming::Preset, "");
             }
             (_, Action::ResetPreset) if builtin => self.ask(
                 format!("Reset \"{}\" to the shipped keys?", self.keymap.name),
@@ -174,7 +174,7 @@ impl App {
                 self.overlay = Overlay::None;
                 match what {
                     Capture::Binding { ctx, action, add } => {
-                        self.bind(ctx, action, vec![keys], add)
+                        self.bind(ctx, action, vec![keys], add);
                     }
                     Capture::Leader => {}
                 }
@@ -183,19 +183,18 @@ impl App {
                 keys.pop();
                 self.overlay = Overlay::Capture { what, keys };
             }
-            _ => match what {
-                Capture::Leader => {
+            _ => {
+                if matches!(what, Capture::Leader) {
                     self.overlay = Overlay::None;
                     self.keymap = self.keymap.with_leader(key);
                     self.sync_preset();
                     self.messages
                         .info(format!("Leader is now {}", key.display()));
-                }
-                _ => {
+                } else {
                     keys.push(key);
                     self.overlay = Overlay::Capture { what, keys };
                 }
-            },
+            }
         }
     }
 }

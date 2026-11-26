@@ -46,6 +46,10 @@ use state::messages::Messages;
 use state::nav::{Focus, For, Overlay, Page, Side};
 use state::palette_editor::PaletteEditor;
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each flag is an independent yes/no state (new palette, new theme, hand pointer, quit); an enum would not make it clearer"
+)]
 pub struct App {
     pub store: Store,
     pub name: String,
@@ -105,7 +109,7 @@ pub struct App {
     pub pending_keys: Vec<Key>,
     /// What the Open / Save as pop-up is for.
     pub overlay_for: For,
-    /// The palette list (For::Palette): each entry's palette, for previewing
+    /// The palette list (`For::Palette`): each entry's palette, for previewing
     /// it while it's highlighted, and the palette from before the list opened.
     pub open_palettes: Vec<Option<Palette>>,
     pub open_original: Option<Palette>,
@@ -136,6 +140,12 @@ impl App {
         )
     }
 
+    /// Starts with a given config: loads the first palette, builds the state,
+    /// then restores the session (migrations, theme, warnings).
+    ///
+    /// # Errors
+    /// Fails when a palette named on the command line cannot be loaded and no
+    /// theme has that name either.
     pub fn with_config(store: Store, start: Start, config: crate::config::Loaded) -> Result<App> {
         let active = store.active_name();
         let system_palette = active.as_ref().and_then(|n| store.load(n).ok());
@@ -145,30 +155,23 @@ impl App {
             _ => None,
         };
         let start_new = matches!(start, Start::New);
-        let (name, palette, is_new) = match start {
-            Start::Named(n) => match store.load(&n) {
-                Ok(p) => (n, p, false),
-                Err(e)
-                    if !ThemeStore {
-                        dir: store.dir.clone(),
-                    }
-                    .load_all()
-                    .iter()
-                    .any(|(t, _)| *t == n) =>
-                {
-                    return Err(e);
-                }
-                Err(_) => match active.as_deref().map(|n| (n, store.load(n))) {
-                    Some((n, Ok(p))) => (n.to_string(), p, false),
-                    _ => ("untitled".to_string(), Palette::blank(), true),
-                },
-            },
-            Start::Active => match active.as_deref().map(|n| (n, store.load(n))) {
-                Some((n, Ok(p))) => (n.to_string(), p, false),
-                _ => ("untitled".to_string(), Palette::blank(), true),
-            },
-            Start::New => ("untitled".to_string(), Palette::blank(), true),
-        };
+        let first = first_palette(&store, start, active.as_deref())?;
+        let warnings = config.warnings.clone();
+        let mut app = App::build(store, first, active, system_palette, config);
+        app.restore_session(start_new, named.as_deref(), &warnings);
+        Ok(app)
+    }
+
+    /// Builds the state: each field gets its start value. Only the fonts tab
+    /// reads the disk.
+    // Long function: one struct literal that gives every `App` field its start value.
+    fn build(
+        store: Store,
+        (name, palette, is_new): (String, Palette, bool),
+        active: Option<String>,
+        system_palette: Option<Palette>,
+        config: crate::config::Loaded,
+    ) -> App {
         let terminal = store.terminal_map().ok();
         let preview = Preview::new(&store.desktop);
         let fonts = FontsTab::new(
@@ -198,8 +201,8 @@ impl App {
             fonts,
             picker: None,
             sample_image: None,
-            sample_settle: Default::default(),
-            prefetch: Default::default(),
+            sample_settle: crate::model::settle::Settle::default(),
+            prefetch: crate::system::prefetch::Prefetch::default(),
             redraw_at: None,
             sample_error: None,
             overlay_for: For::Palette,
@@ -215,8 +218,8 @@ impl App {
             presets: config.presets,
             config_dir: config.dir.clone(),
             settings: config.settings.clone(),
-            settings_page: Default::default(),
-            dl: Default::default(),
+            settings_page: crate::settings_page::SettingsPage::default(),
+            dl: crate::fonts::download_page::DlPage::default(),
             tour_page: None,
             pending_keys: Vec::new(),
             store,
@@ -236,7 +239,7 @@ impl App {
             terminal,
             messages: Messages::new(),
             overlay: Overlay::None,
-            hits: Default::default(),
+            hits: crate::app::state::hit::HitMap::default(),
             pointer_hand: false,
             quit: false,
         };
@@ -244,36 +247,49 @@ impl App {
         app.fonts.filters = app.settings.font_list.filters();
         app.fonts.unfold_current = app.settings.fonts.list_opens_to_current_font;
         app.fonts.refresh_installed();
-        // palettes.json / fonts.json: version 1 files become version 2 (once;
-        // the old file goes to the history)
+        app
+    }
+
+    /// Restores the session: file migrations, the theme, the selected row,
+    /// and the warnings that the config loading found.
+    fn restore_session(&mut self, start_new: bool, named: Option<&str>, warnings: &[String]) {
+        self.migrate_files();
+        if start_new {
+            self.new_theme();
+            self.messages.message = None;
+        } else {
+            self.init_theme(named);
+        }
+        self.sync_row();
+        if !warnings.is_empty() {
+            self.messages
+                .error(format!("Settings: {}", warnings.join("; ")));
+        }
+    }
+
+    /// palettes.json / fonts.json: version 1 files become version 2 (once;
+    /// the old file goes to the history).
+    fn migrate_files(&mut self) {
         for (what, result) in [
-            ("palettes.json", app.store.migrate()),
+            ("palettes.json", self.store.migrate()),
             // before fonts.json: it takes the sizes from the presets
-            ("themes.json", app.themes.migrate(&app.fonts.store)),
-            ("fonts.json", app.fonts.store.migrate()),
+            ("themes.json", self.themes.migrate(&self.fonts.store)),
+            ("fonts.json", self.fonts.store.migrate()),
         ] {
             match result {
-                Ok(Some(v)) => app.messages.info(format!(
+                Ok(Some(v)) => self.messages.info(format!(
                     "{what} updated to file format version {v} (the old file is in the history)"
                 )),
                 Ok(None) => {}
-                Err(e) => app.messages.error(format!("{what}: {e:#}")),
+                Err(e) => self.messages.error(format!("{what}: {e:#}")),
             }
         }
-        if start_new {
-            app.new_theme();
-            app.messages.message = None;
-        } else {
-            app.init_theme(named.as_deref());
-        }
-        app.sync_row();
-        if !config.warnings.is_empty() {
-            app.messages
-                .error(format!("Settings: {}", config.warnings.join("; ")));
-        }
-        Ok(app)
     }
 
+    /// Runs the main loop until the user quits: timers, drawing, one event.
+    ///
+    /// # Errors
+    /// Fails when drawing or reading terminal events fails.
     pub fn run(
         &mut self,
         terminal: &mut Term,
@@ -287,31 +303,7 @@ impl App {
             if self.page == Page::Main && self.layout.sample_visible {
                 self.update_sample();
             }
-            // downloads: the catalogue, progress, finished installs
-            if self.poll_downloads() {
-                redraw = true;
-            }
-            if self.poll_prefetch() {
-                redraw = true;
-            }
-            if self.poll_tournament() {
-                redraw = true;
-            }
-            if self.messages.expire(self.settings.messages.seconds) {
-                redraw = true;
-            }
-            // a role's size, once h / l have been still for a moment: saved
-            // to the theme and applied (one i3 restart, not one per step)
-            if self
-                .fonts
-                .sized_at
-                .is_some_and(|t| t.elapsed() >= Duration::from_millis(400))
-            {
-                self.apply_sizes();
-                redraw = true;
-            }
-            // an image waiting for its pane's size to settle
-            if self.redraw_at.is_some_and(|t| Instant::now() >= t) {
+            if self.poll_background() {
                 redraw = true;
             }
             if self.preview.take_dirty() || redraw {
@@ -321,19 +313,58 @@ impl App {
             }
             // Short poll: the preview's programs can print at any time.
             if event::poll(Duration::from_millis(25))? {
-                match event::read()? {
-                    Event::Key(k) if k.kind == KeyEventKind::Press => self.on_key(k),
-                    Event::Mouse(m) => self.on_mouse(m),
-                    Event::Paste(s) => {
-                        self.on_paste(&s);
-                        self.sync_palette_preview();
-                    }
-                    _ => {}
-                }
+                self.handle_event(&event::read()?);
                 redraw = true;
             }
         }
         Ok(())
+    }
+
+    /// Checks the background work and the timers. True when the screen must
+    /// be drawn again.
+    fn poll_background(&mut self) -> bool {
+        let mut redraw = false;
+        // downloads: the catalogue, progress, finished installs
+        if self.poll_downloads() {
+            redraw = true;
+        }
+        if self.poll_prefetch() {
+            redraw = true;
+        }
+        if self.poll_tournament() {
+            redraw = true;
+        }
+        if self.messages.expire(self.settings.messages.seconds) {
+            redraw = true;
+        }
+        // a role's size, once h / l have been still for a moment: saved
+        // to the theme and applied (one i3 restart, not one per step)
+        if self
+            .fonts
+            .sized_at
+            .is_some_and(|t| t.elapsed() >= Duration::from_millis(400))
+        {
+            self.apply_sizes();
+            redraw = true;
+        }
+        // an image waiting for its pane's size to settle
+        if self.redraw_at.is_some_and(|t| Instant::now() >= t) {
+            redraw = true;
+        }
+        redraw
+    }
+
+    /// Sends one terminal event to the key, mouse or paste handler.
+    fn handle_event(&mut self, event: &Event) {
+        match event {
+            Event::Key(k) if k.kind == KeyEventKind::Press => self.on_key(*k),
+            Event::Mouse(m) => self.on_mouse(*m),
+            Event::Paste(s) => {
+                self.on_paste(s);
+                self.sync_palette_preview();
+            }
+            _ => {}
+        }
     }
 
     /// The mouse pointer is a hand over anything clickable (OSC 22; Ghostty
@@ -440,7 +471,7 @@ impl App {
             crate::model::encoding::base64(text.as_bytes())
         );
         let mut out = std::io::stdout();
-        let _ = out.write_all(seq.as_bytes()).and_then(|_| out.flush());
+        let _ = out.write_all(seq.as_bytes()).and_then(|()| out.flush());
         self.messages.info(format!("Copied {text}"));
     }
 
@@ -456,10 +487,41 @@ impl App {
     }
 }
 
+/// Picks the palette to start with: the name, the active palette, or a blank
+/// one. Returns its name, the palette, and whether it is new (not saved yet).
+fn first_palette(
+    store: &Store,
+    start: Start,
+    active: Option<&str>,
+) -> Result<(String, Palette, bool)> {
+    // The active palette, or a blank one when there is none or it fails to load.
+    let active_or_blank = || match active.map(|n| (n, store.load(n))) {
+        Some((n, Ok(p))) => (n.to_string(), p, false),
+        _ => ("untitled".to_string(), Palette::blank(), true),
+    };
+    Ok(match start {
+        Start::Named(n) => match store.load(&n) {
+            Ok(p) => (n, p, false),
+            // A name that is a theme (not a palette) is fine: the theme sets the palette.
+            Err(e) => {
+                let themes = ThemeStore {
+                    dir: store.dir.clone(),
+                };
+                if !themes.load_all().iter().any(|(t, _)| *t == n) {
+                    return Err(e);
+                }
+                active_or_blank()
+            }
+        },
+        Start::Active => active_or_blank(),
+        Start::New => ("untitled".to_string(), Palette::blank(), true),
+    })
+}
+
 /// Sets the mouse pointer shape (OSC 22): "pointer" (hand) or "default".
 pub fn set_pointer(shape: &str) {
     let mut out = std::io::stdout();
-    let _ = write!(out, "\x1b]22;{shape}\x1b\\").and_then(|_| out.flush());
+    let _ = write!(out, "\x1b]22;{shape}\x1b\\").and_then(|()| out.flush());
 }
 
 /// Indices of entries whose name contains `filter` (case-insensitive).

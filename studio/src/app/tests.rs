@@ -4,6 +4,7 @@ use super::state::nav::{ColourRow, Pending};
 use super::*;
 
 use crate::keymap::action::Action;
+use std::fmt::Write as _;
 
 use crate::keymap::Context;
 use crate::model::store::to_jq_string;
@@ -323,6 +324,10 @@ fn number_keys_jump_between_panels() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one walk through the fonts tab (edit, save, open a preset); each step uses the state the step before left"
+)]
 fn fonts_tab_edits_saves_and_opens_presets() {
     let store = temp_store("fonts");
     let dir = store.dir.clone();
@@ -462,7 +467,7 @@ fn leader_sequences_popup_help_and_hints() {
     );
     // Esc cancels without doing anything
     press(&mut app, "\x1b");
-    assert!(app.pending_keys.is_empty());
+    assert_eq!(app.pending_keys, []);
     // <leader>sp saves the palette from anywhere
     press(&mut app, "#abcdef\n");
     assert!(app.dirty());
@@ -475,7 +480,7 @@ fn leader_sequences_popup_help_and_hints() {
     );
     // an unbound sequence does nothing and clears
     press(&mut app, " zz");
-    assert!(app.pending_keys.is_empty());
+    assert_eq!(app.pending_keys, []);
     // the help screen lists the real bindings
     press(&mut app, "?");
     let screen = render(&mut app, 160, 45);
@@ -752,6 +757,10 @@ fn extreme_sizes_render_at_every_window_size() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one resize walk: each terminal size is checked against the layout the previous size left"
+)]
 fn layout_three_columns_then_preview_row_then_too_small() {
     use crate::ui::layout::{Arrangement, arrange};
     let r = |w, h| Rect::new(0, 0, w, h);
@@ -956,11 +965,17 @@ fn settings_changes_wait_for_save() {
     assert_eq!(app.keymap.keys_of(Context::Colours, Action::Pin).len(), 1);
     // d unbinds, s saves; <leader>u undoes that save, again redoes
     press(&mut app, "ds");
-    assert!(app.keymap.keys_of(Context::Colours, Action::Pin).is_empty());
+    assert_eq!(
+        app.keymap.keys_of(Context::Colours, Action::Pin),
+        Vec::<Vec<Key>>::new()
+    );
     press(&mut app, " u");
     assert_eq!(app.keymap.keys_of(Context::Colours, Action::Pin).len(), 1);
     press(&mut app, " u");
-    assert!(app.keymap.keys_of(Context::Colours, Action::Pin).is_empty());
+    assert_eq!(
+        app.keymap.keys_of(Context::Colours, Action::Pin),
+        Vec::<Vec<Key>>::new()
+    );
     // Behaviour tab: the leader, by pressing it
     press(&mut app, "]");
     app.settings_page.bh_sel = 1;
@@ -1119,7 +1134,7 @@ fn settings_history_tab_previews_restores_and_names_versions() {
         crate::settings_page::FILES[app.settings_page.hist_file],
         "fonts.json"
     );
-    assert!(app.versions().is_empty());
+    assert_eq!(app.versions(), []);
     assert!(render(&mut app, 160, 45).contains("No earlier versions yet"));
     std::fs::remove_dir_all(dir).unwrap();
 }
@@ -1152,6 +1167,10 @@ fn ctrl_c_quits_unless_the_keymap_uses_it() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one scenario: set the hover look, save it, then check each pane border in turn"
+)]
 fn hover_look_is_configurable_and_pane_borders_light_up() {
     use crate::app::state::hit::{Target as T, Underline};
     use crate::app::state::nav::{BhRow, LookId};
@@ -1262,7 +1281,7 @@ fn hover_look_is_configurable_and_pane_borders_light_up() {
     let saved = crate::config::load(&dir.join("studio-config"), false);
     assert_eq!(saved.settings.hover.look.underline, "double");
     assert_eq!(saved.settings.colours.derived_highlight.underline, "single");
-    crate::app::state::hit::set_looks(Default::default());
+    crate::app::state::hit::set_looks(crate::app::state::hit::Looks::default());
     std::fs::remove_dir_all(dir).unwrap();
 }
 
@@ -1544,7 +1563,7 @@ fn settings_groups_fold_and_only_names_are_underlined() {
     let row: String = (r.x..r.right())
         .map(|x| buf[(x, r.y)].symbol().to_string())
         .collect();
-    let start = r.x + row.find("Leader").unwrap() as u16;
+    let start = r.x + u16::try_from(row.find("Leader").unwrap()).unwrap();
     assert!(under(start) && under(start + 10), "the name");
     assert!(
         !under(r.x) && !under(start + 45) && !under(start + 52),
@@ -1554,6 +1573,10 @@ fn settings_groups_fold_and_only_names_are_underlined() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one walk through the Download page (list, search, remove); each step uses the state the step before left"
+)]
 fn download_page_lists_searches_and_removes() {
     use crate::app::state::hit::Target as T;
     use crate::fonts::download_page::{DlRow, DlStatus, DlTab};
@@ -1682,8 +1705,8 @@ fn download_page_lists_searches_and_removes() {
     assert_eq!(app.dl.tab, DlTab::Installed);
     assert_eq!(app.dl_rows(), vec![DlRow::Listed("Zen Loop".into())]);
     press(&mut app, "d");
-    assert!(crate::system::download::list::read_list(&list).is_empty());
-    assert!(app.dl_rows().is_empty());
+    assert_eq!(crate::system::download::list::read_list(&list), Map::new());
+    assert_eq!(app.dl_rows(), []);
     // Nerd Fonts tab, with the release (past the Tournament tab)
     press(&mut app, "]");
     assert_eq!(app.dl.tab, DlTab::Tournament);
@@ -1916,7 +1939,7 @@ fn the_readme_tab_renders_scrolls_and_jumps_between_headings() {
     // the guide isn't next to the temp configs: give the tab its text
     let mut md = String::from("# Guide\n\nFirst part.\n\n");
     for i in 0..60 {
-        md += &format!("- line {i}\n");
+        writeln!(md, "- line {i}").unwrap();
     }
     md += "\n## Second\n\n| a | b |\n| - | - |\n| `x` | y |\n";
     app.settings_page.readme = Some((None, Ok(md)));
@@ -1954,7 +1977,7 @@ fn messages_time_out_and_saves_can_pop_up() {
     let dir = store.dir.clone();
     crate::model::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
-    let ago = |s: u64| Some(Instant::now() - Duration::from_secs(s));
+    let ago = |s: u64| Instant::now().checked_sub(Duration::from_secs(s));
     // info messages go after settings.messages.seconds (3 by default)
     app.messages.info("hello");
     assert!(!app.messages.expire(app.settings.messages.seconds));
@@ -2089,7 +2112,7 @@ fn behaviour_tab_sets_up_prefetching() {
         app.with_draft(|a| {
             a.settings_page.bh_sel = at(r);
             a.run_behaviour_tab(Action::Confirm);
-        })
+        });
     };
     // prefetching: off by default, monospace chosen; edits wait for Save
     assert!(!app.settings.fonts_page.prefetch);
@@ -2305,7 +2328,7 @@ fn installed_fonts_preview_from_their_files() {
         .output()
         .ok()
         .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
-        .filter(|f| f.ends_with(".ttf") || f.ends_with(".otf"))
+        .filter(|f| has_font_extension(f))
     else {
         eprintln!("skipped: no font file");
         return;
@@ -2315,7 +2338,11 @@ fn installed_fonts_preview_from_their_files() {
     let mut app = test_app(store, Start::Named("One".into()));
     let fonts = crate::model::paths::installed_fonts_dir().join("test-mono");
     std::fs::create_dir_all(&fonts).unwrap();
-    let ext = if file.ends_with(".otf") { "otf" } else { "ttf" };
+    let ext = if has_extension(&file, "otf") {
+        "otf"
+    } else {
+        "ttf"
+    };
     std::fs::copy(&file, fonts.join(format!("TestMono-Regular.{ext}"))).unwrap();
     let list = app.installed_list_path();
     std::fs::create_dir_all(list.parent().unwrap()).unwrap();
@@ -2359,6 +2386,10 @@ fn prefetching_keeps_the_main_loop_quick() {
     use crate::system::download::{Catalogue, Entry, Msg, Source};
     use std::sync::mpsc::Sender;
     // downloads answer at once (no network)
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "the prefetch field is a function pointer that takes the entry and the sender by value"
+    )]
     fn stub(e: Entry, tx: Sender<Msg>) {
         let _ = tx.send(Msg::Preview {
             id: e.id,
@@ -2487,11 +2518,11 @@ fn a_tournament_of_installed_fonts_from_setup_to_results() {
 
 /// End to end against the real data and commands: re-picks the active
 /// preset's current fonts through the studio, which saves (unchanged) and
-/// applies them. Run with NO_RESTART=1 so i3 and Ghostty aren't restarted:
+/// applies them. Run with `NO_RESTART=1` so i3 and Ghostty aren't restarted:
 /// `THEME_STUDIO_REAL_SWITCH=1 NO_RESTART=1 cargo test studio_applies_fonts --
 /// --ignored --nocapture` (without the first, tests never run the scripts).
 #[test]
-#[ignore]
+#[ignore = "runs the real scripts; needs THEME_STUDIO_REAL_SWITCH=1"]
 fn studio_applies_fonts_like_font_switch() {
     use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     let store = Store::locate();
@@ -2525,4 +2556,16 @@ fn studio_applies_fonts_like_font_switch() {
             app.fonts.preset.fonts[role], app.messages.message
         );
     }
+}
+
+/// True when `file` ends in `.ext` (letter case does not matter).
+fn has_extension(file: &str, ext: &str) -> bool {
+    std::path::Path::new(file)
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case(ext))
+}
+
+/// True for a font file that the preview can read (`.ttf` or `.otf`).
+fn has_font_extension(file: &str) -> bool {
+    has_extension(file, "ttf") || has_extension(file, "otf")
 }

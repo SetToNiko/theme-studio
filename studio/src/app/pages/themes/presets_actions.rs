@@ -122,7 +122,7 @@ impl App {
     }
 
     /// A new preset, a copy of `from`, highlighted in the list.
-    pub fn new_preset_from(&mut self, from: &str, name: String) {
+    pub fn new_preset_from(&mut self, from: &str, name: &str) {
         if self.presets.iter().any(|p| p.name == name) {
             return self
                 .messages
@@ -131,7 +131,7 @@ impl App {
         let Some(mut km) = self.presets.iter().find(|p| p.name == from).cloned() else {
             return;
         };
-        km.name = name.clone();
+        km.name = name.to_string();
         self.presets.push(km);
         self.settings_page.browse = Some(self.presets.len() - 1);
         self.messages.info(format!(
