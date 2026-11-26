@@ -37,6 +37,7 @@ mod tour_page;
 mod tour_ui;
 mod tournament;
 mod ui;
+mod widgets;
 
 use std::io::stdout;
 

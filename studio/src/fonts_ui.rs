@@ -12,7 +12,8 @@ use crate::app::App;
 use crate::app::nav::Side;
 use crate::fonts::{CHIPS, FontFocus, ROLE_NAMES, ROLE_NEEDS, ROLE_USE, Row};
 use crate::hit::{Target, hover};
-use crate::ui::{pane_title, panel_number};
+use crate::ui::pane_title;
+use crate::widgets::panel_number;
 
 fn block(app: &App, area: Rect, title: Line<'static>, focused: bool) -> Block<'static> {
     Block::bordered()

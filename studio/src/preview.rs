@@ -598,7 +598,7 @@ impl Preview {
             };
             let block = Block::bordered()
                 .title(Line::from(vec![
-                    crate::ui::panel_number(n),
+                    crate::widgets::panel_number(n),
                     Span::styled(format!("{label} "), Style::new().fg(label_fg.color())),
                 ]))
                 .border_style(Style::new().fg(border.color()).bg(p.get("bg_dim").color()));

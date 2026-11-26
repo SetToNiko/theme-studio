@@ -5,8 +5,8 @@ Usage: python3 scripts/dev/module-cycles.py [studio/src]
 
 Each .rs file under the folder (also in subfolders) is a module, named by its
 file name (mod.rs: its folder's name). A module depends on another module when
-its code names `crate::...::<other>`. The test module (everything after
-`#[cfg(test)]`) and files named tests.rs do not count.
+its code names `crate::...::<other>`. The test module (from `#[cfg(test)]` followed by `mod tests`) and files named
+tests.rs do not count.
 A cycle group is a set of modules that all depend on each other, directly
 or through other modules in the group. The refactor wants zero groups.
 
@@ -36,6 +36,19 @@ def module_name(path, src_dir):
     return file_name[: -len(".rs")]
 
 
+def without_test_module(text):
+    """The code of a file without its test module.
+
+    The test module starts at a line `#[cfg(test)]` that is followed by a line
+    `mod tests`. Only that cut counts: a `#[cfg(test)]` on a single function or
+    field earlier in the file must not hide the code after it.
+    """
+    match = re.search(r"^#\[cfg\(test\)\]\s*\n\s*mod tests\b", text, re.MULTILINE)
+    if match is None:
+        return text
+    return text[: match.start()]
+
+
 def read_dependencies(src_dir):
     """Return {module: set of modules that it names}, for each .rs file.
 
@@ -51,7 +64,7 @@ def read_dependencies(src_dir):
             path = os.path.join(folder, file_name)
             with open(path, encoding="utf-8") as f:
                 text = f.read()
-            production_code[module_name(path, src_dir)] = text.split("#[cfg(test)]")[0]
+            production_code[module_name(path, src_dir)] = without_test_module(text)
 
     dependencies = {}
     for module, text in production_code.items():

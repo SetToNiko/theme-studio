@@ -17,6 +17,7 @@ use crate::hit::{Border, BorderId, Target, hover};
 use crate::keymap::{Action, Context};
 use crate::palette::{self, GROUPS, TEXT_KEYS};
 use crate::preview::Mode as PreviewMode;
+use crate::widgets::panel_number;
 
 /// Narrowest the fonts column, the colour column and the preview can be.
 const FONTS_W: u16 = 46;
@@ -2151,12 +2152,6 @@ fn truncate(s: &str, n: usize) -> String {
     }
 }
 
-/// Superscript panel number for a title, btop-style ("¹Palette"); the
-/// number key jumps to that panel.
-pub fn panel_number(n: u8) -> Span<'static> {
-    const SUP: [&str; 10] = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"];
-    Span::styled(format!(" {}", SUP[n as usize % 10]), Style::new().yellow())
-}
 #[cfg(test)]
 mod tests {
     use super::{fit_hints, friendly};

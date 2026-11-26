@@ -67,7 +67,7 @@ Theme Studio has a 25k-line Rust TUI (35 modules in one flat folder) and 4 bash 
 | `packaging/nix/` | Nix package and modules | package, home-manager module, NixOS module, fonts | none |
 
 Cycles: app ↔ {behaviour, draft, fonts_dl, fonts_preview, hit, prefetch, presets, settings, theme, tour_page, ui, …}; ui ↔ settings_ui, fonts_ui; fonts ↔ keymap, fonts_pick, font_tree; fonts_dl ↔ fonts_preview; paths ↔ store (tests only).
-Key numbers: 35 Rust modules in 1 folder, 6 scripts, about 25k Rust lines, 12 files over 500 production lines, largest `app.rs` (2,448 production lines), 2 cycle groups with 21 of 35 modules (`scripts/dev/module-cycles.py`), line coverage 82.72%, duplicate rate 1.13%.
+Key numbers: 35 Rust modules in 1 folder, 6 scripts, about 25k Rust lines, 12 files over 500 production lines, largest `app.rs` (2,448 production lines), 2 cycle groups with 22 of 35 modules (`scripts/dev/module-cycles.py`; corrected in the Phase 4 review from 21: the first script version cut each file at the first `#[cfg(test)]` and missed code after it), line coverage 82.72%, duplicate rate 1.13%.
 
 ## 3. Target architecture
 - `share/integrations.json`: the data list. For each app: its theme and font outputs (file + generator) and its reload command.
@@ -180,7 +180,7 @@ Completes: none (prepares criterion 5)
 
 ### Phase 4: Dependency direction
 - [x] P4.1 (replaced by P3.12, Phase 3 revision) Nav enums into `app/nav.rs`: Page, Overlay, For, Side, Pending, Focus | Files: `app/mod.rs`, `app/nav.rs`, `hit.rs`, `prefetch.rs`, `presets.rs` | Target: T5 | Check: tests, fewer cycles
-- [x] P4.2 nav.rs as a leaf: move `Capture`, `Naming`, `Deferred` (settings.rs) and `BhRow` + `LookId` (behaviour.rs) into app/nav.rs as plain enums, so nav imports nothing from the cycle | Files: `app/nav.rs`, `settings.rs`, `behaviour.rs` (+ access-path edits in 8 files: app/{mod,overlay,tests}.rs, fonts_dl, presets, settings_ui, tour_page, ui) | Target: T5 | Check: tests; module-cycles: nav, hit, prefetch leave the big group
+- [x] P4.2 nav.rs as a leaf: move `Capture`, `Naming`, `Deferred` (settings.rs) and `BhRow` + `LookId` (behaviour.rs) into app/nav.rs as plain enums, so nav is in no cycle (it depends only on color and keymap; keymap does not depend on nav) | Files: `app/nav.rs`, `settings.rs`, `behaviour.rs` (+ access-path edits in 8 files: app/{mod,overlay,tests}.rs, fonts_dl, presets, settings_ui, tour_page, ui) | Target: T5 | Check: tests; module-cycles: nav, hit, prefetch leave the big group
 - [x] P4.3 The run loop gets the draw function: App no longer calls `crate::ui::draw` (pass it in, or move the event loop to main.rs) | Files: `app/mod.rs`, `main.rs`, `docs/refactor/PLAN.md` | Target: T5 (direction ui -> app) | Check: tests; the drawing modules leave the big group
 - [x] P4.4 `base64` out of app into the leaf module `encoding.rs` (app and download.rs use it) | Files: `app/mod.rs`, `app/tests.rs`, `download.rs`, `main.rs`, `encoding.rs` (new) | Target: T5 | Check: download no longer imports app
 - [x] P4.5 prefetch: its `impl App` block moves to `app/prefetch_actions.rs` | Files: `prefetch.rs`, new `app/prefetch_actions.rs`, `app/mod.rs` | Target: T5 | Check: prefetch no longer imports App
