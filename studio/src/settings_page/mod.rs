@@ -9,11 +9,13 @@
 //! - `draft.rs`: the unsaved changes (`Draft`) of the Keymaps and Behaviour tabs.
 //! - `keymap_presets.rs`: the preset browser of the Keymaps tab.
 //! - `readme.rs`: the README tab (Markdown rendered to styled lines).
+//! - `readme_layout.rs`: word wrapping and table layout for the README tab.
 
 pub mod behaviour;
 pub mod draft;
 pub mod keymap_presets;
 pub mod readme;
+pub mod readme_layout;
 
 use std::path::PathBuf;
 

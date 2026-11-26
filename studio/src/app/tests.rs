@@ -5,6 +5,7 @@ use super::*;
 
 use crate::keymap::action::Action;
 use std::fmt::Write as _;
+use std::time::Duration;
 
 use crate::keymap::Context;
 use crate::model::store::to_jq_string;
