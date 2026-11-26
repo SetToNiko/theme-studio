@@ -75,7 +75,7 @@ Key numbers: 35 Rust modules in 1 folder, 6 scripts, about 25k Rust lines, 12 fi
 - `scripts/lib/integrations.sh`: the runner. It writes the outputs and runs the reloads one time. It is the only location that runs reload commands.
 - `scripts/lib/paths.sh` and `studio/src/paths.rs`: each user and system path, with one `home()`. The login-screen paths can be changed with environment variables.
 - `studio/src/app/`: App divided by concern: `palette_editor`, `layout`, `messages`, `overlay`, `mouse`, `actions`, `nav` (Page, Overlay, For, Side).
-- `studio/src/core/`, `system/`, `ui/`: folders by layer, 10 modules or fewer each. Direction: ui → app → core and system. No cycles.
+- `studio/src/model/`, `system/`, `ui/`: folders by layer, 10 modules or fewer each. Direction: ui → app → model and system. No cycles.
 
 Advanced techniques that the refactor adds:
 - Module re-exports (`pub use`) | `main.rs` during the folder moves | keep `crate::x` paths valid, so one move changes 5 files or fewer. A comment explains each re-export.
@@ -210,6 +210,8 @@ Completes: none (cycle count decreases, measured)
 - [x] P5.8 config: sizes and defaults separate from load and save | Files: `config.rs` -> `config/mod.rs`, `config/sizes.rs` | Target: limits | Check: tests
 - [x] P5.11 desktop_preview split: the hidden-terminal state moved to `preview_term/mod.rs` (Preview, Mode, PaneId, draft palette) and `preview_term/pane.rs` (Pane, TermColors, key_bytes), outside ui; the drawing (bar, rofi, windows) stays in `ui/desktop_preview.rs`; each under 500 lines | Files: ui/desktop_preview.rs, preview_term/{mod,pane}.rs, main.rs (+ access-path edits in 6 files) | Target: limits, T5 | Check: tests; cycles 0
 - [x] P5.9 `core/` folder (done): color, encoding, history, palette, paths, samples (with its data folder), settle, store, theme, tournament (10 modules; `config/` stays a root folder, to keep core at 10). Not moved: hit, behaviour, draft, presets, settings, tour_page, docs (screen code: no place yet, see P5.10 note) | Files: main.rs, core/mod.rs, moves | Target: T5 | Check: tests
+- [x] P5.12 Rename `core/` to `model/` (decided after P5.9: `core` hides Rust's built-in core crate) | Files: the folder, access paths, docs
+- [ ] P5.13 Page state into folders (decided after P5.9): new `settings_page/` (mod from settings.rs, behaviour, draft, keymap_presets from presets.rs, readme from docs.rs); tour_page.rs to `fonts/tournament_page.rs`; hit.rs to `app/state/hit.rs` | Files: moves, access paths | Target: T5 | Check: tests; cycles 0
 - [ ] P5.10 `system/` folder: desktop, download, prefetch, out (samples went to core in P5.9; docs, hit, behaviour, draft, presets, settings, tour_page have no place yet: decide here, they use `app`/`ui` and are screen code), and the cycle ratchet set to 0: `nix flake check` fails on any cycle | Files: main.rs, system/mod.rs, moves, `docs/refactor/lint-baseline.txt` | Target: T5 | Check: tests; cycles 0; no module left in the root except main.rs
 Removed: the old "settings: tabs into separate files" step (Phase 4 moved the impl App blocks out; settings.rs is under 500).
 Completes: criterion 5 (with the docs action), no dependency cycles
@@ -274,6 +276,7 @@ Completes: criterion 6
 | 4 | Revise Phase 5: app/ sub-folders first (P5.0), ui/widgets leaf, fonts/types leaf, folder lists complete, cycles to 0 | ACCEPT: Phase 5 rewritten (P5.0 to P5.10) | Phase 5 was written before Phases 3 and 4; the two remaining cycles break on splits that Phase 5 does anyway. |
 | 5 | P5.3 is too large (panes ~700, overlays ~520 lines) | ACCEPT: divided into P5.3a, P5.3b, P5.3c (same goal) | Found in P5.2; the three parts take different functions out of ui/mod.rs. |
 | 6 | ui/desktop_preview.rs (about 1000 lines) holds terminal state and drawing | ACCEPT: new step P5.11 before P5.9 | Found in P5.4. |
+| 7 | After P5.9: `core` hides Rust's core crate; 7 page-state modules have no place in P5.10 | USER: rename to `model/` (P5.12); page-state folder `settings_page/`, tour_page to fonts/, hit to app/state/ (P5.13) | Decided by the user. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->

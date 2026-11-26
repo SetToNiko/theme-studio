@@ -9,10 +9,10 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use crate::app::App;
 use crate::app::state::nav::{BhRow, LookId};
-use crate::core::color::Rgb;
 use crate::hit::{Target, hover, hover_line, hover_row};
 use crate::keymap::Keymap;
 use crate::keymap::key::display_seq;
+use crate::model::color::Rgb;
 use crate::settings::{DiffLine, FILES, HistFocus, KmRow, TABS, Tab};
 
 /// Keeps `sel` on screen in a list `height` rows tall.
@@ -125,7 +125,7 @@ pub fn draw_settings(f: &mut Frame, app: &mut App, area: Rect) {
 /// docs/theme-studio.md, rendered for the pane (at most 100 columns wide, so
 /// lines stay readable), from the scroll position, with a scrollbar.
 fn draw_readme(f: &mut Frame, app: &mut App, area: Rect) {
-    let path = crate::core::paths::guide(&app.store.share);
+    let path = crate::model::paths::guide(&app.store.share);
     let modified = std::fs::metadata(&path).and_then(|m| m.modified()).ok();
     let p = &mut app.settings_page;
     // read it (again, if the file changed)

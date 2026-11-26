@@ -5,7 +5,6 @@
 mod app;
 mod behaviour;
 mod config;
-mod core;
 mod desktop;
 mod docs;
 mod download;
@@ -13,6 +12,7 @@ mod draft;
 mod fonts;
 mod hit;
 mod keymap;
+mod model;
 mod out;
 mod prefetch;
 mod presets;
@@ -31,7 +31,7 @@ use ratatui::crossterm::event::{
 use ratatui::crossterm::execute;
 
 use app::{App, Start};
-use core::store::Store;
+use model::store::Store;
 
 const USAGE: &str = "\
 Usage: theme-studio [--fonts] [THEME | PALETTE | --new]
@@ -60,7 +60,7 @@ More: docs/theme-studio.md (also the Settings page's README tab)";
 
 fn main() -> Result<()> {
     // every write the studio makes keeps the old file in the history
-    core::history::init(core::history::default_dir());
+    model::history::init(model::history::default_dir());
     let mut args: Vec<String> = std::env::args().skip(1).collect();
     let fonts_tab = args.iter().any(|a| a == "--fonts");
     args.retain(|a| a != "--fonts");
@@ -80,7 +80,7 @@ fn main() -> Result<()> {
                 share: store.share.clone(),
             };
             // themes.json: the first theme, from the active palette and fonts
-            let themes = core::theme::ThemeStore {
+            let themes = model::theme::ThemeStore {
                 dir: store.dir.clone(),
             };
             if !themes.exists()
@@ -88,14 +88,14 @@ fn main() -> Result<()> {
             {
                 match themes.save(
                     &p,
-                    &core::theme::Theme {
+                    &model::theme::Theme {
                         palette: p.clone(),
                         sizes: fonts.load(&f).ok().map(|preset| preset.sizes()),
                         fonts: f,
                     },
                 ) {
                     Ok(()) => {
-                        let _ = core::theme::ThemeStore::set_active(&p);
+                        let _ = model::theme::ThemeStore::set_active(&p);
                         println!("themes.json: made the theme \"{p}\"");
                     }
                     Err(e) => eprintln!("warning: themes.json: {e:#}"),

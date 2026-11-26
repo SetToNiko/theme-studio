@@ -12,7 +12,7 @@
 
 use super::state::nav::{Focus, For, Overlay, Pending};
 use super::{App, open_matches};
-use crate::core::color::Rgb;
+use crate::model::color::Rgb;
 
 impl App {
     pub(super) fn save(&mut self, then_apply: bool) {

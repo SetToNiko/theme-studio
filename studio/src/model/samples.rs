@@ -3,7 +3,7 @@
 //! Font icon sample, prose (chapter 1 of Frankenstein), and a README-style
 //! document.
 
-use crate::core::palette::Palette;
+use crate::model::palette::Palette;
 
 /// What a preview shows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -7,8 +7,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::sync::{Arc, Mutex};
 
-use crate::core::color::Rgb;
-use crate::core::palette::Palette;
+use crate::model::color::Rgb;
+use crate::model::palette::Palette;
 
 use super::presets::Font;
 
@@ -260,7 +260,7 @@ fn job_key(markup: &str, fontconfig: &Option<PathBuf>, width: Option<u32>) -> St
 /// decoding, and the size.
 fn log_timing(prefix: &str, job: &Job, started: std::time::Instant, r: &SampleResult) {
     use std::io::Write as _;
-    let dir = crate::core::paths::timing_log_dir();
+    let dir = crate::model::paths::timing_log_dir();
     let _ = std::fs::create_dir_all(&dir);
     let size = match r {
         Ok(img) => format!("{}x{}", img.width(), img.height()),
@@ -358,8 +358,8 @@ mod tests {
     #[allow(deprecated)] // a picker without a terminal to ask
     fn preview_timing() {
         use std::time::Instant;
-        let p = crate::core::palette::Palette::blank();
-        let st = crate::core::samples::Style {
+        let p = crate::model::palette::Palette::blank();
+        let st = crate::model::samples::Style {
             family: "DejaVu Sans Mono",
             size: 12,
             palette: &p,
@@ -370,7 +370,7 @@ mod tests {
             ratatui_image::picker::Picker::from_fontsize(ratatui_image::FontSize::new(10, 20));
         picker.set_protocol_type(ratatui_image::picker::ProtocolType::Kitty);
         for (name, lines) in [("whole file", usize::MAX), ("a pane's worth", 30)] {
-            let full = crate::core::samples::code(&st, 0, 0, usize::MAX);
+            let full = crate::model::samples::code(&st, 0, 0, usize::MAX);
             // keep the first `lines` lines (and the closing tag)
             let markup = if lines == usize::MAX {
                 full

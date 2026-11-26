@@ -6,10 +6,10 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-use crate::core::color::Rgb;
-use crate::core::history::SnapshotInfo;
 use crate::keymap::Context;
 use crate::keymap::action::Action;
+use crate::model::color::Rgb;
+use crate::model::history::SnapshotInfo;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Tab {

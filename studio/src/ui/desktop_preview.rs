@@ -11,8 +11,8 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
-use crate::core::palette::Palette;
-use crate::core::store::TerminalMap;
+use crate::model::palette::Palette;
+use crate::model::store::TerminalMap;
 use crate::preview_term::pane::TermColors;
 use crate::preview_term::{PaneId, Preview};
 

@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 use anyhow::{Context, Result, anyhow};
 use serde_json::{Map, Value};
 
-use crate::core::color::Rgb;
+use crate::model::color::Rgb;
 
 /// Every key, in the order palette-derive.jq (and so palettes.json) uses.
 pub const KEYS: [&str; 34] = [
@@ -334,13 +334,13 @@ mod tests {
     use std::process::Command;
 
     fn configs() -> Option<PathBuf> {
-        let dir = crate::core::store::test_data_dir();
+        let dir = crate::model::store::test_data_dir();
         dir.join("palettes.json").exists().then_some(dir)
     }
 
     fn all_palettes(dir: &std::path::Path) -> Map<String, Value> {
         let text = std::fs::read_to_string(dir.join("palettes.json")).unwrap();
-        crate::core::store::data_map(serde_json::from_str(&text).unwrap(), "palettes").unwrap()
+        crate::model::store::data_map(serde_json::from_str(&text).unwrap(), "palettes").unwrap()
     }
 
     #[test]
@@ -378,10 +378,10 @@ mod tests {
         let input =
             std::env::temp_dir().join(format!("theme-studio-derive-{}.json", std::process::id()));
         std::fs::write(&input, serde_json::to_string(&bases).unwrap()).unwrap();
-        let share = crate::core::store::Store::locate().share;
+        let share = crate::model::store::Store::locate().share;
         let out = Command::new("jq")
             .args(["-r", "-f"])
-            .arg(crate::core::paths::share_file(&share, "palette-derive.jq"))
+            .arg(crate::model::paths::share_file(&share, "palette-derive.jq"))
             .arg(&input)
             .output();
         let Ok(out) = out else {
@@ -395,7 +395,7 @@ mod tests {
         );
         // palette-derive.jq writes the version-2 layout
         let expected =
-            crate::core::store::data_map(serde_json::from_slice(&out.stdout).unwrap(), "palettes")
+            crate::model::store::data_map(serde_json::from_slice(&out.stdout).unwrap(), "palettes")
                 .unwrap();
         assert_eq!(expected.len(), all.len());
         for (name, want) in &expected {

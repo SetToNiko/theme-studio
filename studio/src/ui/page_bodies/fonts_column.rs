@@ -397,7 +397,7 @@ pub fn draw_sample(f: &mut Frame, app: &mut App, area: Rect) {
         // while resizing: the size it had, if that fits (else just the
         // background) until the size holds still
         let place = app.sample_settle.place(inner);
-        app.redraw_at = crate::core::settle::sooner(app.redraw_at, app.sample_settle.due());
+        app.redraw_at = crate::model::settle::sooner(app.redraw_at, app.sample_settle.due());
         if let Some(r) = place {
             // shrink to fit if needed; never stretch past real size
             f.render_stateful_widget(StatefulImage::default().resize(Resize::Fit(None)), r, img);

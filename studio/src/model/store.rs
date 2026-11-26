@@ -8,7 +8,7 @@ use std::process::{Command, Stdio};
 use anyhow::{Context, Result, anyhow, bail};
 use serde_json::{Map, Value};
 
-use crate::core::palette::Palette;
+use crate::model::palette::Palette;
 
 pub struct Store {
     /// The data folder: palettes.json, fonts.json, themes.json.
@@ -81,9 +81,9 @@ pub fn write_json_file(path: &std::path::Path, value: &Value) -> Result<()> {
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    crate::core::history::record(&label, path, value);
+    crate::model::history::record(&label, path, value);
     // through a link: write the file it points at, so the link stays
-    let path = &crate::core::paths::write_target(path);
+    let path = &crate::model::paths::write_target(path);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
             .with_context(|| format!("creating {}", parent.display()))?;
@@ -119,9 +119,9 @@ pub fn migrate_data_file(
 impl Store {
     pub fn locate() -> Store {
         Store {
-            dir: crate::core::paths::data_dir(),
-            share: crate::core::paths::share_dir(),
-            desktop: crate::core::paths::desktop_dir(),
+            dir: crate::model::paths::data_dir(),
+            share: crate::model::paths::share_dir(),
+            desktop: crate::model::paths::desktop_dir(),
         }
     }
 
@@ -138,7 +138,7 @@ impl Store {
     /// A switch script (`theme-switch`, `font-switch`), told where this
     /// store's data and share folders are.
     pub fn switch_command(&self, name: &str) -> Command {
-        crate::core::paths::switch_command(name, &self.dir, &self.share)
+        crate::model::paths::switch_command(name, &self.dir, &self.share)
     }
 
     fn palettes_path(&self) -> PathBuf {
@@ -172,7 +172,7 @@ impl Store {
 
     /// The palette theme-switch.sh last applied.
     pub fn active_name(&self) -> Option<String> {
-        let s = std::fs::read_to_string(crate::core::paths::colors_dir().join("current")).ok()?;
+        let s = std::fs::read_to_string(crate::model::paths::colors_dir().join("current")).ok()?;
         Some(s.trim().to_string()).filter(|s| !s.is_empty())
     }
 
@@ -205,7 +205,7 @@ impl Store {
     }
 
     pub fn terminal_map(&self) -> Result<TerminalMap> {
-        let path = crate::core::paths::share_file(&self.share, "terminal-colors.json");
+        let path = crate::model::paths::share_file(&self.share, "terminal-colors.json");
         let text = std::fs::read_to_string(&path)
             .with_context(|| format!("reading {}", path.display()))?;
         let v: Value = serde_json::from_str(&text)?;
@@ -237,7 +237,7 @@ impl Store {
 /// real data, so the data tests would skip there).
 #[cfg(test)]
 pub fn test_data_dir() -> PathBuf {
-    let real = crate::core::paths::data_dir();
+    let real = crate::model::paths::data_dir();
     if real.join("palettes.json").exists() {
         return real;
     }
@@ -307,7 +307,7 @@ mod tests {
         let store = Store::at(dir.clone());
 
         let mut p = Palette::blank();
-        p.set("red", crate::core::color::Rgb(1, 2, 3));
+        p.set("red", crate::model::color::Rgb(1, 2, 3));
         store.save("A", &p).unwrap();
         store.save("C", &p).unwrap();
         let all = store.load_all().unwrap();

@@ -12,10 +12,10 @@ use crate::app::App;
 use crate::app::state::nav::{BhRow, Capture, LookId, Overlay};
 use crate::behaviour::{selectable_ends, theme_keys, visible_behaviour_rows};
 use crate::config::settings::{LookSettings, Settings};
-use crate::core::palette::GROUPS;
 use crate::hit::{Look, Looks, Underline};
 use crate::keymap::action::Action;
 use crate::keymap::key::{Key, display_seq};
+use crate::model::palette::GROUPS;
 use crate::settings::wrap;
 
 impl App {

@@ -11,10 +11,10 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
 use crate::app::App;
-use crate::core::palette::{self, GROUPS, Palette};
 use crate::hit::Target;
 use crate::keymap::Context;
 use crate::keymap::action::Action;
+use crate::model::palette::{self, GROUPS, Palette};
 use crate::preview_term::Mode as PreviewMode;
 use crate::ui::widgets::friendly;
 use crate::ui::{focused_block, swatch};

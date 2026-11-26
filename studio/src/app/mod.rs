@@ -30,13 +30,13 @@ use ratatui::Frame;
 use ratatui::crossterm::event::{self, Event, KeyEventKind};
 use ratatui::layout::Rect;
 
-use crate::core::color::Rgb;
-use crate::core::palette::{self, GROUPS, Palette};
-use crate::core::store::{Store, TerminalMap};
-use crate::core::theme::ThemeStore;
 use crate::fonts::FontsTab;
 use crate::keymap::Keymap;
 use crate::keymap::key::Key;
+use crate::model::color::Rgb;
+use crate::model::palette::{self, GROUPS, Palette};
+use crate::model::store::{Store, TerminalMap};
+use crate::model::theme::ThemeStore;
 use crate::preview_term::{Mode as PreviewMode, Preview};
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
@@ -82,7 +82,7 @@ pub struct App {
     pub picker: Option<Picker>,
     pub sample_image: Option<StatefulProtocol>,
     /// The sample's size while resizing (re-encoded once it holds still).
-    pub sample_settle: crate::core::settle::Settle,
+    pub sample_settle: crate::model::settle::Settle,
     /// Previews fetched ahead of time (settings: fonts-page.prefetch).
     pub prefetch: crate::prefetch::Prefetch,
     /// When an image's size settles and the screen should be drawn again.
@@ -114,7 +114,7 @@ pub struct App {
     /// Not in themes.json yet.
     pub theme_new: bool,
     /// The theme's parts as saved (None: never saved).
-    pub theme_saved: Option<crate::core::theme::Theme>,
+    pub theme_saved: Option<crate::model::theme::Theme>,
     quit: bool,
 }
 
@@ -436,7 +436,7 @@ impl App {
     fn copy(&mut self, text: &str) {
         let seq = format!(
             "\x1b]52;c;{}\x07",
-            crate::core::encoding::base64(text.as_bytes())
+            crate::model::encoding::base64(text.as_bytes())
         );
         let mut out = std::io::stdout();
         let _ = out.write_all(seq.as_bytes()).and_then(|_| out.flush());

@@ -10,10 +10,10 @@ use ratatui::widgets::{Block, Paragraph};
 
 use crate::app::App;
 use crate::app::state::nav::Page;
-use crate::core::color::Rgb;
 use crate::hit::{Target, hover};
 use crate::keymap::Context;
 use crate::keymap::action::Action;
+use crate::model::color::Rgb;
 mod pages;
 pub mod pane_chrome;
 pub mod widgets;

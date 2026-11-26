@@ -100,7 +100,7 @@ pub fn draw_downloads(f: &mut Frame, app: &mut App, area: Rect) {
 
 /// The highlighted font drawn with a sample text (fonts/preview_page.rs).
 fn draw_preview(f: &mut Frame, app: &mut App, area: Rect) {
-    use crate::core::samples::{KINDS, Kind, LANGS};
+    use crate::model::samples::{KINDS, Kind, LANGS};
     let selected = app.preview_entry();
     // " Preview  Code ▾  Rust ▾  12pt ": the kind and the language are
     // dropdowns
@@ -158,7 +158,7 @@ fn draw_preview(f: &mut Frame, app: &mut App, area: Rect) {
     if let Some(pv) = app.dl.preview.as_mut() {
         place = pv.settle.place(inner);
         pv.area = pv.settle.size((inner.width, inner.height));
-        app.redraw_at = crate::core::settle::sooner(app.redraw_at, pv.settle.due());
+        app.redraw_at = crate::model::settle::sooner(app.redraw_at, pv.settle.due());
     }
     let note = app.preview_note();
     match app.dl.preview.as_mut().and_then(|pv| pv.image.as_mut()) {
@@ -433,7 +433,7 @@ fn draw_details(f: &mut Frame, app: &mut App, area: Rect) {
             lines.push(Line::styled(name.clone(), Style::new().bold()));
             lines.push(Line::raw(""));
             lines.push(Line::raw(format!(" from     {}", s("source"))));
-            let here = crate::core::paths::installed_fonts_dir()
+            let here = crate::model::paths::installed_fonts_dir()
                 .join(s("id"))
                 .exists();
             lines.push(Line::raw(if here {
@@ -451,7 +451,7 @@ fn draw_details(f: &mut Frame, app: &mut App, area: Rect) {
     lines.push(Line::styled(
         format!(
             " Files go to {}; the list for Nix is",
-            crate::core::paths::installed_fonts_dir().display()
+            crate::model::paths::installed_fonts_dir().display()
         ),
         Style::new().dark_gray(),
     ));

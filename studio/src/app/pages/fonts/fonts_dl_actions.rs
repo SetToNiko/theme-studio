@@ -316,7 +316,7 @@ impl App {
                 self.messages.info(format!("Downloading {}…", e.family));
                 download::install(
                     e,
-                    crate::core::paths::installed_fonts_dir(),
+                    crate::model::paths::installed_fonts_dir(),
                     self.dl.sender(),
                 );
             }
@@ -346,7 +346,7 @@ impl App {
             .and_then(Value::as_str)
             .unwrap_or("")
             .to_string();
-        let result = download::remove_files(&crate::core::paths::installed_fonts_dir(), &id)
+        let result = download::remove_files(&crate::model::paths::installed_fonts_dir(), &id)
             .and_then(|_| download::write_list(&path, list));
         self.dl.listed = None;
         match result {

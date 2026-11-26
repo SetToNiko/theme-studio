@@ -1,4 +1,4 @@
-//! The data and rules of the studio. No screen code here: nothing in `core`
+//! The data and rules of the studio. No screen code here: nothing in `model`
 //! depends on `app` or `ui`. Some modules read or write the studio's own data
 //! files (palettes, themes, history, saved tournaments); none starts a program
 //! or uses the network, except `history` (one `date` call) and `store` (one

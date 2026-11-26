@@ -18,8 +18,8 @@ use portable_pty::CommandBuilder;
 use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::Rect;
 
-use crate::core::palette::{KEYS, Palette};
 use crate::desktop::{self, BarBlock, Roles};
+use crate::model::palette::{KEYS, Palette};
 use pane::{Pane, key_bytes};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -86,7 +86,7 @@ impl Preview {
         Preview {
             configs: configs.to_path_buf(),
             // the demo shell's `git log`: the checkout, else home
-            workdir: crate::core::paths::demo_dir(),
+            workdir: crate::model::paths::demo_dir(),
             draft: draft_dir.join("colors.sh"),
             draft_dir,
             written: None,

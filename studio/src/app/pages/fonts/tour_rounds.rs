@@ -4,13 +4,13 @@
 //!
 //! This is another `impl App { ... }` block (see `fonts_preview_actions.rs`
 //! for the same style). The set-up and fetching are in `tour_actions.rs`;
-//! `tour_page.rs` keeps the tab's own data and the bracket is in `core/tournament.rs`.
+//! `tour_page.rs` keeps the tab's own data and the bracket is in `model/tournament.rs`.
 
 use crate::app::App;
-use crate::core::samples::{self, Kind};
-use crate::core::tournament::{self, Tournament};
 use crate::download;
 use crate::keymap::action::Action;
+use crate::model::samples::{self, Kind};
+use crate::model::tournament::{self, Tournament};
 use crate::tour_page::Stage;
 
 impl App {

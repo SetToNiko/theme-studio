@@ -11,11 +11,11 @@ use ratatui::widgets::{Block, Clear, Paragraph};
 use super::{centered, popup};
 use crate::app::state::nav::{Capture, Overlay, Pending};
 use crate::app::{App, open_matches};
-use crate::core::color::Rgb;
 use crate::hit::{Target, hover};
 use crate::keymap::Context;
 use crate::keymap::action::Action;
 use crate::keymap::key::Key;
+use crate::model::color::Rgb;
 use crate::ui::{swatch, truncate};
 
 /// Draws the open overlay (if any), on top of the page.

@@ -119,9 +119,10 @@ impl App {
         let mut errors = Vec::new();
         if before["keymaps"] != after["keymaps"] {
             let keymaps = keymaps_value(&self.presets, &self.keymap.name);
-            if let Err(e) =
-                crate::core::store::write_json_file(&self.config_dir.join("keymaps.json"), &keymaps)
-            {
+            if let Err(e) = crate::model::store::write_json_file(
+                &self.config_dir.join("keymaps.json"),
+                &keymaps,
+            ) {
                 errors.push(format!("keymaps.json: {e:#}"));
             }
         }

@@ -5,7 +5,7 @@
 //! `app/behaviour_actions.rs` (it builds an `App`).
 
 use crate::app::state::nav::{BhRow, LookId};
-use crate::core::palette::GROUPS;
+use crate::model::palette::GROUPS;
 
 impl BhRow {
     /// Rows whose value is a key of the system palette.
@@ -132,13 +132,13 @@ mod tests {
     use crate::app::Start;
     use crate::app::state::nav::{Capture, Overlay};
     use crate::config::settings::{LookSettings, Settings};
-    use crate::core::color::Rgb;
-    use crate::core::palette::Palette;
-    use crate::core::store::{Store, data_file, to_jq_string};
     use crate::hit::Underline;
     use crate::keymap::Keymap;
     use crate::keymap::action::Action;
     use crate::keymap::key::{Key, display_seq};
+    use crate::model::color::Rgb;
+    use crate::model::palette::Palette;
+    use crate::model::store::{Store, data_file, to_jq_string};
     use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use ratatui::style::{Color, Modifier};
     use serde_json::{Map, Value};
@@ -164,7 +164,7 @@ mod tests {
     fn test_app(tag: &str) -> App {
         let store = temp_store(tag);
         // settings_save (draft tests) writes history; keep it in the temp folder
-        crate::core::history::init_for_test(store.dir.join("history"));
+        crate::model::history::init_for_test(store.dir.join("history"));
         let config = crate::config::Loaded {
             keymap: Keymap::vim(),
             presets: Keymap::builtin(),

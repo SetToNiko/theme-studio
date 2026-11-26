@@ -111,7 +111,7 @@ impl ThemeStore {
             }
             m.insert(n, t.to_json());
         }
-        crate::core::store::write_json_file(
+        crate::model::store::write_json_file(
             &self.path(),
             &json!({"version": THEMES_VERSION, "themes": m}),
         )?;
@@ -141,7 +141,7 @@ impl ThemeStore {
         if !placed {
             m.insert(name.to_string(), t.to_json());
         }
-        crate::core::store::write_json_file(
+        crate::model::store::write_json_file(
             &self.path(),
             &json!({"version": THEMES_VERSION, "themes": m}),
         )
@@ -149,7 +149,7 @@ impl ThemeStore {
 
     /// The theme applied last (themes-switch.sh or the studio).
     pub fn active_name() -> Option<String> {
-        let s = std::fs::read_to_string(crate::core::paths::colors_dir().join("theme")).ok()?;
+        let s = std::fs::read_to_string(crate::model::paths::colors_dir().join("theme")).ok()?;
         Some(s.trim().to_string()).filter(|s| !s.is_empty())
     }
 
@@ -158,7 +158,7 @@ impl ThemeStore {
         if cfg!(test) {
             return Ok(());
         }
-        let dir = crate::core::paths::colors_dir();
+        let dir = crate::model::paths::colors_dir();
         std::fs::create_dir_all(&dir)?;
         std::fs::write(dir.join("theme"), format!("{name}\n"))?;
         Ok(())

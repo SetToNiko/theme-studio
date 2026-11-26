@@ -1,5 +1,5 @@
 //! The Fonts page's Tournament tab: choosing a pool, fetching its previews,
-//! playing the matches, and the results (core/tournament.rs has the bracket).
+//! playing the matches, and the results (model/tournament.rs has the bracket).
 //! Stages: Setup → Fetching → Playing → Results; Esc goes back to Setup,
 //! where an unfinished tournament can be picked up again.
 //! The `impl App` methods are in `app/tour_actions.rs` and `app/tour_rounds.rs`.
@@ -10,10 +10,10 @@ use std::sync::atomic::AtomicBool;
 
 use ratatui_image::protocol::StatefulProtocol;
 
-use crate::core::samples::Kind;
-use crate::core::settle::Settle;
-use crate::core::tournament::{Entrant, Rng, Tournament};
 use crate::fonts::render::SampleRenderer;
+use crate::model::samples::Kind;
+use crate::model::settle::Settle;
+use crate::model::tournament::{Entrant, Rng, Tournament};
 
 /// The pools: (key, label). Google's categories and Nerd Fonts come from
 /// the catalogue; the installed ones from the system's fonts.

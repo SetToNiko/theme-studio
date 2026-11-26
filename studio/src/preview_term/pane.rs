@@ -17,9 +17,9 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 
-use crate::core::color::Rgb;
-use crate::core::palette::{self, Palette};
-use crate::core::store::TerminalMap;
+use crate::model::color::Rgb;
+use crate::model::palette::{self, Palette};
+use crate::model::store::TerminalMap;
 
 /// A program running in a hidden terminal.
 pub struct Pane {

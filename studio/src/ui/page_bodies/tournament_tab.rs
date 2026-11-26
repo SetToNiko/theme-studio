@@ -247,7 +247,7 @@ fn draw_pane(f: &mut Frame, app: &mut App, area: Rect, i: usize, title: String, 
     p.area = p.settle.size((inner.width, inner.height));
     let due = p.settle.due();
     let error = p.error.clone();
-    app.redraw_at = crate::core::settle::sooner(app.redraw_at, due);
+    app.redraw_at = crate::model::settle::sooner(app.redraw_at, due);
     let p = &mut app.tour().panes[i];
     match (p.image.as_mut(), place) {
         (Some(img), Some(r)) => f.render_stateful_widget(

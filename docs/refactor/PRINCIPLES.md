@@ -123,7 +123,7 @@ A simpler design that is slightly less "pure" is better than a textbook pattern 
 
 ## 5. Project rules
 
-1. All system paths go through `studio/src/core/paths.rs` (Rust) or `scripts/lib/paths.sh` (bash). New code never hard-codes a path.
+1. All system paths go through `studio/src/model/paths.rs` (Rust) or `scripts/lib/paths.sh` (bash). New code never hard-codes a path.
 2. Only one location runs app reload commands (`pkill`, `i3-msg`, and others).
 3. Changed shell scripts pass `shellcheck`. Changed Rust code passes `cargo clippy --all-targets -- -D warnings` with the groups pedantic, style, and correctness (ratchet: refer to GOAL.md, criterion 7).
 4. Rust documentation follows the rustdoc style strictly. Refer to the project-conventions skill, section "Documentation style".

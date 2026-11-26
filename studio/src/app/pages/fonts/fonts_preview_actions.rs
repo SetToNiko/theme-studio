@@ -8,11 +8,11 @@
 
 use crate::app::App;
 use crate::app::state::nav::{Overlay, Page};
-use crate::core::samples::{self, KINDS, Kind, LANGS};
 use crate::download::{self, Entry, Source};
 use crate::fonts::download_page::{DlRow, DlTab, mb};
 use crate::fonts::preview_page::FontPreview;
 use crate::keymap::action::Action;
+use crate::model::samples::{self, KINDS, Kind, LANGS};
 
 impl App {
     pub(crate) fn pv(&mut self) -> &mut FontPreview {
