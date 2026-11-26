@@ -10,6 +10,9 @@ use serde_json::{Map, Value};
 
 use crate::model::palette::Palette;
 
+/// The three folders that the studio reads (the data, share and desktop
+/// folders; `model/paths.rs` explains each), and the methods that read and
+/// write palettes.json and run `theme-switch`.
 pub struct Store {
     /// The data folder: palettes.json, fonts.json, themes.json.
     pub dir: PathBuf,

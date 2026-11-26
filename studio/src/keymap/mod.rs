@@ -2,9 +2,10 @@
 //! keys or sequences in Vim notation (`j`, `<C-r>`, `<leader>sp`). Text
 //! fields (hex, search, names) don't go through the keymap.
 //!
-//! `key.rs` has the key press, `action.rs` and `labels.rs` the actions, and
-//! `defaults.rs` the keys that ship with the studio. This file has the
-//! contexts and the lookup, loading and saving of a keymap.
+//! `key.rs` has the key press, `action.rs` the actions, `table.rs` the table
+//! with the id, label and group of each action, and `defaults.rs` the keys
+//! that ship with the studio. This file has the contexts and the lookup,
+//! loading and saving of a keymap.
 
 use std::collections::HashSet;
 
@@ -92,6 +93,7 @@ impl Context {
     }
 }
 
+/// One key sequence that runs one action in one context.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Binding {
     pub context: Context,
@@ -108,6 +110,8 @@ pub enum Lookup {
     None,
 }
 
+/// A keymap preset: a leader key and a list of bindings. `lookup` turns the
+/// keys pressed so far into an action.
 #[derive(Clone, Debug)]
 pub struct Keymap {
     /// (context, action) pairs deliberately left without keys.

@@ -5,7 +5,7 @@
 //! the button). Discard drops the draft; quitting with one asks first.
 //!
 //! The test module below also tests the `App` methods of
-//! `app/draft_actions.rs` (it builds an `App`).
+//! `app/pages/settings/draft_actions.rs` (it builds an `App`).
 
 use serde_json::{Map, Value};
 

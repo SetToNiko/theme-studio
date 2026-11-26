@@ -320,5 +320,5 @@ Completes: criterion 6
 | Phase 6 review | done (3 reviewers; no refactor bugs; finding 28 fixed; long-function reasons verified in one pass) |
 | Phase 7 steps | done (P7.1 and P7.2 ran next to Phase 6 wave 1: no shared files) |
 | Phase 7 review | done (no bugs; install.sh checks and tests added; finding 27 fixed by the user's choice) |
-| Documentation | open |
+| Documentation | done (ARCHITECTURE.md new; README Development section; doc comments checked) |
 | Final review | open |

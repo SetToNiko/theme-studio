@@ -12,13 +12,18 @@ studio/           the studio (Rust, ratatui)
 scripts/          theme-switch, themes-switch, font-switch (bash, jq)
 share/            files the studio and scripts read
 packaging/nix/    the Nix package, a home-manager module
+tests/            golden-file tests of the scripts, the install test
 docs/             theme-studio.md: the guide (also the studio's README tab)
                   plan.md: how it was built; migration.md: how it became a
                   project of its own, and what still ties it to one setup
+ARCHITECTURE.md   how the code is built and how to extend it
 ```
 
 It works on NixOS today (packaged with Nix); making it work on other
 distros is the next step (`docs/migration.md`, at the end).
+
+New to the code? Read [ARCHITECTURE.md](ARCHITECTURE.md): how to read the
+code, the modules, and how to add a program that Theme Studio configures.
 
 ## Install
 
@@ -77,6 +82,30 @@ It also says what happens when an optional program is missing.
 nix build                                    # the package: studio + commands
 cd studio && nix develop .. --command cargo test
 ```
+
+## Development
+
+Setup: install [Nix](https://nixos.org/) with flakes. `nix develop` opens a shell
+with `cargo`, `clippy`, `rustfmt`, `shellcheck` and the other tools.
+
+```sh
+nix develop                      # the development shell (run it in the project folder)
+cd studio && cargo test          # the Rust tests (inside nix develop)
+cd studio && cargo run           # the studio, from the checkout
+nix flake check                  # all checks: build and tests, rustfmt, clippy,
+                                 # rustdoc, shellcheck, no module cycles,
+                                 # script tests, install test
+bash tests/scripts/run.sh        # golden-file tests of the switch scripts
+bash tests/install/run.sh        # install into a temporary folder, test, uninstall
+```
+
+`bash tests/scripts/run.sh --update` rewrites the golden files. Use it only
+when a change of the script output is wanted. `bash tests/install/run.sh`
+runs `cargo build` unless `THEME_STUDIO_BIN` points to a built studio.
+
+The code has these rules: no clippy warning (`-D warnings`), no shellcheck
+finding, no dependency cycle between modules. `ARCHITECTURE.md` explains the
+modules and the extension steps.
 
 ## Licence
 

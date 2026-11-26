@@ -46,6 +46,9 @@ use state::messages::Messages;
 use state::nav::{Focus, For, Overlay, Page, Side};
 use state::palette_editor::PaletteEditor;
 
+/// The whole state of the studio: the palette being edited, the page and
+/// focus, the open pop-up, the settings and the keymap. Key and mouse input
+/// change it, and `ui::draw` reads it to draw a frame.
 #[expect(
     clippy::struct_excessive_bools,
     reason = "each flag is an independent yes/no state (new palette, new theme, hand pointer, quit); an enum would not make it clearer"
@@ -123,6 +126,8 @@ pub struct App {
     quit: bool,
 }
 
+/// What to open at start (from the command line): the active theme, a theme
+/// or palette by name, or a new one.
 pub enum Start {
     Active,
     Named(String),

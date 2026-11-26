@@ -5,7 +5,8 @@
 //! playing the matches, and the results (model/tournament.rs has the bracket).
 //! Stages: Setup → Fetching → Playing → Results; Esc goes back to Setup,
 //! where an unfinished tournament can be picked up again.
-//! The `impl App` methods are in `app/tour_actions.rs` and `app/tour_rounds.rs`.
+//! The `impl App` methods are in `app/pages/fonts/tour_actions.rs` and
+//! `app/pages/fonts/tour_rounds.rs`.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
