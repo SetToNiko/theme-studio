@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "themes": {
+    "CRT Amber": {
+      "palette": "CRT Amber",
+      "fonts": "JetBrains Mono",
+      "sizes": {
+        "monospace": 14,
+        "proportional": 9,
+        "icons": 9
+      }
+    }
+  }
+}

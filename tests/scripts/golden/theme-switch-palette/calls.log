@@ -1,0 +1,4 @@
+pkill -USR2 -f ^ghostty( |$)
+i3-msg restart
+pywalfox update
+wallpaper-rotate refresh

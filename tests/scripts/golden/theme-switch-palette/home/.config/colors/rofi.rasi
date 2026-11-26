@@ -1,0 +1,36 @@
+* {
+    bg-dim: #120b04;
+    bg0: #1a1005;
+    bg1: #251b0f;
+    bg2: #251b0f;
+    bg3: #3c3222;
+    bg4: #3c3222;
+    bg5: #534935;
+    bg-statusline1: #251b0f;
+    bg-statusline2: #2f2416;
+    bg-statusline3: #534935;
+    bg-visual-red: #401910;
+    bg-visual-yellow: #43371d;
+    bg-visual-green: #2d3208;
+    bg-visual-blue: #382531;
+    bg-visual-purple: #422208;
+    bg-diff-red: #34160d;
+    bg-diff-green: #272707;
+    bg-diff-blue: #2e1e23;
+    bg-current-word: #312718;
+    fg0: #fff3c4;
+    fg1: #fff3c4;
+    red: #ef4444;
+    orange: #f69567;
+    yellow: #fde68a;
+    green: #84cc16;
+    aqua: #f59e0b;
+    blue: #c084fc;
+    purple: #f97316;
+    bg-red: #ef4444;
+    bg-green: #84cc16;
+    bg-yellow: #fde68a;
+    grey0: #7c7257;
+    grey1: #988d6e;
+    grey2: #b3a885;
+}

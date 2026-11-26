@@ -1,0 +1,27 @@
+{
+  "version": 4,
+  "presets": {
+    "JetBrains Mono": {
+      "monospace": {
+        "family": "JetBrainsMono Nerd Font Mono"
+      },
+      "proportional": {
+        "family": "JetBrainsMono Nerd Font Propo"
+      },
+      "icons": {
+        "family": "JetBrainsMono Nerd Font Propo"
+      }
+    },
+    "JetBrains + DejaVu Sans": {
+      "monospace": {
+        "family": "JetBrainsMono Nerd Font"
+      },
+      "proportional": {
+        "family": "DejaVu Sans"
+      },
+      "icons": {
+        "family": "DejaVu Sans"
+      }
+    }
+  }
+}
