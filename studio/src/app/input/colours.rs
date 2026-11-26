@@ -10,8 +10,8 @@
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
-use super::App;
-use super::nav::{ColourRow, Focus, Overlay, Side};
+use crate::app::App;
+use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
 use crate::color::Rgb;
 use crate::keymap::Action;
 use crate::palette::GROUPS;
@@ -29,7 +29,7 @@ const FOCUS_ORDER: [Focus; 7] = [
 
 impl App {
     /// Selects a colour without touching the list cursor.
-    pub(super) fn select_key(&mut self, i: usize) {
+    pub(in crate::app) fn select_key(&mut self, i: usize) {
         if i < self.keys.len() && i != self.sel {
             self.sel = i;
             self.editor.end_edit_run();
@@ -38,7 +38,7 @@ impl App {
     }
 
     /// Selects a colour, opening its group and moving the list cursor to it.
-    pub(super) fn select(&mut self, i: usize) {
+    pub(in crate::app) fn select(&mut self, i: usize) {
         if i < self.keys.len() {
             self.select_key(i);
             let g = self.group_of(i);
@@ -65,7 +65,7 @@ impl App {
     }
 
     /// The index of the group that holds colour `key`.
-    pub(super) fn group_of(&self, key: usize) -> usize {
+    pub(in crate::app) fn group_of(&self, key: usize) -> usize {
         let mut start = 0;
         for (gi, (_, keys)) in GROUPS.iter().enumerate() {
             if key < start + keys.len() {
@@ -77,7 +77,7 @@ impl App {
     }
 
     /// Moves the list cursor; landing on a colour selects it.
-    pub(super) fn move_row(&mut self, d: i32) {
+    pub(in crate::app) fn move_row(&mut self, d: i32) {
         let rows = self.colour_rows();
         self.row_sel = (self.row_sel as i32 + d).clamp(0, rows.len() as i32 - 1) as usize;
         if let ColourRow::Key(k) = rows[self.row_sel] {
@@ -87,7 +87,7 @@ impl App {
 
     /// Puts the list cursor on the selected colour if its group is open, else
     /// on its group.
-    pub(super) fn sync_row(&mut self) {
+    pub(in crate::app) fn sync_row(&mut self) {
         let rows = self.colour_rows();
         let g = self.group_of(self.sel);
         self.row_sel = rows
@@ -101,7 +101,7 @@ impl App {
     }
 
     /// Opens or closes group `g` in the colour list.
-    pub(super) fn set_group_open(&mut self, g: usize, open: bool) {
+    pub(in crate::app) fn set_group_open(&mut self, g: usize, open: bool) {
         if open {
             self.expanded_groups.insert(g);
         } else {
@@ -143,7 +143,7 @@ impl App {
 
     /// Colour-list keys: open/close groups, move, start editing.
     // Long function (reason verified, phase 3): one match over every (action, row kind) pair of the colour list.
-    pub(super) fn list_action(&mut self, a: Action) {
+    pub(in crate::app) fn list_action(&mut self, a: Action) {
         let rows = self.colour_rows();
         let last = rows.len() as i32 - 1;
         let copying = matches!(self.overlay, Overlay::CopyFrom { .. });
@@ -193,7 +193,7 @@ impl App {
 
     /// Keys while the hex field has the focus: type, Enter applies, Esc restores.
     // Long function (reason verified, phase 3): one match over the 6 key kinds of the hex field (about 39 lines).
-    pub(super) fn on_hex_key(&mut self, k: KeyEvent) {
+    pub(in crate::app) fn on_hex_key(&mut self, k: KeyEvent) {
         match k.code {
             KeyCode::Enter => match Rgb::parse(&self.editor.hex_input) {
                 Some(c) => {
@@ -232,7 +232,7 @@ impl App {
     }
 
     /// Bracketed paste (Ctrl+Shift+V): a hex colour sets the selected key.
-    pub(super) fn on_paste(&mut self, s: &str) {
+    pub(in crate::app) fn on_paste(&mut self, s: &str) {
         if self.side == Side::Fonts && matches!(self.overlay, Overlay::None) {
             if self.fonts.focus == crate::fonts::types::FontFocus::Search {
                 self.fonts.search.push_str(s.trim());
@@ -262,7 +262,7 @@ impl App {
     }
 
     /// Moves the focus `d` steps through the picker controls (wraps around).
-    pub(super) fn cycle_focus(&mut self, d: i32) {
+    pub(in crate::app) fn cycle_focus(&mut self, d: i32) {
         let i = FOCUS_ORDER
             .iter()
             .position(|f| *f == self.focus)

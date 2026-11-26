@@ -2,7 +2,7 @@
 //!
 //! [`PaletteEditor`] knows nothing about the rest of the studio (pages,
 //! messages, the preview). It works on one palette and gets the selected key
-//! as a parameter. [`App`](super::App) calls it and then does the parts that
+//! as a parameter. [`App`](crate::app::App) calls it and then does the parts that
 //! need the rest of the studio, such as showing a message.
 
 use crate::color::{self, Rgb};

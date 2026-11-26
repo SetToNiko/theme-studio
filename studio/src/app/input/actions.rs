@@ -14,12 +14,12 @@
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use super::nav::{ColourRow, Focus, For, Overlay, Page, Pending, Side};
-use super::{App, PreviewMode};
+use crate::app::state::nav::{ColourRow, Focus, For, Overlay, Page, Pending, Side};
+use crate::app::{App, PreviewMode};
 use crate::keymap::{Action, Context, Key, Lookup};
 
 impl App {
-    pub(super) fn on_key(&mut self, k: KeyEvent) {
+    pub(in crate::app) fn on_key(&mut self, k: KeyEvent) {
         self.handle_key(k);
         self.sync_palette_preview();
         self.end_session_outside_picker();
@@ -28,7 +28,7 @@ impl App {
     /// Only Enter keeps a picker change: leaving the picker any other way
     /// (Esc, another pane or column, a preview window, a click elsewhere,
     /// hiding it) puts the colours back.
-    pub(super) fn end_session_outside_picker(&mut self) {
+    pub(in crate::app) fn end_session_outside_picker(&mut self) {
         let left =
             self.focus == Focus::List || self.side != Side::Colours || self.preview.focus.is_some();
         if left && self.editor.in_edit_session() {
@@ -479,7 +479,7 @@ impl App {
 /// hints and preview toggles.
 ///
 /// `run_action` and `page_tabs_action` both use it, so the list is in one place.
-pub(super) fn is_page_action(a: Action) -> bool {
+pub(in crate::app) fn is_page_action(a: Action) -> bool {
     matches!(
         a,
         Action::Quit

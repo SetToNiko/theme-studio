@@ -8,8 +8,8 @@
 
 use ratatui::style::{Color, Modifier};
 
-use super::App;
-use super::nav::{BhRow, Capture, LookId, Overlay};
+use crate::app::App;
+use crate::app::state::nav::{BhRow, Capture, LookId, Overlay};
 use crate::behaviour::{selectable_ends, theme_keys, visible_behaviour_rows};
 use crate::config::{LookSettings, Settings};
 use crate::hit::{Look, Looks, Underline};
@@ -384,7 +384,7 @@ impl App {
                 };
                 self.overlay = Overlay::Ask {
                     question,
-                    then: crate::app::nav::Deferred::ClearPreviews,
+                    then: crate::app::state::nav::Deferred::ClearPreviews,
                 };
             }
             BhRow::ResetSizes => {

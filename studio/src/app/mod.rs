@@ -3,40 +3,22 @@
 //! `App` is one struct. Its methods are split by topic over several files
 //! (Rust allows more than one `impl App` block, in any file of the crate).
 //! Each file's own `//!` says what stays outside it. Where to look:
-//! - state: this file (`App` and its core methods), `nav.rs` (where the user is: `Page`, `Focus`, `Overlay`, ...), `palette_editor.rs`, `layout.rs`, `messages.rs` (own structs, not `impl App`)
-//! - input: `actions.rs` (`run_action`), `focus.rs`, `mouse.rs`, `overlay.rs` (pop-ups), `colours.rs`
-//! - saving: `persist.rs` (save, open, unsaved-changes prompt), `draft_actions.rs` (Settings drafts), `theme_actions.rs`
-//! - fonts: `fonts_dl_actions.rs` (Download fonts), `fonts_preview_actions.rs`, `prefetch_actions.rs`, `tour_actions.rs` and `tour_rounds.rs` (Tournament)
-//! - settings: `settings_actions.rs` (the page as a whole), `settings_keymaps_actions.rs`, `settings_history_actions.rs`, `behaviour_actions.rs`, `presets_actions.rs`
-//! - `tests.rs`: tests of the above
+//! - `state/`: the data behind `App`: `nav.rs` (where the user is: `Page`, `Focus`, `Overlay`, ...), `palette_editor.rs`, `layout.rs`, `messages.rs` (own structs, not `impl App`)
+//! - `input/`: `actions.rs` (`run_action`), `focus.rs`, `mouse.rs`, `overlay.rs` (pop-ups), `colours.rs`
+//! - `pages/settings/`: `settings_actions.rs` (the page as a whole), `settings_keymaps_actions.rs`, `settings_history_actions.rs`, `draft_actions.rs` (Settings drafts)
+//! - `pages/fonts/`: `fonts_dl_actions.rs` (Download fonts), `fonts_preview_actions.rs`, `prefetch_actions.rs`, `tour_actions.rs` and `tour_rounds.rs` (Tournament)
+//! - `pages/themes/`: `theme_actions.rs`, `presets_actions.rs`, `behaviour_actions.rs`
+//! - this folder: this file (`App` and its core methods), `persist.rs` (save, open, unsaved-changes prompt), `tests.rs` (tests of the above)
 //!
 //! The run loop (`App::run`) does not draw by itself: `main.rs` passes in `ui::draw`.
 //!
 //! All `impl App` blocks are in this folder: no other module of the crate adds
 //! methods to `App`.
 
-mod actions;
-mod behaviour_actions;
-mod colours;
-mod draft_actions;
-mod focus;
-mod fonts_dl_actions;
-mod fonts_preview_actions;
-mod layout;
-mod messages;
-mod mouse;
-pub mod nav;
-mod overlay;
-mod palette_editor;
+mod input;
+mod pages;
 mod persist;
-mod prefetch_actions;
-mod presets_actions;
-mod settings_actions;
-mod settings_history_actions;
-mod settings_keymaps_actions;
-mod theme_actions;
-mod tour_actions;
-mod tour_rounds;
+pub mod state;
 
 use std::io::Write;
 use std::time::{Duration, Instant};
@@ -55,12 +37,12 @@ use crate::palette::{self, GROUPS, Palette};
 use crate::preview::{Mode as PreviewMode, Preview};
 use crate::store::{Store, TerminalMap};
 use crate::theme::ThemeStore;
-use layout::Layout;
-use messages::Messages;
-use nav::{Focus, For, Overlay, Page, Side};
-use palette_editor::PaletteEditor;
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
+use state::layout::Layout;
+use state::messages::Messages;
+use state::nav::{Focus, For, Overlay, Page, Side};
+use state::palette_editor::PaletteEditor;
 
 pub struct App {
     pub store: Store,

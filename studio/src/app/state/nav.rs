@@ -36,7 +36,7 @@ pub enum Pending {
 
 impl Pending {
     /// True for the two font-preset variants: they check the fonts, not the palette.
-    pub(super) fn is_fonts(&self) -> bool {
+    pub(in crate::app) fn is_fonts(&self) -> bool {
         matches!(self, Pending::NewFonts | Pending::OpenFonts(_))
     }
 }

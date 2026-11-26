@@ -8,7 +8,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use crate::app::App;
-use crate::app::nav::{BhRow, LookId};
+use crate::app::state::nav::{BhRow, LookId};
 use crate::color::Rgb;
 use crate::hit::{Target, hover, hover_line, hover_row};
 use crate::keymap::{Keymap, display_seq};

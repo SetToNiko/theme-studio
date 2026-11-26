@@ -6,8 +6,8 @@
 //! need the whole `App`: opening the list, its keys, clicks, and making,
 //! deleting and resetting presets.
 
-use super::App;
-use super::nav::{Deferred, Naming, Overlay};
+use crate::app::App;
+use crate::app::state::nav::{Deferred, Naming, Overlay};
 use crate::keymap::{Action, Keymap};
 use crate::presets::is_shipped;
 

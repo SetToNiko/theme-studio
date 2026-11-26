@@ -9,8 +9,8 @@
 
 use std::path::PathBuf;
 
-use super::App;
-use super::nav::{Deferred, Overlay, Page};
+use crate::app::App;
+use crate::app::state::nav::{Deferred, Overlay, Page};
 use crate::download::{self, Entry};
 use crate::fonts_dl::DlTab;
 use crate::keymap::Action;
@@ -247,7 +247,7 @@ impl App {
     }
 
     // Long function: one match over the set-up page's keys.
-    pub(super) fn run_tour_setup(&mut self, a: Action) -> bool {
+    pub(in crate::app) fn run_tour_setup(&mut self, a: Action) -> bool {
         let rows = self.tour_setup_rows();
         let last = rows.len().saturating_sub(1);
         let t = self.tour();

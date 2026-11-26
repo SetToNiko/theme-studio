@@ -15,8 +15,8 @@ use ratatui::crossterm::event::{
 };
 use ratatui::layout::Rect;
 
-use super::nav::{ColourRow, Focus, Overlay, Side};
-use super::{App, PreviewMode};
+use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
+use crate::app::{App, PreviewMode};
 use crate::hit::Target as T;
 use crate::keymap::Action;
 
@@ -31,7 +31,7 @@ fn frac(v: u16, start: u16, len: u16) -> f64 {
 
 impl App {
     /// Handles one mouse event, then keeps the palette preview and the picker session in step.
-    pub(super) fn on_mouse(&mut self, m: MouseEvent) {
+    pub(in crate::app) fn on_mouse(&mut self, m: MouseEvent) {
         self.handle_mouse(m);
         self.sync_palette_preview();
         self.end_session_outside_picker();

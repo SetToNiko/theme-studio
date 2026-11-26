@@ -9,8 +9,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-use super::App;
-use super::nav::{Deferred, Naming};
+use crate::app::App;
+use crate::app::state::nav::{Deferred, Naming};
 use crate::color::Rgb;
 use crate::history::{History, SnapshotInfo};
 use crate::keymap::Action;
