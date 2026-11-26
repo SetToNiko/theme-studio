@@ -102,6 +102,9 @@ Advanced techniques that the refactor adds:
 | 16 | `desktop.rs` test `real_configs_parse` | Looks for `i3/theme` in the data folder (`store.dir`), but the desktop configs are in `store.desktop`. The test never runs since the data moved (found in P0.5, not fixed) | correctness of tests | M |
 | 17 | `scripts/themes-switch.sh` | A theme with a missing palette: the fonts are applied (files and `fonts/current` change), then the palette fails with exit 1, and nothing reloads. The desktop is left half-switched (found in P0.8, recorded in golden case `themes-switch-missing-palette`, not fixed) | correctness, T7 | M |
 | 18 | `paths.rs` (`config_home`, `studio_config_dir`, `history_dir`, `timing_log_dir`) | The same XDG base folders are read three ways: `config_home` accepts any non-empty `XDG_CONFIG_HOME`; `studio_config_dir` and `history_dir` accept only absolute values; `timing_log_dir` accepts any `XDG_STATE_HOME`, even empty. Kept as they were (P1.2). | T2 (single source) | L |
+| 19 | `scripts/lib/paths.sh`, `studio/src/paths.rs` | The two files agree on colors_dir, fonts_dir, host_fonts_file only through comments. No test compares them (Phase 1 review) | T2 (single source) | L |
+| 20 | `studio/src/paths.rs` | `studio_config_dir`, `history_dir`, `timing_log_dir` have no tests for their different XDG rules (finding 18). Tests need care: env vars in parallel tests (Phase 1 review) | T4 (testability) | M |
+| 21 | `config::dir()`, `history::default_dir()` | One-line wrappers around paths.rs functions since P1.2. Callers could use paths:: directly (Phase 1 review) | T4 | L |
 
 ## 5. Test coverage
 - Rust: 119 tests in 25 modules (115 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.

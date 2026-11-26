@@ -4731,7 +4731,7 @@ mod tests {
         let store = temp_store("installed-preview");
         let dir = store.dir.clone();
         let mut app = test_app(store, Start::Named("One".into()));
-        let fonts = crate::download::fonts_dir().join("test-mono");
+        let fonts = crate::download::installed_fonts_dir().join("test-mono");
         std::fs::create_dir_all(&fonts).unwrap();
         let ext = if file.ends_with(".otf") { "otf" } else { "ttf" };
         std::fs::copy(&file, fonts.join(format!("TestMono-Regular.{ext}"))).unwrap();

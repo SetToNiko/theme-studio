@@ -433,7 +433,9 @@ fn draw_details(f: &mut Frame, app: &mut App, area: Rect) {
             lines.push(Line::styled(name.clone(), Style::new().bold()));
             lines.push(Line::raw(""));
             lines.push(Line::raw(format!(" from     {}", s("source"))));
-            let here = crate::download::fonts_dir().join(s("id")).exists();
+            let here = crate::download::installed_fonts_dir()
+                .join(s("id"))
+                .exists();
             lines.push(Line::raw(if here {
                 "files    downloaded here (a rebuild takes over)"
             } else {
@@ -449,7 +451,7 @@ fn draw_details(f: &mut Frame, app: &mut App, area: Rect) {
     lines.push(Line::styled(
         format!(
             " Files go to {}; the list for Nix is",
-            crate::download::fonts_dir().display()
+            crate::download::installed_fonts_dir().display()
         ),
         Style::new().dark_gray(),
     ));

@@ -101,7 +101,7 @@ fn xdg(var: &str, fallback: &str) -> PathBuf {
 }
 
 /// `~/.local/share/fonts/theme-studio` (or under `$XDG_DATA_HOME`).
-pub fn fonts_dir() -> PathBuf {
+pub fn installed_fonts_dir() -> PathBuf {
     xdg("XDG_DATA_HOME", ".local/share").join("fonts/theme-studio")
 }
 
@@ -682,7 +682,7 @@ pub fn fetch_preview(e: Entry, tx: Sender<Msg>) {
 /// (the Installed tab's preview: nothing to fetch).
 pub fn scan_installed(id: String, tx: Sender<Msg>) {
     std::thread::spawn(move || {
-        let dir = fonts_dir().join(&id);
+        let dir = installed_fonts_dir().join(&id);
         let result = preview_file(&dir)
             .ok_or_else(|| format!("no font files in {}", dir.display()))
             .and_then(|f| {
