@@ -24,16 +24,7 @@ static DIR: OnceLock<PathBuf> = OnceLock::new();
 
 /// `$XDG_STATE_HOME/theme-studio/history`, or `~/.local/state/…`.
 pub fn default_dir() -> PathBuf {
-    let base = std::env::var_os("XDG_STATE_HOME")
-        .map(PathBuf::from)
-        .filter(|p| p.is_absolute())
-        .unwrap_or_else(|| {
-            std::env::var_os("HOME")
-                .map(PathBuf::from)
-                .unwrap_or_default()
-                .join(".local/state")
-        });
-    base.join("theme-studio/history")
+    crate::paths::history_dir()
 }
 
 pub fn init(dir: PathBuf) {

@@ -14,16 +14,7 @@ use crate::keymap::Keymap;
 
 /// `$XDG_CONFIG_HOME/theme-studio`, or `~/.config/theme-studio`.
 pub fn dir() -> PathBuf {
-    let base = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .filter(|p| p.is_absolute())
-        .unwrap_or_else(|| {
-            std::env::var_os("HOME")
-                .map(PathBuf::from)
-                .unwrap_or_default()
-                .join(".config")
-        });
-    base.join("theme-studio")
+    crate::paths::studio_config_dir()
 }
 
 /// How the font list starts.

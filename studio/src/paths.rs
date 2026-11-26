@@ -38,6 +38,46 @@ pub fn config_home() -> PathBuf {
     env_dir("XDG_CONFIG_HOME").unwrap_or_else(|| home().join(".config"))
 }
 
+/// The studio's own settings folder (keymaps.json, settings.json):
+/// `$XDG_CONFIG_HOME/theme-studio`, default `~/.config/theme-studio`.
+///
+/// Honours `$XDG_CONFIG_HOME` only when it is an absolute path (an empty or
+/// relative value is ignored). [`config_home`] differs: it accepts any
+/// non-empty value.
+pub fn studio_config_dir() -> PathBuf {
+    let base = std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute())
+        .unwrap_or_else(|| home().join(".config"));
+    base.join("theme-studio")
+}
+
+/// Where the edit history is kept: `$XDG_STATE_HOME/theme-studio/history`,
+/// default `~/.local/state/theme-studio/history`.
+///
+/// Honours `$XDG_STATE_HOME` only when it is an absolute path (an empty or
+/// relative value is ignored). [`timing_log_dir`] differs: it takes any value.
+pub fn history_dir() -> PathBuf {
+    let base = std::env::var_os("XDG_STATE_HOME")
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute())
+        .unwrap_or_else(|| home().join(".local/state"));
+    base.join("theme-studio/history")
+}
+
+/// The folder for the render timing log (`timing.log`):
+/// `$XDG_STATE_HOME/theme-studio`, default `~/.local/state/theme-studio`.
+///
+/// Honours `$XDG_STATE_HOME` with any value, even an empty or relative one
+/// (an empty value gives the relative path `theme-studio`). [`history_dir`]
+/// differs: it ignores values that are not absolute.
+pub fn timing_log_dir() -> PathBuf {
+    std::env::var_os("XDG_STATE_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home().join(".local/state"))
+        .join("theme-studio")
+}
+
 /// The system fontconfig file (`/etc/fonts/fonts.conf`) that the generated
 /// preview fontconfig files include, so previews still see the system fonts.
 pub const SYSTEM_FONTCONFIG: &str = "/etc/fonts/fonts.conf";

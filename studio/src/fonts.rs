@@ -744,12 +744,7 @@ fn job_key(markup: &str, fontconfig: &Option<PathBuf>, width: Option<u32>) -> St
 /// decoding, and the size.
 fn log_timing(prefix: &str, job: &Job, started: std::time::Instant, r: &SampleResult) {
     use std::io::Write as _;
-    let dir = std::env::var_os("XDG_STATE_HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".local/state")
-        })
-        .join("theme-studio");
+    let dir = crate::paths::timing_log_dir();
     let _ = std::fs::create_dir_all(&dir);
     let size = match r {
         Ok(img) => format!("{}x{}", img.width(), img.height()),
