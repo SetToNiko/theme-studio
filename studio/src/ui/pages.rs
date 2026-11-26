@@ -10,7 +10,8 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
-use super::{MainLayout, draw_list, draw_picker, draw_preview};
+use super::layout::MainLayout;
+use super::{draw_list, draw_picker, draw_preview};
 use crate::app::App;
 use crate::app::state::nav::Page;
 use crate::hit::{BorderId, Target};
