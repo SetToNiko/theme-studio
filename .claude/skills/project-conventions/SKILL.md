@@ -37,7 +37,7 @@ Priority: correctness > audience test > readability > maintainability, modularit
 - Errors: each message says what failed and what to do. Errors keep their cause (anyhow `.context`).
 - All system paths go through `studio/src/paths.rs` or `scripts/lib/paths.sh`.
 - Only one location runs app reload commands (pkill, i3-msg, ...).
-- Clippy pedantic + style + correctness: files that a step changes are warning-free. The total never increases. Each allowed lint uses `#[expect(..., reason = "...")]`.
+- Clippy pedantic + style + correctness: the functions that a step writes or changes have no warnings. The total never increases. Phase 6 makes whole files clean. Each allowed lint uses `#[expect(..., reason = "...")]`.
 - Changed scripts pass shellcheck.
 
 ## Code rules
