@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "apps": [
+    {
+      "name": "i3",
+      "outputs": [
+        { "kind": "jq", "dir": "colors_dir", "file": "i3", "generator": "i3-colors.jq" }
+      ]
+    },
+    {
+      "name": "rofi",
+      "outputs": [
+        { "kind": "jq", "dir": "colors_dir", "file": "rofi.rasi", "generator": "rofi-colors.jq" }
+      ]
+    }
+  ]
+}

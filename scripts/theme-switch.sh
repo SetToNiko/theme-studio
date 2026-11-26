@@ -7,6 +7,8 @@ palettes="${PALETTES:-$(data_file palettes.json)}"
 out=$(colors_dir)
 # shellcheck disable=SC1091 # the other lib files are not followed either
 . "$here/lib/data.sh" # json_data (either file layout)
+# shellcheck disable=SC1091 # the lib files are found at run time, beside the script
+. "$here/lib/integrations.sh" # write_theme_outputs
 
 name=${1:-}
 [ -n "$name" ] || { echo "usage: theme-switch.sh <palette name>" >&2; exit 2; }
@@ -18,8 +20,8 @@ json_data "$palettes" > "$data"
 jq -e --arg n "$name" 'has($n)' "$data" >/dev/null || { echo "no scheme '$name'" >&2; exit 1; }
 
 mkdir -p "$out"
-jq -r --arg n "$name" '.[$n] | to_entries[] | "set $\(.key) \(.value)"' \
-  "$data" > "$out/i3"
+# The i3 and rofi colour files come from share/integrations.json
+write_theme_outputs "$name" "$data"
 jq -r --arg n "$name" '.[$n] | to_entries[] | "\(.key)=\(.value)"' \
   "$data" > "$out/colors.sh"
 echo "$name" > "$out/current"
@@ -46,11 +48,6 @@ fi
       "background = \($p[$m.background])", "foreground = \($p[$m.foreground])",
       ($m.palette | to_entries[] | "palette = \(.key)=\($p[.value])")' \
     "$data"; } > "$out/ghostty"
-
-# rofi: raw colours only; config.rasi decides what uses them
-{ echo '* {'
-  jq -r --arg n "$name" '.[$n] | to_entries[] | "    \(.key | gsub("_"; "-")): \(.value);"' "$data"
-  echo '}'; } > "$out/rofi.rasi"
 
 # Firefox (Pywalfox): the mapping is share/pywalfox-colors.jq
 cache=$(cache_dir)
