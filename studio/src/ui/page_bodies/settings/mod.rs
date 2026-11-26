@@ -76,7 +76,7 @@ fn draw_tab_strip(f: &mut Frame, app: &mut App, tabs: Rect) {
 }
 
 /// Draws the Settings page: the frame, the tab strip and the current tab.
-// Long function: frame, tab strip position (top or bottom) and tab dispatch are decided from the same inner rectangle in one top-to-bottom pass.
+// Long function (reason verified, phase 6): frame, tab strip position (top or bottom) and tab dispatch are decided from the same inner rectangle in one top-to-bottom pass.
 pub fn draw_settings(f: &mut Frame, app: &mut App, area: Rect) {
     let block = Block::bordered()
         .title(" Settings ")
@@ -129,7 +129,7 @@ fn text_width(text: &str) -> u16 {
 
 /// The Save and Discard buttons on the frame's bottom edge, while there are
 /// unsaved changes; drawn with the live keymap (keys change only on Save).
-// Long function: the note and two buttons are placed left to right in one row; each x comes from the width of the previous one.
+// Long function (reason verified, phase 6): the note and two buttons are placed left to right in one row; each x comes from the width of the previous one.
 pub fn draw_save_buttons(f: &mut Frame, app: &mut App, area: Rect, changes: usize) {
     if changes == 0 || area.height < 2 {
         return;

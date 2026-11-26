@@ -302,7 +302,7 @@ mod tests {
     }
 
     #[test]
-    // Long function: one table of scripts and the block expected for each.
+    // Long function (reason verified, phase 6): one table of scripts and the block expected for each.
     fn blocks_take_first_lines_and_time_out() {
         let dir = std::env::temp_dir().join(format!("theme-studio-bar-{}", std::process::id()));
         std::fs::create_dir_all(dir.join("i3blocks")).unwrap();

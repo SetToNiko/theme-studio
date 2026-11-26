@@ -35,7 +35,7 @@ const fn row(action: Action, id: &'static str, label: &'static str, group: Actio
 }
 
 /// All actions without data, in the order of the keymaps file and Settings page.
-// Long function: one table row for each of the plain actions; nothing else is here.
+// Long function (reason verified, phase 6): one table row for each of the plain actions; nothing else is here.
 pub(super) const ROWS: &[Row] = {
     use Action as A;
     use ActionGroup as G;

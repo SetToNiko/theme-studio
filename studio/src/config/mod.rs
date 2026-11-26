@@ -319,7 +319,7 @@ mod tests {
         std::fs::remove_dir_all(d).unwrap();
     }
 
-    // Long function: one scenario; the file content and the load result are checked together.
+    // Long function (reason verified, phase 6): one scenario; the file content and the load result are checked together.
     #[test]
     fn edits_are_kept_and_missing_actions_filled_in() {
         let d = temp("edit");
@@ -432,7 +432,7 @@ mod tests {
 mod migrate_tests {
     use super::*;
 
-    // Long function: one scenario; one old file shows which bindings move and which stay.
+    // Long function (reason verified, phase 6): one scenario; one old file shows which bindings move and which stay.
     #[test]
     fn version_1_panes_move_to_the_leader_but_edits_stay() {
         let old = serde_json::json!({"active": "Vim", "presets": {"Vim": {"leader": "<Space>", "bindings": {"global": {

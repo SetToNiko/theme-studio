@@ -218,7 +218,7 @@ impl App {
         }
     }
 
-    // Long function: one match over the Fonts group's rows, one short arm per row.
+    // Long function (reason verified, phase 6): one match over the Fonts group's rows, one short arm per row.
     /// The Fonts pane group: the sample, the font list's filters, prefetching.
     fn change_fonts_row(&mut self, row: BhRow, d: i32) {
         let s = &mut self.settings;

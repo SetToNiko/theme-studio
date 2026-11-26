@@ -45,7 +45,7 @@ fn look_rows(id: LookId) -> [BhRow; 7] {
     ]
 }
 
-// Long function: the rows of the Behaviour tab in screen order, as one flat list; splitting it would hide the order.
+// Long function (reason verified, phase 6): the rows of the Behaviour tab in screen order, as one flat list; splitting it would hide the order.
 pub fn behaviour_rows() -> Vec<BhRow> {
     use BhRow as R;
     let mut v = vec![R::Header("Keys"), R::Leader];

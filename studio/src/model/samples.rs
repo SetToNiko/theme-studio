@@ -229,7 +229,7 @@ pub fn prose_page(st: &Style, from: usize, budget: usize) -> (String, usize) {
 
 /// A README-style document: headings, a list, inline code, a code block, a
 /// table and a quote.
-// Long function: one fixed sample document, built top to bottom with one block for each section.
+// Long function (reason verified, phase 6): one fixed sample document, built top to bottom with one block for each section.
 #[expect(
     clippy::format_push_string,
     reason = "the markup is built piece by piece; `+= &format!(..)` reads simpler than `write!`, whose Result cannot fail for a String"
@@ -355,7 +355,7 @@ mod tests {
     }
 
     /// Pango accepts every text (skipped without `ImageMagick`).
-    // Long function: one end-to-end check that renders every sample text, with its skip test and set-up.
+    // Long function (reason verified, phase 6): one end-to-end check that renders every sample text, with its skip test and set-up.
     #[test]
     fn pango_renders_every_text() {
         if std::process::Command::new("magick")

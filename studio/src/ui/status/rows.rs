@@ -36,7 +36,7 @@ pub(super) fn downloads_hints(app: &App) -> Vec<String> {
 }
 
 /// The tournament rows: one list per stage, or the bracket view.
-// Long function: a pure data table: one key-hint list per tournament stage, plus the bracket view.
+// Long function (reason verified, phase 6): a pure data table: one key-hint list per tournament stage, plus the bracket view.
 pub(super) fn tournament_rows(app: &App) -> Rows<'static> {
     use crate::fonts::tournament_page::Stage;
     let stage = app.tour_page.as_ref().map_or(Stage::Setup, |t| t.stage);
@@ -96,7 +96,7 @@ pub(super) fn settings_hints(app: &App) -> Vec<String> {
 }
 
 /// The settings rows for the current tab.
-// Long function: a pure data table: one key-hint list per settings tab (the Keymaps tab has two).
+// Long function (reason verified, phase 6): a pure data table: one key-hint list per settings tab (the Keymaps tab has two).
 pub(super) fn settings_rows(app: &App) -> Rows<'static> {
     use crate::settings_page::Tab;
     match app.settings_page.tab {

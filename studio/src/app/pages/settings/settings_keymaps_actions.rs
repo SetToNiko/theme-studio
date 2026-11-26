@@ -41,7 +41,7 @@ impl App {
         rows
     }
 
-    // Long function: one match over the Keymaps tab's row kinds and keys.
+    // Long function (reason verified, phase 6): one match over the Keymaps tab's row kinds and keys.
     pub(crate) fn run_keymaps_tab(&mut self, a: Action) {
         if self.settings_page.browse.is_some() {
             return self.run_browse(a);

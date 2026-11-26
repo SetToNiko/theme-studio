@@ -155,7 +155,7 @@ fn role_warning_line(app: &App, role: usize, fix_key: Option<&str>) -> Line<'sta
 
 /// The three lines of one role, with its click area registered. Hovering the
 /// name shows what the font has to be in the status line.
-// Long function: the three lines, the name hover note and the click area of one role use the same rectangle.
+// Long function (reason verified, phase 6): the three lines, the name hover note and the click area of one role use the same rectangle.
 fn role_lines(app: &mut App, role: usize, boxed: &RolesBox) -> Vec<Line<'static>> {
     let inner = boxed.inner;
     let (first, second) = role_text_lines(app, role, boxed);

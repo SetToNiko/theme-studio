@@ -164,7 +164,7 @@ impl App {
 
     /// Builds the state: each field gets its start value. Only the fonts tab
     /// reads the disk.
-    // Long function: one struct literal that gives every `App` field its start value.
+    // Long function (reason verified, phase 6): one struct literal that gives every `App` field its start value.
     fn build(
         store: Store,
         (name, palette, is_new): (String, Palette, bool),

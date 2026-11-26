@@ -397,7 +397,7 @@ mod tests {
         assert_eq!(summarize(&json!({"x": 1}), &json!({"x": 1})), "no change");
     }
 
-    // Long function: one scenario; each step depends on the files the step before it left on disk.
+    // Long function (reason verified, phase 6): one scenario; each step depends on the files the step before it left on disk.
     #[test]
     fn records_lists_prunes_and_keeps_named() {
         let d = temp("prune");

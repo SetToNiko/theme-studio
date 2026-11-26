@@ -10,7 +10,7 @@ use crate::keymap::key::{Key, display_seq};
 use crate::model::palette::GROUPS;
 
 impl App {
-    // Long function: one match over every Behaviour row kind, one short arm per row.
+    // Long function (reason verified, phase 6): one match over every Behaviour row kind, one short arm per row.
     /// The value shown for a row.
     pub fn behaviour_value(&self, row: BhRow) -> String {
         let s = &self.settings;
@@ -96,7 +96,7 @@ impl App {
         }
     }
 
-    // Long function: one match over every Behaviour row kind, one text per row.
+    // Long function (reason verified, phase 6): one match over every Behaviour row kind, one text per row.
     pub fn behaviour_label(row: BhRow) -> String {
         match row {
             BhRow::Gap => String::new(),

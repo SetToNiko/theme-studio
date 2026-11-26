@@ -118,7 +118,7 @@ impl App {
 
     /// A click on the Settings page: selects; on the selected row, acts
     /// like Enter.
-    // Long function: one match over the click targets of the Settings page.
+    // Long function (reason verified, phase 6): one match over the click targets of the Settings page.
     pub fn settings_click(&mut self, target: crate::app::state::hit::Target) {
         use crate::app::state::hit::Target as T;
         if let T::PresetRow(index) = target {
@@ -193,7 +193,7 @@ impl App {
 
     // ----- keys ------------------------------------------------------------
 
-    // Long function: one match over the page-wide keys, then the hand-over to the current tab.
+    // Long function (reason verified, phase 6): one match over the page-wide keys, then the hand-over to the current tab.
     pub fn run_settings(&mut self, a: Action) {
         let top = self.settings.layout.inner_tabs_on_top();
         if self.settings_page.tabs_focused {
@@ -329,7 +329,7 @@ impl App {
     }
 
     /// The prompt's text, confirmed.
-    // Long function: one match over the kinds of name or text prompt.
+    // Long function (reason verified, phase 6): one match over the kinds of name or text prompt.
     pub fn finish_prompt(&mut self, purpose: Naming, input: &str) {
         let text = input.trim();
         if text.is_empty() {
@@ -374,7 +374,7 @@ impl App {
     }
 
     /// The question was answered yes.
-    // Long function: one match over every yes/no question the page asks.
+    // Long function (reason verified, phase 6): one match over every yes/no question the page asks.
     pub fn run_deferred(&mut self, d: Deferred) {
         match d {
             Deferred::Restore { file, version } => {

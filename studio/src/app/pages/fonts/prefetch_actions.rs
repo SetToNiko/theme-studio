@@ -12,7 +12,7 @@ use crate::system::download::{self, Msg};
 use crate::system::prefetch::queue;
 
 impl App {
-    // Long function: one top-to-bottom sequence of early exits (off, no catalogue, queue not built), then feed and progress.
+    // Long function (reason verified, phase 6): one top-to-bottom sequence of early exits (off, no catalogue, queue not built), then feed and progress.
     /// Each loop: keeps a few previews downloading while prefetching is on,
     /// and the Behaviour tab's "space used" up to date. Quick: the slow
     /// parts run on threads. True when the screen should be redrawn.

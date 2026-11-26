@@ -109,7 +109,7 @@ impl Keymap {
 
     /// Emacs: C-n / C-p / C-f / C-b to move, C-x prefixes for files, C-g to
     /// back out, C-/ to undo; the leader is C-c.
-    // Long function: one table, one row per Emacs key, then the table of movement keys.
+    // Long function (reason verified, phase 6): one table, one row per Emacs key, then the table of movement keys.
     pub fn emacs() -> Keymap {
         use Action as A;
         use Context as C;
@@ -227,7 +227,7 @@ impl Keymap {
 
     /// The shipped Vim preset: the studio's original keys, plus leader
     /// sequences for saving and applying either side.
-    // Long function: one table, one row per default key of the Vim preset.
+    // Long function (reason verified, phase 6): one table, one row per default key of the Vim preset.
     #[expect(
         clippy::too_many_lines,
         reason = "one table, one row per default key of the Vim preset; splitting it would only scatter the rows"

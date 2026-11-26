@@ -111,7 +111,7 @@ fn part_rects(inner: Rect) -> (u16, Rect, Rect, u16) {
 }
 
 /// Works out where each part goes and registers the clickable ones.
-// Long function: six `hits.add` calls that share `inner`, `rows` and `track_w`; splitting would only pass these three values around.
+// Long function (reason verified, phase 6): six `hits.add` calls that share `inner`, `rows` and `track_w`; splitting would only pass these three values around.
 fn register_hits(app: &mut App, inner: Rect) -> PickerParts {
     let (rows, sq, hue, track_w) = part_rects(inner);
     let track = |row: u16| Rect {
@@ -272,7 +272,7 @@ fn draw_sliders(buf: &mut Buffer, app: &App, parts: &PickerParts, key: &'static 
 
 /// One slider row: its label, the colour track, the thumb and the value text.
 /// `hsl` is the colour that the other two sliders show.
-// Long function: label, track, thumb and value text of one slider are drawn in this order into the same buffer row, so later cells overwrite earlier ones.
+// Long function (reason verified, phase 6): label, track, thumb and value text of one slider are drawn in this order into the same buffer row, so later cells overwrite earlier ones.
 fn draw_slider(
     buf: &mut Buffer,
     app: &App,
@@ -319,7 +319,7 @@ fn draw_slider(
 }
 
 /// The hex input row, and the colour before and after editing.
-// Long function: one line of six spans (label, input, saved and current swatches) plus its row rectangle.
+// Long function (reason verified, phase 6): one line of six spans (label, input, saved and current swatches) plus its row rectangle.
 fn draw_hex(f: &mut Frame, app: &App, parts: &PickerParts, key: &str, current: Rgb) {
     let inner = parts.inner;
     let y = inner.y + parts.rows + 4;

@@ -244,7 +244,7 @@ fn km_info_lines(
 }
 
 /// The info lines of a binding: its name, shipped keys, clashes and what each key does.
-// Long function: the order of the lines is the order on screen: name, shipped keys, clashes, then the key help.
+// Long function (reason verified, phase 6): the order of the lines is the order on screen: name, shipped keys, clashes, then the key help.
 fn binding_info_lines(
     app: &App,
     (ctx, action): (Context, Action),

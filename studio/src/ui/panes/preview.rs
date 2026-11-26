@@ -196,7 +196,7 @@ fn ansi_rows(p: &Palette, map: &crate::model::store::TerminalMap) -> Vec<Line<'s
 
 /// The sample code: tokens and line backgrounds as nvim shows them
 /// (mini.base16 mapping from nvim/lua/theme.lua).
-// Long function: a pure data table: one row per sample code line, each with its tokens and their colour keys.
+// Long function (reason verified, phase 6): a pure data table: one row per sample code line, each with its tokens and their colour keys.
 fn code_sample() -> Vec<CodeLine<'static>> {
     vec![
         (
@@ -317,7 +317,7 @@ fn nvim_status_line(p: &Palette) -> Line<'static> {
 }
 
 /// i3 window borders and bar (i3/theme roles).
-// Long function: a pure data row: the seven spans of the i3 borders and bar, listed in their on-screen order, each with its own colour pair.
+// Long function (reason verified, phase 6): a pure data row: the seven spans of the i3 borders and bar, listed in their on-screen order, each with its own colour pair.
 fn i3_lines(lines: &mut Vec<Line<'static>>, p: &Palette) {
     let bg = p.get("bg0");
     lines.push(heading(p, "Window borders and bar"));

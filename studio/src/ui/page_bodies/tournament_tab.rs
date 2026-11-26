@@ -242,7 +242,7 @@ fn draw_match(f: &mut Frame, app: &mut App, area: Rect) {
 
 /// A preview pane: its frame, its image (kept at its size while
 /// resizing), a click target when `pick` (the match's panes).
-// Long function: the pane's image state is read, updated and read again in order, because the settle size must be set before the image is drawn.
+// Long function (reason verified, phase 6): the pane's image state is read, updated and read again in order, because the settle size must be set before the image is drawn.
 fn draw_pane(f: &mut Frame, app: &mut App, area: Rect, index: usize, title: String, pick: bool) {
     let hovered = pick && app.hits.add(area, Target::TourPane(to_u8(index)));
     let block = Block::bordered()
@@ -288,7 +288,7 @@ fn installed_families(app: &App) -> Vec<String> {
 }
 
 /// The result list: a heading, then each placing with its fonts.
-// Long function: one running `y` for the heading, the placings and the fonts; each row's click index counts across all placings.
+// Long function (reason verified, phase 6): one running `y` for the heading, the placings and the fonts; each row's click index counts across all placings.
 fn draw_results_list(f: &mut Frame, app: &mut App, list: Rect, t: &Tournament, sel: usize) {
     let focused = !app.dl.tabs_focused && !app.layout.page_tabs_focused;
     let installed = installed_families(app);

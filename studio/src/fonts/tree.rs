@@ -233,7 +233,7 @@ mod tests {
 
     /// The fonts on this machine, grouped as agreed: design → variant → font.
     #[test]
-    // Long function: one table of real font names and the tree expected for them; each line stands alone, so splitting it only hides the table.
+    // Long function (reason verified, phase 6): one table of real font names and the tree expected for them; each line stands alone, so splitting it only hides the table.
     fn groups_real_font_names() {
         let fonts = installed(&[
             "DejaVu Sans",

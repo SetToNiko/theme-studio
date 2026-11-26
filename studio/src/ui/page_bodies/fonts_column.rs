@@ -138,7 +138,7 @@ fn search_line(app: &mut App, inner: Rect, rows: &[Row]) -> Line<'static> {
 /// The filter chips, wrapped to the panel width; each is clickable. Picking
 /// for a role: its requirement comes first, locked, and the chips it decides
 /// are hidden.
-// Long function: chips wrap to the panel width with one running column `x`; each chip's click area depends on where the wrap put it.
+// Long function (reason verified, phase 6): chips wrap to the panel width with one running column `x`; each chip's click area depends on where the wrap put it.
 fn chip_lines(app: &mut App, inner: Rect) -> Vec<Line<'static>> {
     let t = &app.fonts;
     let mut chip_lines: Vec<Vec<Span>> = vec![vec![" ".into()]];
@@ -303,7 +303,7 @@ fn need_notes(role: usize) -> Vec<Line<'static>> {
 
 /// ² the installed fonts: search line, filter chips, then the grouped list
 /// scrolled so that the selection shows. `browsing`: the list has the keyboard.
-// Long function: search line, chips and font rows are stacked from one running line count, and the scroll window depends on the height that is left.
+// Long function (reason verified, phase 6): search line, chips and font rows are stacked from one running line count, and the scroll window depends on the height that is left.
 fn draw_installed(f: &mut Frame, app: &mut App, area: Rect, title: Line<'static>, browsing: bool) {
     let block = block(app, area, title, browsing);
     let inner = block.inner(area);
@@ -343,7 +343,7 @@ fn draw_installed(f: &mut Frame, app: &mut App, area: Rect, title: Line<'static>
 
 /// The sample image: the fonts drawn by Pango at this machine's sizes and
 /// DPI, in the palette being edited.
-// Long function: the frame, the background, the error text and the image are drawn in this order, each over the previous one.
+// Long function (reason verified, phase 6): the frame, the background, the error text and the image are drawn in this order, each over the previous one.
 pub fn draw_sample(f: &mut Frame, app: &mut App, area: Rect) {
     let title = Line::from(vec![panel_number(3), "Sample ".into()]);
     let title = pane_title(app, area, title, 3);

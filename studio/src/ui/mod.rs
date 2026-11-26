@@ -32,7 +32,7 @@ mod panes;
 
 /// Draws the whole window: the tabs, the page for the window size, the status
 /// line, then the overlays on top.
-// Long function: the order of the drawing calls is the order on screen: tabs, page, status, then the overlays on top.
+// Long function (reason verified, phase 6): the order of the drawing calls is the order on screen: tabs, page, status, then the overlays on top.
 pub fn draw(f: &mut Frame, app: &mut App) {
     reset_frame_state(app);
     let full = f.area();
@@ -101,7 +101,7 @@ fn draw_tabs(f: &mut Frame, app: &mut App, area: Rect) -> u16 {
 }
 
 /// Draws one page tab at column `x`; returns its width.
-// Long function: one tab: its text, width, style and click area depend on each other in this order.
+// Long function (reason verified, phase 6): one tab: its text, width, style and click area depend on each other in this order.
 fn draw_page_tab(
     f: &mut Frame,
     app: &mut App,

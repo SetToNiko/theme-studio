@@ -291,7 +291,7 @@ fn diff_walk(
 }
 
 /// Adds the line (or, for an object, the lines) for one key.
-// Long function: one match over the cases of a key (two objects, same, changed, added, removed).
+// Long function (reason verified, phase 6): one match over the cases of a key (two objects, same, changed, added, removed).
 fn diff_entry(
     key: &str,
     old: Option<&Value>,
@@ -403,7 +403,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    // Long function: two JSON documents and the lines expected for them, checked in one table.
+    // Long function (reason verified, phase 6): two JSON documents and the lines expected for them, checked in one table.
     fn difference_view_shows_changes_in_place() {
         let now = json!({"version": 2, "palettes": {"a": {"red": "#111111", "bg0": "#000000"}, "gone": {"x": 1}}});
         let then = json!({"version": 2, "palettes": {"a": {"red": "#222222", "bg0": "#000000"}, "new": {"x": 2}}});

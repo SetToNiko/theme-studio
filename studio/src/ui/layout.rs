@@ -222,7 +222,7 @@ fn columns_narrow(main: Rect, columns_need: u16, sizes: &Sizes) -> Columns {
 
 /// `show_preview`: the preview column (or row) is shown; hidden, the fonts
 /// and colour columns share its space.
-// Long function: one top-to-bottom pass: size check, columns, then the two column splits, which add their borders in this fixed order.
+// Long function (reason verified, phase 6): one top-to-bottom pass: size check, columns, then the two column splits, which add their borders in this fixed order.
 pub fn arrange(
     area: Rect,
     page: Page,

@@ -357,7 +357,7 @@ mod tests {
     }
 
     #[test]
-    // Long function: one scenario in order (write version 2 files, migrate, check, migrate again); each step needs the files of the step before.
+    // Long function (reason verified, phase 6): one scenario in order (write version 2 files, migrate, check, migrate again); each step needs the files of the step before.
     fn version_2_migrates_presets_and_host_offsets_once() {
         let dir =
             std::env::temp_dir().join(format!("theme-studio-fonts-v3-{}", std::process::id()));

@@ -134,7 +134,7 @@ impl App {
     }
 
     /// Keys for the preview (on the Fonts page). True if handled.
-    // Long function: one match over the preview's key actions.
+    // Long function (reason verified, phase 6): one match over the preview's key actions.
     pub fn preview_action(&mut self, a: Action) -> bool {
         let sel = self.preview_entry();
         let pv = self.pv();

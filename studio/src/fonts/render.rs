@@ -417,7 +417,7 @@ mod tests {
     #[test]
     #[ignore = "needs ImageMagick; slow"]
     #[allow(deprecated)] // a picker without a terminal to ask
-    // Long function: a benchmark that is only run by hand: it times render, decode and encode in one loop.
+    // Long function (reason verified, phase 6): a benchmark that is only run by hand: it times render, decode and encode in one loop.
     fn preview_timing() {
         use std::time::Instant;
         let p = crate::model::palette::Palette::blank();

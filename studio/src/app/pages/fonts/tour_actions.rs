@@ -273,7 +273,7 @@ impl App {
         }
     }
 
-    // Long function: one match over the set-up page's keys.
+    // Long function (reason verified, phase 6): one match over the set-up page's keys.
     pub(in crate::app) fn run_tour_setup(&mut self, a: Action) -> bool {
         let rows = self.tour_setup_rows();
         let last = rows.len().saturating_sub(1);

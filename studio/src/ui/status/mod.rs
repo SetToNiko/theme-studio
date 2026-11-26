@@ -27,7 +27,7 @@ use rows::{colours_hints, downloads_hints, fonts_hints, settings_hints};
 type Rows<'a> = Vec<(&'a [Action], &'static str)>;
 
 /// Draws the status line: tabs, then the message, then the key hints.
-// Long function: the tabs, the message and the right-aligned hints share one row, and each width depends on the widths already used on it (tabs, then message, then hints).
+// Long function (reason verified, phase 6): the tabs, the message and the right-aligned hints share one row, and each width depends on the widths already used on it (tabs, then message, then hints).
 pub(super) fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
     // the page tabs start the line unless they're on top (settings: layout.tabs)
     let used = if app.settings.layout.tabs_on_top() {

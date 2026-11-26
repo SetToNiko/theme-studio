@@ -364,7 +364,7 @@ fn open_row(app: &App, name: &str, swatches: &[Rgb]) -> Line<'static> {
 }
 
 /// The "Open ..." list with a search field (centred, or hanging under the Palette pane).
-// Long function: the row loop needs the box rectangle, the scroll window and the line count at once, and registers each row's click area in line order.
+// Long function (reason verified, phase 6): the row loop needs the box rectangle, the scroll window and the line count at once, and registers each row's click area in line order.
 fn draw_open(
     f: &mut Frame,
     app: &mut App,

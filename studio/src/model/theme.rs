@@ -197,7 +197,7 @@ mod tests {
         std::fs::remove_dir_all(d).unwrap();
     }
 
-    // Long function: one scenario; it writes two files and then checks both outcomes of the same migration.
+    // Long function (reason verified, phase 6): one scenario; it writes two files and then checks both outcomes of the same migration.
     #[test]
     fn version_1_themes_take_their_presets_sizes_once() {
         let d = std::env::temp_dir().join(format!("theme-studio-themes-v2-{}", std::process::id()));

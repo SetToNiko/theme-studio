@@ -131,7 +131,7 @@ impl App {
     }
 
     /// Colour-list keys: open/close groups, move, start editing.
-    // Long function: one match over every (action, row kind) pair of the colour list.
+    // Long function (reason verified, phase 6): one match over every (action, row kind) pair of the colour list.
     pub(in crate::app) fn list_action(&mut self, action: Action) {
         let rows = self.colour_rows();
         let last = to_i32(rows.len()) - 1;

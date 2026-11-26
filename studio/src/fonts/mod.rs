@@ -66,7 +66,7 @@ pub struct FontsTab {
 }
 
 impl FontsTab {
-    // Long function: one struct literal that sets every field of the tab.
+    // Long function (reason verified, phase 6): one struct literal that sets every field of the tab.
     pub fn new(data: &Path, share: &Path, draft_dir: &Path, dirty: Arc<AtomicBool>) -> FontsTab {
         let store = FontStore {
             dir: data.to_path_buf(),
@@ -401,7 +401,7 @@ impl FontsTab {
     }
 
     /// An action in the font list; returns false if it means nothing there.
-    // Long function: one match over the list actions, which share the row count and the cursor.
+    // Long function (reason verified, phase 6): one match over the list actions, which share the row count and the cursor.
     fn act_in_list(&mut self, a: Action) -> bool {
         let last = self.rows().len().saturating_sub(1);
         match a {
@@ -610,7 +610,7 @@ mod tests {
     }
 
     #[test]
-    // Long function: one scenario in order (open, filter, search, pick) on one tab; each step needs the state of the step before.
+    // Long function (reason verified, phase 6): one scenario in order (open, filter, search, pick) on one tab; each step needs the state of the step before.
     fn grouped_list_opens_filters_searches_and_picks() {
         let mut t = tab_with(vec![
             font("DejaVu Sans", false, false),

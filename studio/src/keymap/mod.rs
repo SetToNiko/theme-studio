@@ -589,7 +589,7 @@ mod tests {
 mod edit_tests {
     use super::*;
 
-    // Long function: one scenario; each step changes the same keymap and the next assert depends on it.
+    // Long function (reason verified, phase 6): one scenario; each step changes the same keymap and the next assert depends on it.
     #[test]
     fn set_keys_leader_change_and_conflicts() {
         let mut km = Keymap::vim();

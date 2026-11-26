@@ -363,7 +363,7 @@ mod tests {
 
     /// A real program in a pane: its ANSI colours come out as the palette's.
     #[test]
-    // Long function: one table of ANSI colour numbers and the palette colour expected for each.
+    // Long function (reason verified, phase 6): one table of ANSI colour numbers and the palette colour expected for each.
     fn pane_maps_ansi_colours_to_the_palette() {
         let dirty = Arc::new(AtomicBool::new(false));
         let mut cmd = CommandBuilder::new("printf");

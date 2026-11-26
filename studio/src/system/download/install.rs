@@ -342,7 +342,7 @@ mod tests {
     /// Real downloads (network): `cargo test -- --ignored live_installs`.
     #[test]
     #[ignore = "downloads from the network"]
-    // Long function: an ignored test that installs from the network in order (download, check, remove); each step needs the files of the step before.
+    // Long function (reason verified, phase 6): an ignored test that installs from the network in order (download, check, remove); each step needs the files of the step before.
     fn live_installs() {
         let root = std::env::temp_dir().join(format!("theme-studio-live-{}", std::process::id()));
         remove_dir_if_present(&root);

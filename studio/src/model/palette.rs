@@ -156,7 +156,7 @@ fn lum(c: Rgb) -> f64 {
 }
 
 /// All 34 keys computed from the 8 base colours (palette-derive.jq's `derive`).
-// Long function: one table, one `put` line for each of the 34 derived keys.
+// Long function (reason verified, phase 6): one table, one `put` line for each of the 34 derived keys.
 pub fn derive(base: &HashMap<&'static str, Rgb>) -> HashMap<&'static str, Rgb> {
     let b = |k: &str| base[k];
     let (bg, fg) = (b("bg0"), b("fg0"));
@@ -369,7 +369,7 @@ mod tests {
 
     /// Runs palette-derive.jq on the base colours of every real palette and
     /// checks the Rust port gives exactly the same 34 colours.
-    // Long function: one comparison against the jq script, with its set-up and failure messages in one place.
+    // Long function (reason verified, phase 6): one comparison against the jq script, with its set-up and failure messages in one place.
     #[test]
     fn derive_matches_palette_derive_jq() {
         let Some(dir) = configs() else {

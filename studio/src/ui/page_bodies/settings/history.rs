@@ -140,7 +140,7 @@ fn draw_versions(
 }
 
 /// The preview box: the selected version in place of what's there now.
-// Long function: the scroll limit depends on the head lines built first and on the box height, and the diff area is registered before the lines are drawn.
+// Long function (reason verified, phase 6): the scroll limit depends on the head lines built first and on the box height, and the diff area is registered before the lines are drawn.
 fn draw_preview(
     f: &mut Frame,
     app: &mut App,
