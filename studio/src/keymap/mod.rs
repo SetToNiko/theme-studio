@@ -117,6 +117,52 @@ pub struct Keymap {
     pub bindings: Vec<Binding>,
 }
 
+/// Whether two contexts are active at the same time (so their keys can clash).
+fn active_together(a: Context, b: Context) -> bool {
+    use Context as C;
+    a == b
+        || (a == C::Global && b != C::Resize)
+        || (b == C::Global && a != C::Resize)
+        || matches!(
+            (a, b),
+            (C::Colours, C::ColourList | C::Picker)
+                | (C::ColourList | C::Picker, C::Colours)
+                | (C::Fonts, C::FontRoles | C::FontList)
+                | (C::FontRoles | C::FontList, C::Fonts)
+        )
+}
+
+/// The leader key of a preset: the file's `leader`, else the base preset's,
+/// else Space. A leader that is not one key is reported and replaced by Space.
+fn read_leader(name: &str, v: &Value, base: Option<&Keymap>, warnings: &mut Vec<String>) -> Key {
+    let space = Key::new(KeyCode::Char(' '), KeyModifiers::NONE);
+    match v.get("leader").and_then(Value::as_str) {
+        Some(s) => match Key::parse_seq(s, space) {
+            Ok(k) if k.len() == 1 => k[0],
+            _ => {
+                warnings.push(format!("{name}: leader \"{s}\" isn't one key; using Space"));
+                space
+            }
+        },
+        None => base.map_or(space, |b| b.leader),
+    }
+}
+
+/// The action named `aid` in a preset file. A renamed action gives its new
+/// name; an action that no longer exists, or an unknown one, gives `None`
+/// (the unknown one with a warning).
+fn resolve_action(name: &str, aid: &str, warnings: &mut Vec<String>) -> Option<Action> {
+    match (Action::from_id(aid), Action::legacy(aid)) {
+        (Some(a), _) => Some(a),
+        (None, Some(LegacyId::Renamed(renamed))) => Some(renamed),
+        (None, Some(LegacyId::Dropped)) => None, // no longer exists
+        (None, None) => {
+            warnings.push(format!("{name}: unknown action \"{aid}\""));
+            None
+        }
+    }
+}
+
 impl Keymap {
     /// Builds a keymap from (context, action, sequences) rows.
     pub fn from_rows(
@@ -235,17 +281,7 @@ impl Keymap {
     /// a newer version show up; an empty list means deliberately unbound.
     pub fn from_json(name: &str, v: &Value, base: Option<&Keymap>) -> (Keymap, Vec<String>) {
         let mut warnings = Vec::new();
-        let space = Key::new(KeyCode::Char(' '), KeyModifiers::NONE);
-        let leader = match v.get("leader").and_then(Value::as_str) {
-            Some(s) => match Key::parse_seq(s, space) {
-                Ok(k) if k.len() == 1 => k[0],
-                _ => {
-                    warnings.push(format!("{name}: leader \"{s}\" isn't one key; using Space"));
-                    space
-                }
-            },
-            None => base.map(|b| b.leader).unwrap_or(space),
-        };
+        let leader = read_leader(name, v, base, &mut warnings);
         let mut km = Keymap {
             name: name.to_string(),
             leader,
@@ -254,58 +290,83 @@ impl Keymap {
         };
         let mut mentioned: HashSet<(Context, Action)> = HashSet::new();
         if let Some(contexts) = v.get("bindings").and_then(Value::as_object) {
-            for (cid, actions) in contexts {
-                let Some(ctx) = Context::from_id(cid) else {
-                    warnings.push(format!("{name}: unknown context \"{cid}\""));
-                    continue;
-                };
-                let Some(actions) = actions.as_object() else {
-                    continue;
-                };
-                for (aid, seqs) in actions {
-                    let action = match (Action::from_id(aid), Action::legacy(aid)) {
-                        (Some(a), _) => a,
-                        (None, Some(LegacyId::Renamed(renamed))) => renamed,
-                        (None, Some(LegacyId::Dropped)) => continue, // no longer exists
-                        (None, None) => {
-                            warnings.push(format!("{name}: unknown action \"{aid}\""));
-                            continue;
-                        }
-                    };
-                    mentioned.insert((ctx, action));
-                    let list = seqs.as_array().cloned().unwrap_or_default();
-                    if list.is_empty() {
-                        km.unbound.insert((ctx, action));
-                    }
-                    for s in list.iter().filter_map(Value::as_str) {
-                        match Key::parse_seq(s, leader) {
-                            Ok(keys) => km.bindings.push(Binding {
-                                context: ctx,
-                                keys,
-                                action,
-                            }),
-                            Err(e) => warnings.push(format!("{name}: {cid}.{aid}: {e}")),
-                        }
-                    }
-                }
-            }
+            km.read_contexts(name, contexts, &mut mentioned, &mut warnings);
         }
         if let Some(base) = base {
-            for b in &base.bindings {
-                if !mentioned.contains(&(b.context, b.action)) {
-                    // re-read with this preset's leader
-                    let text = display_seq(&b.keys, base.leader);
-                    if let Ok(keys) = Key::parse_seq(&text, leader) {
-                        km.bindings.push(Binding {
-                            context: b.context,
-                            keys,
-                            action: b.action,
-                        });
-                    }
+            km.add_missing_from(base, &mentioned);
+        }
+        (km, warnings)
+    }
+
+    /// Reads the `bindings` object of a preset: one entry for each context,
+    /// each with its actions. Fills `mentioned` with every action the file names.
+    fn read_contexts(
+        &mut self,
+        name: &str,
+        contexts: &Map<String, Value>,
+        mentioned: &mut HashSet<(Context, Action)>,
+        warnings: &mut Vec<String>,
+    ) {
+        for (cid, actions) in contexts {
+            let Some(ctx) = Context::from_id(cid) else {
+                warnings.push(format!("{name}: unknown context \"{cid}\""));
+                continue;
+            };
+            let Some(actions) = actions.as_object() else {
+                continue;
+            };
+            self.read_actions(name, (cid, ctx), actions, mentioned, warnings);
+        }
+    }
+
+    /// Reads the actions of one context: `context` is its id in the file and
+    /// the context itself. Problems are reported in `warnings`.
+    fn read_actions(
+        &mut self,
+        name: &str,
+        context: (&str, Context),
+        actions: &Map<String, Value>,
+        mentioned: &mut HashSet<(Context, Action)>,
+        warnings: &mut Vec<String>,
+    ) {
+        let (cid, ctx) = context;
+        for (aid, seqs) in actions {
+            let Some(action) = resolve_action(name, aid, warnings) else {
+                continue;
+            };
+            mentioned.insert((ctx, action));
+            let list = seqs.as_array().cloned().unwrap_or_default();
+            if list.is_empty() {
+                self.unbound.insert((ctx, action));
+            }
+            for s in list.iter().filter_map(Value::as_str) {
+                match Key::parse_seq(s, self.leader) {
+                    Ok(keys) => self.bindings.push(Binding {
+                        context: ctx,
+                        keys,
+                        action,
+                    }),
+                    Err(e) => warnings.push(format!("{name}: {cid}.{aid}: {e}")),
                 }
             }
         }
-        (km, warnings)
+    }
+
+    /// Copies the bindings of `base` for the actions that the file did not
+    /// mention, re-read with this preset's leader.
+    fn add_missing_from(&mut self, base: &Keymap, mentioned: &HashSet<(Context, Action)>) {
+        for b in &base.bindings {
+            if !mentioned.contains(&(b.context, b.action)) {
+                let text = display_seq(&b.keys, base.leader);
+                if let Ok(keys) = Key::parse_seq(&text, self.leader) {
+                    self.bindings.push(Binding {
+                        context: b.context,
+                        keys,
+                        action: b.action,
+                    });
+                }
+            }
+        }
     }
 
     /// An action's key sequences in a context.
@@ -353,19 +414,6 @@ impl Keymap {
     /// active together) one sequence starting the other, which can't work
     /// without a timeout.
     pub fn conflicts(&self, ctx: Context, action: Action, keys: &[Key]) -> Vec<String> {
-        let together = |a: Context, b: Context| {
-            use Context as C;
-            a == b
-                || (a == C::Global && b != C::Resize)
-                || (b == C::Global && a != C::Resize)
-                || matches!(
-                    (a, b),
-                    (C::Colours, C::ColourList | C::Picker)
-                        | (C::ColourList | C::Picker, C::Colours)
-                        | (C::Fonts, C::FontRoles | C::FontList)
-                        | (C::FontRoles | C::FontList, C::Fonts)
-                )
-        };
         let mut out = Vec::new();
         for b in self
             .bindings
@@ -373,7 +421,7 @@ impl Keymap {
             .filter(|b| !(b.context == ctx && b.action == action))
         {
             let same = b.context == ctx && b.keys == keys;
-            let prefix = together(b.context, ctx)
+            let prefix = active_together(b.context, ctx)
                 && b.keys != keys
                 && (b.keys.starts_with(keys) || keys.starts_with(&b.keys));
             if same || prefix {
@@ -418,6 +466,7 @@ mod tests {
         Key::new(KeyCode::Char(' '), KeyModifiers::NONE)
     }
 
+    // Long function: one list of notation examples; each assert is one example.
     #[test]
     fn parses_and_displays_vim_notation() {
         let l = space();
@@ -541,6 +590,7 @@ mod tests {
 mod edit_tests {
     use super::*;
 
+    // Long function: one scenario; each step changes the same keymap and the next assert depends on it.
     #[test]
     fn set_keys_leader_change_and_conflicts() {
         let mut km = Keymap::vim();
@@ -567,16 +617,18 @@ mod edit_tests {
                 .len(),
             1
         );
-        assert!(
-            !km.conflicts(Context::Colours, Action::Pin, &seq(" ", l))
-                .is_empty()
+        assert_ne!(
+            km.conflicts(Context::Colours, Action::Pin, &seq(" ", l))
+                .len(),
+            0
         );
         // the font list's n deliberately hides the global n: not a conflict
-        assert!(
+        assert_eq!(
             km.conflicts(Context::FontList, Action::Filter('n'), &seq("n", l))
-                .is_empty()
+                .len(),
+            0
         );
-        assert!(km.warnings().is_empty());
+        assert_eq!(km.warnings().len(), 0);
         km.set_keys(Context::Global, Action::PreviewCycle, vec![]);
         km.set_keys(Context::Global, Action::Help, vec![seq("<M-h>", l)]);
         assert_eq!(km.warnings().len(), 2);

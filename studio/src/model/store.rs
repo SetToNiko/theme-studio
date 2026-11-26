@@ -27,8 +27,8 @@ pub struct TerminalMap {
     pub ansi: Vec<String>,
 }
 
-/// palettes.json is formatted exactly like `jq .` output, which is what
-/// serde_json's pretty printer produces plus a final newline.
+/// `palettes.json` is formatted exactly like `jq .` output, which is what
+/// the pretty printer of `serde_json` produces plus a final newline.
 pub fn to_jq_string(v: &Value) -> String {
     let mut s = serde_json::to_string_pretty(v).expect("JSON values always serialise");
     s.push('\n');
@@ -172,6 +172,10 @@ impl Store {
     }
 
     /// The palette theme-switch.sh last applied.
+    #[expect(
+        clippy::unused_self,
+        reason = "a method like the other Store functions, and like `FontPresets::active_name`, so callers use the one Store handle"
+    )]
     pub fn active_name(&self) -> Option<String> {
         let s = std::fs::read_to_string(crate::model::paths::colors_dir().join("current")).ok()?;
         Some(s.trim().to_string()).filter(|s| !s.is_empty())

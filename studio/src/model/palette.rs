@@ -138,19 +138,25 @@ pub fn related(key: &str) -> Vec<&'static str> {
 }
 
 /// Blends colour `a` towards `b` by `t`, rounding like palette-derive.jq.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "both inputs are in 0..=255 and `t` is in 0..=1, so the blend is in 0..=255 before the cast"
+)]
 fn mix(a: Rgb, b: Rgb, t: f64) -> Rgb {
-    let ch = |x: u8, y: u8| {
-        let (x, y) = (x as f64, y as f64);
-        (x + (y - x) * t + 0.5).floor() as u8
+    let ch = |from: u8, to: u8| {
+        let (from, to) = (f64::from(from), f64::from(to));
+        (from + (to - from) * t + 0.5).floor() as u8
     };
     Rgb(ch(a.0, b.0), ch(a.1, b.1), ch(a.2, b.2))
 }
 
 fn lum(c: Rgb) -> f64 {
-    c.0 as f64 * 0.299 + c.1 as f64 * 0.587 + c.2 as f64 * 0.114
+    f64::from(c.0) * 0.299 + f64::from(c.1) * 0.587 + f64::from(c.2) * 0.114
 }
 
 /// All 34 keys computed from the 8 base colours (palette-derive.jq's `derive`).
+// Long function: one table, one `put` line for each of the 34 derived keys.
 pub fn derive(base: &HashMap<&'static str, Rgb>) -> HashMap<&'static str, Rgb> {
     let b = |k: &str| base[k];
     let (bg, fg) = (b("bg0"), b("fg0"));
@@ -204,6 +210,22 @@ pub fn derive(base: &HashMap<&'static str, Rgb>) -> HashMap<&'static str, Rgb> {
     d
 }
 
+/// Reads the 8 base colours from a palettes.json object.
+fn read_base(obj: &Map<String, Value>) -> Result<HashMap<&'static str, Rgb>> {
+    let mut values = HashMap::new();
+    for k in BASE {
+        let v = obj
+            .get(k)
+            .and_then(Value::as_str)
+            .ok_or_else(|| anyhow!("missing {k}"))?;
+        values.insert(
+            k,
+            Rgb::parse(v).with_context(|| format!("bad colour for {k}: {v}"))?,
+        );
+    }
+    Ok(values)
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Palette {
     values: HashMap<&'static str, Rgb>,
@@ -217,17 +239,7 @@ impl Palette {
     /// Reads a palette from its palettes.json object. A derived key counts as
     /// pinned when its value differs from what the base colours would give.
     pub fn from_json(obj: &Map<String, Value>) -> Result<Palette> {
-        let mut values = HashMap::new();
-        for k in BASE {
-            let v = obj
-                .get(k)
-                .and_then(Value::as_str)
-                .ok_or_else(|| anyhow!("missing {k}"))?;
-            values.insert(
-                k,
-                Rgb::parse(v).with_context(|| format!("bad colour for {k}: {v}"))?,
-            );
-        }
+        let mut values = read_base(obj)?;
         let mut pinned = HashSet::new();
         for (k, derived) in derive(&values) {
             if is_base(k) {
@@ -349,14 +361,15 @@ mod tests {
             .iter()
             .flat_map(|(_, ks)| ks.iter().copied())
             .collect();
-        seen.sort();
+        seen.sort_unstable();
         let mut keys = KEYS.to_vec();
-        keys.sort();
+        keys.sort_unstable();
         assert_eq!(seen, keys);
     }
 
     /// Runs palette-derive.jq on the base colours of every real palette and
     /// checks the Rust port gives exactly the same 34 colours.
+    // Long function: one comparison against the jq script, with its set-up and failure messages in one place.
     #[test]
     fn derive_matches_palette_derive_jq() {
         let Some(dir) = configs() else {
@@ -425,7 +438,7 @@ mod tests {
         for (name, p) in all_palettes(&dir) {
             let obj = p.as_object().unwrap();
             let pal = Palette::from_json(obj).unwrap();
-            pinned_somewhere += (!pal.pinned.is_empty()) as usize;
+            pinned_somewhere += usize::from(!pal.pinned.is_empty());
             assert_eq!(&pal.to_json(), obj, "{name}");
         }
         assert!(
@@ -458,7 +471,7 @@ mod related_tests {
         // name it as a source
         let mut base: HashMap<&'static str, Rgb> = HashMap::new();
         for (i, k) in BASE.iter().enumerate() {
-            base.insert(k, Rgb(20 + 25 * i as u8, 60, 90));
+            base.insert(k, Rgb(20 + 25 * u8::try_from(i).unwrap(), 60, 90));
         }
         base.insert("bg0", Rgb(20, 20, 24));
         base.insert("fg0", Rgb(220, 220, 210));

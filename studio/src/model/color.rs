@@ -14,7 +14,9 @@ impl Rgb {
             return None;
         }
         let v = u32::from_str_radix(s, 16).ok()?;
-        Some(Rgb((v >> 16) as u8, (v >> 8) as u8, v as u8))
+        // The four bytes of `v` are 0, red, green, blue (the string has 6 digits).
+        let [_, red, green, blue] = v.to_be_bytes();
+        Some(Rgb(red, green, blue))
     }
 
     /// Lowercase `#rrggbb`, as in palettes.json.
@@ -29,7 +31,7 @@ impl Rgb {
     /// WCAG relative luminance.
     pub fn luminance(self) -> f64 {
         let lin = |c: u8| {
-            let c = c as f64 / 255.0;
+            let c = f64::from(c) / 255.0;
             if c <= 0.03928 {
                 c / 12.92
             } else {
@@ -56,11 +58,22 @@ pub fn contrast(a: Rgb, b: Rgb) -> f64 {
     (hi + 0.05) / (lo + 0.05)
 }
 
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "the value is clamped to 0..=255 before the cast"
+)]
 fn to_u8(x: f64) -> u8 {
     (x * 255.0).round().clamp(0.0, 255.0) as u8
 }
 
 /// Hue in degrees (0..360), saturation and value in 0..1.
+#[expect(
+    clippy::many_single_char_names,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "h, s, v, c, x, m, r, g, b are the standard names of the HSV formula; `h` is in 0..6 here, so the cast to an integer is safe"
+)]
 pub fn hsv_to_rgb(h: f64, s: f64, v: f64) -> Rgb {
     let h = h.rem_euclid(360.0) / 60.0;
     let c = v * s;
@@ -78,8 +91,16 @@ pub fn hsv_to_rgb(h: f64, s: f64, v: f64) -> Rgb {
 }
 
 /// Returns (hue, saturation, value); hue is None for greys.
+#[expect(
+    clippy::many_single_char_names,
+    reason = "r, g, b, d, s are the standard names of the HSV formula"
+)]
 pub fn rgb_to_hsv(c: Rgb) -> (Option<f64>, f64, f64) {
-    let (r, g, b) = (c.0 as f64 / 255.0, c.1 as f64 / 255.0, c.2 as f64 / 255.0);
+    let (r, g, b) = (
+        f64::from(c.0) / 255.0,
+        f64::from(c.1) / 255.0,
+        f64::from(c.2) / 255.0,
+    );
     let max = r.max(g).max(b);
     let min = r.min(g).min(b);
     let d = max - min;
@@ -95,12 +116,20 @@ pub fn hsl_to_rgb(h: f64, s: f64, l: f64) -> Rgb {
 }
 
 /// Returns (hue, saturation, lightness); hue is None for greys.
+#[expect(
+    clippy::many_single_char_names,
+    reason = "r, g, b, d, l, s are the standard names of the HSL formula"
+)]
 pub fn rgb_to_hsl(c: Rgb) -> (Option<f64>, f64, f64) {
-    let (r, g, b) = (c.0 as f64 / 255.0, c.1 as f64 / 255.0, c.2 as f64 / 255.0);
+    let (r, g, b) = (
+        f64::from(c.0) / 255.0,
+        f64::from(c.1) / 255.0,
+        f64::from(c.2) / 255.0,
+    );
     let max = r.max(g).max(b);
     let min = r.min(g).min(b);
     let d = max - min;
-    let l = (max + min) / 2.0;
+    let l = f64::midpoint(max, min);
     let s = if d == 0.0 {
         0.0
     } else {
@@ -109,6 +138,11 @@ pub fn rgb_to_hsl(c: Rgb) -> (Option<f64>, f64, f64) {
     (hue(r, g, b, max, d), s, l)
 }
 
+#[expect(
+    clippy::many_single_char_names,
+    clippy::float_cmp,
+    reason = "r, g, b, d, h are the standard names of the formula; `max` is exactly one of r, g, b (it comes from `f64::max`), and `d == 0.0` tests for a grey exactly"
+)]
 fn hue(r: f64, g: f64, b: f64, max: f64, d: f64) -> Option<f64> {
     if d == 0.0 {
         return None;
@@ -136,6 +170,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "r, g, b, c, h, s, v, l are the standard names of the colour formulas"
+    )]
     fn hsv_and_hsl_round_trip_every_sampled_colour() {
         for r in (0..=255).step_by(15) {
             for g in (0..=255).step_by(17) {

@@ -1,7 +1,7 @@
 //! Images wait for a size to settle. While a pane's size keeps changing
 //! (the terminal resizing, a border being dragged, resize mode), an image
 //! stays at the last size that held still, so it isn't re-encoded (or
-//! re-rendered by ImageMagick) on every step; once the size has stayed the
+//! re-rendered by `ImageMagick`) on every step; once the size has stayed the
 //! same for [`SETTLE`] it follows.
 
 use std::time::{Duration, Instant};

@@ -69,6 +69,10 @@ pub fn code_lines(lang: usize) -> usize {
 
 /// `count` lines of code from line `first` on, highlighted: keywords,
 /// strings, numbers, comments, calls, types.
+#[expect(
+    clippy::format_push_string,
+    reason = "the markup is built piece by piece; `+= &format!(..)` reads simpler than `write!`, whose Result cannot fail for a String"
+)]
 pub fn code(st: &Style, lang: usize, first: usize, count: usize) -> String {
     let (_, keywords, comment, src) = LANGS[lang % LANGS.len()];
     let span = |k: &str, t: &str| format!("<span foreground=\"{}\">{}</span>", st.c(k), esc(t));
@@ -127,6 +131,10 @@ pub fn code(st: &Style, lang: usize, first: usize, count: usize) -> String {
 
 /// Nerd Font icons in their usual places: a prompt, a file tree, git
 /// status, a status bar.
+#[expect(
+    clippy::format_push_string,
+    reason = "the markup is built piece by piece; `+= &format!(..)` reads simpler than `write!`, whose Result cannot fail for a String"
+)]
 pub fn icons(st: &Style) -> String {
     let span = |k: &str, t: &str| format!("<span foreground=\"{}\">{}</span>", st.c(k), esc(t));
     let mut out = st.open();
@@ -186,6 +194,10 @@ pub fn icons(st: &Style) -> String {
 
 /// Prose from paragraph `from`, about `budget` characters' worth; returns
 /// the markup and where the next page starts.
+#[expect(
+    clippy::format_push_string,
+    reason = "the markup is built piece by piece; `+= &format!(..)` reads simpler than `write!`, whose Result cannot fail for a String"
+)]
 pub fn prose_page(st: &Style, from: usize, budget: usize) -> (String, usize) {
     let paras = prose();
     let from = from.min(paras.len().saturating_sub(1));
@@ -217,6 +229,11 @@ pub fn prose_page(st: &Style, from: usize, budget: usize) -> (String, usize) {
 
 /// A README-style document: headings, a list, inline code, a code block, a
 /// table and a quote.
+// Long function: one fixed sample document, built top to bottom with one block for each section.
+#[expect(
+    clippy::format_push_string,
+    reason = "the markup is built piece by piece; `+= &format!(..)` reads simpler than `write!`, whose Result cannot fail for a String"
+)]
 pub fn readme(st: &Style) -> String {
     let big = |scale: u32, t: &str| {
         format!(
@@ -286,6 +303,7 @@ pub fn default_kind(category: &str, nerd: bool) -> Kind {
 mod tests {
     use super::*;
 
+    // Long function: one check of the markup of every sample text, in one loop over the languages.
     #[test]
     fn texts_are_valid_markup() {
         let p = Palette::blank();
@@ -323,7 +341,8 @@ mod tests {
         assert_eq!(default_kind("nerd font", true), Kind::Icons);
     }
 
-    /// Pango accepts every text (skipped without ImageMagick).
+    /// Pango accepts every text (skipped without `ImageMagick`).
+    // Long function: one end-to-end check that renders every sample text, with its skip test and set-up.
     #[test]
     fn pango_renders_every_text() {
         if std::process::Command::new("magick")
