@@ -219,7 +219,7 @@ Completes: none (cycle count decreases, measured)
 - [x] P5.14c `model/samples.rs` (523) under 500 | Files: the file, new files in model/ | Target: limits | Check: tests
 - [x] P5.14d `app/pages/themes/behaviour_actions.rs` (521) under 500: moved to app/pages/settings/ (it serves only the Behaviour tab) and divided | Files: settings/behaviour_actions.rs, behaviour_colours_actions.rs, behaviour_rows_actions.rs | Target: limits | Check: tests
 - [ ] P5.15 (N2) model/history: local time with the `chrono` crate (default-features off, `clock`), not the `date` program; same text format | Files: `model/history.rs`, `Cargo.toml`, `Cargo.lock`, `packaging/nix/package.nix` (dependency hash) | Target: layers | Check: tests; history shows the same local time
-- [ ] P5.16 (N3) fonts/types: `kind()` returns an enum, not strings | Files: `fonts/types.rs`, users | Target: T2 | Check: tests
+- [x] P5.16 (N3) fonts/types: `kind()` returns an enum, not strings | Files: `fonts/types.rs`, users | Target: T2 | Check: tests
 - [ ] P5.17 (N4) keymap: one table with id, label and group for each action; a new action is one entry | Files: `keymap/action.rs`, `keymap/labels.rs`, users | Target: T2 | Check: tests; every id, label and group the same as before
 - [ ] P5.18 (N5) `Action::legacy` returns an enum (`Renamed(Action)`, `Dropped`) | Files: `keymap/action.rs`, `keymap/mod.rs` | Target: T1 | Check: tests
 Removed: the old "settings: tabs into separate files" step (Phase 4 moved the impl App blocks out; settings.rs is under 500).
