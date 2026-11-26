@@ -2,7 +2,7 @@
 //!
 //! `draw` in `ui/mod.rs` picks the arrangement for the window size; this
 //! file draws the page inside it (Main, Download fonts, Settings) and the
-//! "window too small" screen. The panes of the Main page live in `ui/mod.rs`.
+//! "window too small" screen. The panes of the Main page live in `ui/panes/`.
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -10,7 +10,10 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
-use super::{MainLayout, draw_list, draw_picker, draw_preview};
+use super::MainLayout;
+use super::panes::colours::draw_list;
+use super::panes::picker::draw_picker;
+use super::panes::preview::draw_preview;
 use crate::app::App;
 use crate::app::state::nav::Page;
 use crate::hit::{BorderId, Target};
