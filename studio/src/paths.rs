@@ -196,7 +196,10 @@ mod tests {
         let share = share_dir();
         // the Nix build has only studio/, not the project around it
         if !share.is_dir() {
-            eprintln!("skipped: not in a checkout ({} isn't there)", share.display());
+            eprintln!(
+                "skipped: not in a checkout ({} isn't there)",
+                share.display()
+            );
             return;
         }
         assert!(

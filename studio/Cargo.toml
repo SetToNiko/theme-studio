@@ -14,3 +14,9 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.154", features = ["preserve_order"] }
 unicode-width = "0.2"
 vt100 = "0.18.1"
+
+# Clippy groups for this project (docs/refactor/PRINCIPLES.md, project rule 3).
+# style and correctness are on by default. pedantic is added here, so a plain
+# `cargo clippy` checks all three. priority = -1 lets a single lint override it.
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
