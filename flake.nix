@@ -34,6 +34,7 @@
           pkgs.cargo-modules # dependency cycles between modules
           pkgs.cargo-llvm-cov # test coverage
           pkgs.python3Packages.lizard # function length, complexity, duplicates
+          pkgs.python3 # scripts/dev/module-cycles.py
         ];
         # cargo-llvm-cov needs the llvm-cov and llvm-profdata of rustc's own LLVM.
         LLVM_COV = "${pkgs.rustc.llvm}/bin/llvm-cov";

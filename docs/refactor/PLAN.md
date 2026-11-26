@@ -67,7 +67,7 @@ Theme Studio has a 25k-line Rust TUI (35 modules in one flat folder) and 4 bash 
 | `packaging/nix/` | Nix package and modules | package, home-manager module, NixOS module, fonts | none |
 
 Cycles: app ↔ {behaviour, draft, fonts_dl, fonts_preview, hit, prefetch, presets, settings, theme, tour_page, ui, …}; ui ↔ settings_ui, fonts_ui; fonts ↔ keymap, fonts_pick, font_tree; fonts_dl ↔ fonts_preview; paths ↔ store (tests only).
-Key numbers: 35 Rust modules in 1 folder, 6 scripts, about 25k Rust lines, 12 files over 500 production lines, largest `app.rs` (2,448 production lines), cycles: Phase 0 measures them with cargo-modules.
+Key numbers: 35 Rust modules in 1 folder, 6 scripts, about 25k Rust lines, 12 files over 500 production lines, largest `app.rs` (2,448 production lines), 2 cycle groups with 21 of 35 modules (`scripts/dev/module-cycles.py`), line coverage 82.72%, duplicate rate 1.13%.
 
 ## 3. Target architecture
 - `share/integrations.json`: the data list. For each app: its theme and font outputs (file + generator) and its reload command.
@@ -113,7 +113,7 @@ Step format (one line for each step):
 
 ### Phase 0: Foundation and safety net
 - [x] P0.1 Dev tools: add clippy, rustfmt, shellcheck, cargo-modules, cargo-llvm-cov, and lizard to the dev shell | Files: `flake.nix` | Target: tools | Check: each tool runs in `nix develop`
-- [ ] P0.2 Phase 0 baselines: measure cycles, dependency direction, coverage, and duplicates. Record them | Files: `docs/refactor/SUCCESS_CRITERIA.md`, `docs/refactor/PLAN.md` (section 2 numbers) | Target: baselines | Check: no "Phase 0" left in the baselines
+- [x] P0.2 Phase 0 baselines: measure cycles, dependency direction, coverage, and duplicates. Record them | Files: `docs/refactor/SUCCESS_CRITERIA.md`, `docs/refactor/PLAN.md` (section 2 numbers) | Target: baselines | Check: no "Phase 0" left in the baselines
 - [ ] P0.3 Lint configuration: `[lints.clippy]` pedantic, fix rustfmt at `paths.rs:196` | Files: `studio/Cargo.toml`, `studio/src/paths.rs` | Target: goal 7 | Check: `cargo fmt --check` passes, clippy count = 490
 - [ ] P0.4 Flake checks: `checks.x86_64-linux` with build, tests, fmt, and ratchet counts for clippy (490) and shellcheck (14) | Files: `flake.nix`, `scripts/dev/lint-counts.sh`, `docs/refactor/lint-baseline.txt` | Target: goal 4, 7 | Check: `nix flake check` passes
 - [ ] P0.5 Test fixtures: small palettes.json, fonts.json, themes.json, configs, so the data tests run in the sandbox | Files: `studio/tests/fixtures/`, `studio/src/store.rs`, `studio/src/palette.rs`, `studio/src/paths.rs` | Target: goal 4 | Check: skip count does not increase, sandbox runs the data tests

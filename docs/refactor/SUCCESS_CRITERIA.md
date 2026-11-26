@@ -40,8 +40,8 @@ Main source: `docs/migration.md`, section "For the refactor: what still ties it 
 | No reference to the old dotfiles location. | `grep -rn 'dotfiles-nixos' studio/src scripts share packaging` | 1 | 0 | |
 | External programs start from fewer modules. Each such module has a name that tells its concern. | `grep -l 'Command::new' studio/src/**/*.rs` | 8 files: app, desktop, download, fonts, history, palette, paths, samples | Fewer than 8. `app.rs` and the UI modules start no programs. | |
 | Modules are in folders by feature, not all in one folder. | Count the modules in each folder. | 35 modules in `studio/src/`, 0 subfolders | 10 modules or fewer in each folder | |
-| No dependency cycles between modules. | `cargo modules dependencies --acyclic` (the cargo-modules tool) | Phase 0 | 0 cycles | |
-| Dependencies go in one direction: UI → application logic → data and system access. | Read the output of `cargo modules dependencies`. Make sure that no data module or system module imports a UI module. | Phase 0 | 0 imports in the wrong direction | |
+| No dependency cycles between modules. | `python3 scripts/dev/module-cycles.py` (counts all `crate::` paths in production code. `cargo modules --acyclic` sees only `use` statements: 13 modules) | 2 cycle groups, 21 of 35 modules: {font_tree, fonts, fonts_pick, keymap} and {app + 16 modules} | 0 groups | |
+| Dependencies go in one direction: UI → application logic → data and system access. | Read the output of `cargo modules dependencies`. Make sure that no data module or system module imports a UI module. | 4 wrong-direction imports: theme → app, download → app (base64 only), prefetch → app, preview → ui | 0 imports in the wrong direction | |
 
 
 ## 3. Functionality and testability
@@ -57,7 +57,7 @@ The constraint "All current functionality of the project must continue to work a
 | The switch scripts have golden-file tests. | Count the scripts that have a golden-file test (refer to docs/refactor/GOAL.md, Verification, item 3). | 0 of 3 | 3 of 3. The font-switch test also covers the login screen part. | |
 | The characterization tests and golden files pass without changes from the start to the end. | No commit changes the expected values. Examine `git log -p` on the test files and the golden files. | — | 0 changes, except in `[feature]` steps | |
 | The manual checklist passes after each phase that changes the scripts or the studio. | `docs/migration.md`, section "Checklist (after each step, as it applies)", items 1 to 9. Also docs/refactor/GOAL.md, Verification, item 6. | manual, before Phase 1 | All items pass | |
-| Coverage of the changed modules does not decrease. | `cargo llvm-cov` or `cargo tarpaulin` | Phase 0 | Equal to or more than the baseline | |
+| Coverage of the changed modules does not decrease. | `cargo llvm-cov --summary-only` (in the dev shell) | lines 82.72% (3,099 of 17,930 missed), regions 82.83% | Equal to or more than the baseline | |
 
 ## 4. Audience test (A1 Beginner)
 
@@ -80,7 +80,7 @@ The constraint "All current functionality of the project must continue to work a
 | Clippy warnings, pedantic + style + correctness (GOAL.md, criterion 7). Ratchet: the count never increases. | `cargo clippy --all-targets -- -W clippy::pedantic -W clippy::style -W clippy::correctness` | 490 (42 lints. Largest: cast lints about 215, many_single_char_names 53, semicolon_if_nothing_returned 41) | 0. Each allowed lint uses `#[expect(..., reason = "...")]`. | |
 | Rustdoc (GOAL.md, criterion 8). | `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --document-private-items`. Count `# Errors` sections for functions that return `Result`. | Fails: 3 "unclosed HTML tag" errors. 0 `# Errors` sections for 51 functions that return `Result`. | Passes. Each function that returns `Result` has `# Errors`. | |
 | Shellcheck warnings. | `shellcheck scripts/*.sh scripts/lib/*.sh` | 14 findings | 0 | |
-| Duplicate code. | `jscpd studio/src scripts` | Phase 0 | Less than the baseline | |
+| Duplicate code. | `lizard -l rust -l bash -Eduplicate studio/src scripts` (jscpd is not in nixpkgs) | 1.13% | Less than the baseline | |
 
 ## 6. Feature: install without Nix
 
