@@ -226,14 +226,15 @@ Removed: the old "settings: tabs into separate files" step (Phase 4 moved the im
 Completes: criterion 5 (with the docs action), no dependency cycles
 
 ### Phase 6: Lint and errors to zero
-Also: `palette_menu_focused` and `page_tabs_focused` may become one `enum TopFocus { None, PaletteMenu, PageTabs }` (check first that both are never true at once; Phase 3 review, note 3).
-- [ ] P6.1 Clippy pedantic to zero in model/, config/, keymap/ | Files: those modules (5 or fewer per step, more steps if necessary) | Target: goal 7 | Check: count decreases
-- [ ] P6.2 Clippy pedantic to zero in system/, preview_term/, fonts/, settings_page/ | Files: those modules | Target: goal 7 | Check: count decreases
-- [ ] P6.3 Clippy pedantic to zero in app | Files: app modules | Target: goal 7 | Check: count decreases
-- [ ] P6.4 Clippy pedantic to zero in ui, then `-D warnings` as the gate | Files: ui modules, `flake.nix` | Target: goal 7 | Check: count = 0
-- [ ] P6.5 Errors in system/download/: handle or report the 18 ignored results | Files: `system/download/*` | Target: T7 | Check: tests, each `let _ =` has a reason or is gone
+Wave 1 (parallel, one folder group each; no two steps change the same file). Each step: clippy pedantic to zero in its folders, and each function over 30 body lines gets a true `// Long function: <reason>.` or is divided (Phase 5 review list). Casts: `From`/`into` where lossless; `try_from` with a clear fallback where a value can be too large; `#[expect(clippy::cast_..., reason = "...")]` only where the range is proven. A step does not change the signature of an item that another folder uses (NEEDS instead).
+- [ ] P6.1 model/, config/, keymap/ (87 warnings) | Files: those folders | Target: goal 7, limits | Check: 0 warnings in those files; long-function scan clean
+- [ ] P6.2 fonts/, settings_page/, system/, preview_term/ (114) | Files: those folders | Target: goal 7, limits | Check: same
+- [ ] P6.3 app/ (144), and TopFocus if both flags are never true at once | Files: app/ | Target: goal 7, limits | Check: same
+- [ ] P6.4 ui/ (126) | Files: ui/ | Target: goal 7, limits | Check: same
 - [ ] P6.6 Shellcheck to zero | Files: `scripts/*.sh`, `scripts/lib/*.sh` | Target: rule 3 | Check: count = 0
-- [ ] P6.7 Long functions (Phase 5 review): each function over 30 body lines gets a true `// Long function: <reason>.` or is divided; the reviewer verifies the reasons. Divide first: fonts_column draw_fonts (343), settings_page/readme render (244), keymap_presets draw_browse (156), layout arrange (153), app with_config (137), fonts/render sample_markup (100), dialogs draw_help and draw_open, status context_hints. One step per folder (several in parallel: different files) | Files: all folders | Target: limits | Check: a scan lists no function over 30 lines without a marker
+Wave 2:
+- [ ] P6.5 Errors in system/download/: handle or report the 18 ignored results | Files: `system/download/*` | Target: T7 | Check: tests, each `let _ =` has a reason or is gone
+- [ ] P6.7 Gate: `-D warnings` in the clippy flake check, baseline line removed; shellcheck gate the same | Files: `flake.nix`, `scripts/dev/lint-counts.sh`, `docs/refactor/lint-baseline.txt` | Target: goal 7 | Check: `nix flake check` fails on any warning
 Completes: criterion 7
 
 ### Phase 7: [feature] Install without Nix
@@ -291,6 +292,7 @@ Completes: criterion 6
 | 8 | After P5.10: 4 production files are still over the 500-line hard limit | ACCEPT: P5.14a-d, one file each, in parallel | Phase 5 has the limits as its target. |
 | 9 | Phase 5 review: about 80 functions over 30 lines without a reason; stale paths in current plan text | ACCEPT: new step P6.7 (long functions, one step per folder); section 3 and Phase 6 updated to the new folders | No bugs found by the 3 reviewers. |
 | 10 | Notes N1-N5 (Phase 5 review) | USER: N1 deferred to the terminal-independence refactor; N2 accepted with chrono (P5.15); N3, N4, N5 accepted (P5.16-P5.18) | Decided by the user in the revise action. |
+| 11 | Phase 6 start: P6.7 (long functions) and P6.1-P6.4 (clippy) change the same files | ACCEPT: one step per folder group does both, in parallel (wave 1); errors and the gate in wave 2; TopFocus into P6.3 | Same goal; no two parallel steps own one file. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
