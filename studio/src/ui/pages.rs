@@ -17,7 +17,7 @@ use super::panes::preview::draw_preview;
 use crate::app::App;
 use crate::app::state::nav::Page;
 use crate::hit::{BorderId, Target};
-use crate::ui::desktop_preview::Mode as PreviewMode;
+use crate::preview_term::Mode as PreviewMode;
 
 /// The Main page: fonts, colour list, picker and preview, then the
 /// draggable borders between them.

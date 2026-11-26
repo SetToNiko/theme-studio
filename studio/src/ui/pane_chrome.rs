@@ -2,7 +2,7 @@
 //!
 //! Split from `widgets.rs` because these two helpers need `app` state
 //! (keyboard focus, mouse hover, hit areas). `widgets.rs` must stay free of
-//! `app`: `desktop_preview.rs` uses it, and `app` uses `desktop_preview.rs`, so a `widgets`
+//! `app`: `desktop_preview.rs` uses it, and `app` uses `ui`, so a `widgets`
 //! to `app` edge would be a cycle (scripts/dev/module-cycles.py). Like
 //! `widgets.rs`, this file must NOT use `ui/mod.rs` or any page file.
 

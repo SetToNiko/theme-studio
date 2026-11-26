@@ -1,7 +1,7 @@
 //! Small drawing pieces that several screens share.
 //!
 //! This is the bottom of the `ui` module tree and depends only on ratatui.
-//! Keep it that way: `desktop_preview.rs` uses it and `app` uses `desktop_preview.rs`, so if
+//! Keep it that way: `desktop_preview.rs` uses it and `app` uses `ui`, so if
 //! this file named `app`, `ui/mod.rs`, or a page file, the modules would
 //! depend on each other in a circle (scripts/dev/module-cycles.py).
 use ratatui::style::Style;

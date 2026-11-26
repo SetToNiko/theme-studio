@@ -5,7 +5,7 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
 use crate::app::state::nav::Page;
-use crate::ui::desktop_preview::PaneId;
+use crate::preview_term::PaneId;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Target {

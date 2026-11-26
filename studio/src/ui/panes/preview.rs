@@ -15,7 +15,7 @@ use crate::hit::Target;
 use crate::keymap::Context;
 use crate::keymap::action::Action;
 use crate::palette::{self, GROUPS, Palette};
-use crate::ui::desktop_preview::Mode as PreviewMode;
+use crate::preview_term::Mode as PreviewMode;
 use crate::ui::widgets::friendly;
 use crate::ui::{focused_block, swatch};
 

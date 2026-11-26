@@ -20,6 +20,7 @@ mod palette;
 mod paths;
 mod prefetch;
 mod presets;
+mod preview_term;
 mod samples;
 mod settings;
 mod settle;
