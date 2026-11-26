@@ -12,8 +12,9 @@
 #   fonts_dir         the font state the switch scripts keep (~/.config/fonts)
 #   host_fonts_file   this machine's font size offsets (~/.config/host/fonts.json)
 #   cache_dir         the pywal-style colour cache (~/.cache/wal)
+#   fontconfig_dir    the fontconfig drop-in folder (~/.config/fontconfig/conf.d)
 #
-# The first three of these four match colors_dir, fonts_dir and host_fonts_file
+# The first three of these five match colors_dir, fonts_dir and host_fonts_file
 # in studio/src/paths.rs. If you change one side, change the other.
 
 data_file() {
@@ -43,4 +44,9 @@ host_fonts_file() {
 # The pywal-style cache folder that theme-switch.sh writes colors.json to.
 cache_dir() {
   printf '%s\n' "$HOME/.cache/wal"
+}
+
+# The fontconfig drop-in folder: font-switch.sh's fontconfig output goes here.
+fontconfig_dir() {
+  printf '%s\n' "$HOME/.config/fontconfig/conf.d"
 }

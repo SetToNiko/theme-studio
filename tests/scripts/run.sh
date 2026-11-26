@@ -73,7 +73,11 @@ make_stubs_dir() {
   # family with "Mono" in its name is monospaced; other families are proportional.
   echo "#!$bash_path" > "$work/stubs/fc-list"
   cat >> "$work/stubs/fc-list" <<'EOF'
-echo "fc-list $*" >> "$CALLS_LOG"
+# Also log the state of the fontconfig file at the moment of the call:
+# font-switch must ask fc-list BEFORE it rewrites that file (fc-list reads it).
+conf="$HOME/.config/fontconfig/conf.d/60-theme-fonts.conf"
+if [ -s "$conf" ]; then state="conf: $(head -c 60 "$conf" | tr "\n" " ")"; else state="conf: none"; fi
+echo "fc-list $* [$state]" >> "$CALLS_LOG"
 for arg in "$@"; do
   if [ "$arg" = "spacing" ]; then
     family=${1#:family=}
@@ -190,7 +194,17 @@ setup_font_switch_gtk_settings() {
   ln -s ../../elsewhere/settings.ini "$HOME/.config/gtk-4.0/settings.ini"
 }
 
+# The fontconfig file is a link to a file elsewhere (managed by a dotfiles
+# repo, for example) and has old content: font-switch must write THROUGH the
+# link (the link stays), and fc-list must still see the old content.
+setup_font_switch_fontconfig_link() {
+  mkdir -p "$HOME/.config/fontconfig/conf.d" "$HOME/elsewhere"
+  printf '<?xml version="1.0"?>\n<!-- old fonts -->\n' > "$HOME/elsewhere/60-theme-fonts.conf"
+  ln -s ../../../elsewhere/60-theme-fonts.conf "$HOME/.config/fontconfig/conf.d/60-theme-fonts.conf"
+}
+
 cases_font_switch() {
+  run_case font-switch-fontconfig-link bash "$scripts/font-switch.sh" "JetBrains + DejaVu Sans"
   run_case font-switch-preset bash "$scripts/font-switch.sh" "JetBrains Mono"
   run_case font-switch-proportional bash "$scripts/font-switch.sh" "JetBrains + DejaVu Sans"
   run_case font-switch-sizes env FONT_SIZES="16 10 11" bash "$scripts/font-switch.sh" "JetBrains Mono"

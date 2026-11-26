@@ -1,6 +1,6 @@
-fc-list -q :family=JetBrainsMono Nerd Font Mono
-fc-list -q :family=JetBrainsMono Nerd Font Propo
-fc-list -q :family=JetBrainsMono Nerd Font Propo
-fc-list :family=JetBrainsMono Nerd Font Propo spacing
+fc-list -q :family=JetBrainsMono Nerd Font Mono [conf: none]
+fc-list -q :family=JetBrainsMono Nerd Font Propo [conf: none]
+fc-list -q :family=JetBrainsMono Nerd Font Propo [conf: none]
+fc-list :family=JetBrainsMono Nerd Font Propo spacing [conf: none]
 pkill -USR2 -f ^ghostty( |$)
 i3-msg restart

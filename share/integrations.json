@@ -29,6 +29,24 @@
       ]
     },
     {
+      "name": "lock-screen",
+      "outputs": [
+        { "kind": "hook", "switch": "fonts", "dir": "fonts_dir", "file": "lock.sh", "generator": "lock-font.sh" }
+      ]
+    },
+    {
+      "name": "gtk",
+      "outputs": [
+        { "kind": "script", "switch": "fonts", "generator": "gtk-font.sh" }
+      ]
+    },
+    {
+      "name": "fontconfig",
+      "outputs": [
+        { "kind": "hook", "switch": "fonts", "dir": "fontconfig_dir", "file": "60-theme-fonts.conf", "generator": "fontconfig-font.sh" }
+      ]
+    },
+    {
       "name": "pywalfox",
       "outputs": [
         { "kind": "jq", "switch": "theme", "dir": "cache_dir", "file": "colors.json", "generator": "pywalfox-colors.jq" }

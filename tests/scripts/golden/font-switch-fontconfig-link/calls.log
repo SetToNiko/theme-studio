@@ -1,0 +1,6 @@
+fc-list -q :family=JetBrainsMono Nerd Font [conf: <?xml version="1.0"?> <!-- old fonts --> ]
+fc-list -q :family=DejaVu Sans [conf: <?xml version="1.0"?> <!-- old fonts --> ]
+fc-list -q :family=DejaVu Sans [conf: <?xml version="1.0"?> <!-- old fonts --> ]
+fc-list :family=DejaVu Sans spacing [conf: <?xml version="1.0"?> <!-- old fonts --> ]
+pkill -USR2 -f ^ghostty( |$)
+i3-msg restart
