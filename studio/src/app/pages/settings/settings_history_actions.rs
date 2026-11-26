@@ -35,7 +35,6 @@ impl App {
     }
 
     /// The preview of the selected version against the file now.
-    // Long function: cache check, read the file, build the view, store it: each step needs the one before.
     pub fn diff_view(&mut self) -> DiffView {
         let versions = self.versions();
         let p = &self.settings_page;
@@ -52,26 +51,7 @@ impl App {
         ) {
             return v;
         }
-        let file = FILES[p.hist_file];
-        let now: Value = std::fs::read_to_string(self.file_path(file))
-            .ok()
-            .and_then(|t| serde_json::from_str(&t).ok())
-            .unwrap_or(Value::Null);
-        let view = match sel.as_deref().and_then(History::load) {
-            Some(then) => {
-                let palette = (file == "palettes.json").then(|| {
-                    (
-                        palette_colours(&now, &self.name),
-                        palette_colours(&then.content, &self.name),
-                    )
-                });
-                DiffView {
-                    lines: diff_lines(&now, &then.content, p.show_all),
-                    palette,
-                }
-            }
-            None => DiffView::default(),
-        };
+        let view = self.build_diff_view(sel.as_deref());
         self.settings_page.store_view(
             generation,
             hist_file,
@@ -81,6 +61,29 @@ impl App {
             view.clone(),
         );
         view
+    }
+
+    /// Reads the file now and the chosen version, and compares them. An empty
+    /// view when no version is chosen or it cannot be read.
+    fn build_diff_view(&self, version: Option<&std::path::Path>) -> DiffView {
+        let file = FILES[self.settings_page.hist_file];
+        let now: Value = std::fs::read_to_string(self.file_path(file))
+            .ok()
+            .and_then(|t| serde_json::from_str(&t).ok())
+            .unwrap_or(Value::Null);
+        let Some(then) = version.and_then(History::load) else {
+            return DiffView::default();
+        };
+        let palette = (file == "palettes.json").then(|| {
+            (
+                palette_colours(&now, &self.name),
+                palette_colours(&then.content, &self.name),
+            )
+        });
+        DiffView {
+            lines: diff_lines(&now, &then.content, self.settings_page.show_all),
+            palette,
+        }
     }
 
     // Long function: one ordered list of early-return key cases for the History tab.

@@ -140,21 +140,22 @@ impl App {
     pub(in crate::app) fn move_pane(&mut self, dx: i32, dy: i32) {
         let columns = self.layout.pane_columns();
         let cur = self.current_pane();
-        let Some((c, r)) = columns
-            .iter()
-            .enumerate()
-            .find_map(|(c, col)| col.iter().position(|&p| p == cur).map(|r| (c, r)))
-        else {
+        let Some((column, row)) = columns.iter().enumerate().find_map(|(column, entries)| {
+            entries
+                .iter()
+                .position(|&p| p == cur)
+                .map(|row| (column, row))
+        }) else {
             return;
         };
-        let c2 = offset(c, dx).min(1);
-        let col = &columns[c2];
-        let r2 = if dx != 0 {
-            r.min(col.len() - 1)
+        let next_column = offset(column, dx).min(1);
+        let entries = &columns[next_column];
+        let next_row = if dx != 0 {
+            row.min(entries.len() - 1)
         } else {
-            offset(r, dy).min(col.len() - 1)
+            offset(row, dy).min(entries.len() - 1)
         };
-        let target = col[r2];
+        let target = entries[next_row];
         if target != cur {
             self.focus_pane(target);
         }
@@ -214,8 +215,8 @@ impl App {
     /// Resize-mode keys: h/l move the focused pane's side edge, j/k its lower
     /// edge, by one cell (capitals: five); = resets; Esc / Enter leave.
     // Long function (reason verified, phase 3): one match from the action to a step size, then the border move.
-    pub(in crate::app) fn run_resize(&mut self, a: Action) {
-        let (dx, dy, n): (i32, i32, i32) = match a {
+    pub(in crate::app) fn run_resize(&mut self, action: Action) {
+        let (dx, dy, step): (i32, i32, i32) = match action {
             Action::Left => (-1, 0, 1),
             Action::Right => (1, 0, 1),
             Action::Up => (0, -1, 1),
@@ -238,14 +239,15 @@ impl App {
         let Some(id) = self.layout.border_for_pane(self.current_pane(), vertical) else {
             return;
         };
-        let b = self
+        let border = self
             .layout
             .borders
             .iter()
-            .find(|b| b.id == id)
+            .find(|border| border.id == id)
             .copied()
             .unwrap();
-        let pos = u16::try_from((i32::from(b.pos()) + (dx + dy) * n).max(0)).unwrap_or(u16::MAX);
+        let pos =
+            u16::try_from((i32::from(border.pos()) + (dx + dy) * step).max(0)).unwrap_or(u16::MAX);
         self.layout.move_border(id, pos);
     }
 }

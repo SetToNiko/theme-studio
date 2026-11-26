@@ -66,9 +66,9 @@ impl App {
     }
 
     /// Moves the list cursor; landing on a colour selects it.
-    pub(in crate::app) fn move_row(&mut self, d: i32) {
+    pub(in crate::app) fn move_row(&mut self, delta: i32) {
         let rows = self.colour_rows();
-        self.row_sel = offset(self.row_sel, d).min(rows.len() - 1);
+        self.row_sel = offset(self.row_sel, delta).min(rows.len() - 1);
         if let ColourRow::Key(k) = rows[self.row_sel] {
             self.select_key(k);
         }
@@ -132,18 +132,18 @@ impl App {
 
     /// Colour-list keys: open/close groups, move, start editing.
     // Long function: one match over every (action, row kind) pair of the colour list.
-    pub(in crate::app) fn list_action(&mut self, a: Action) {
+    pub(in crate::app) fn list_action(&mut self, action: Action) {
         let rows = self.colour_rows();
         let last = to_i32(rows.len()) - 1;
         let copying = matches!(self.overlay, Overlay::CopyFrom { .. });
         if self.layout.palette_menu_focused && !copying {
-            self.palette_menu_action(a);
+            self.palette_menu_action(action);
             return;
         }
-        if !copying && self.leaves_list(a, last) {
+        if !copying && self.leaves_list(action, last) {
             return;
         }
-        match (a, rows.get(self.row_sel).copied()) {
+        match (action, rows.get(self.row_sel).copied()) {
             (Action::Up, _) => self.move_row(-1),
             (Action::Top, _) => self.move_row(-to_i32(self.row_sel)),
             (Action::Bottom, _) => self.move_row(last - to_i32(self.row_sel)),
@@ -170,10 +170,10 @@ impl App {
                 }),
             ) => self.set_group_open(index, false),
             (Action::Left, Some(ColourRow::Key(k))) => {
-                let g = group_of(k);
+                let group = group_of(k);
                 self.row_sel = rows
                     .iter()
-                    .position(|r| matches!(r, ColourRow::Group { index, .. } if *index == g))
+                    .position(|r| matches!(r, ColourRow::Group { index, .. } if *index == group))
                     .unwrap_or(0);
             }
             (Action::Right | Action::Confirm, Some(ColourRow::Key(_))) => self.open_picker(),
@@ -251,13 +251,13 @@ impl App {
         }
     }
 
-    /// Moves the focus `d` steps through the picker controls (wraps around).
-    pub(in crate::app) fn cycle_focus(&mut self, d: i32) {
+    /// Moves the focus `delta` steps through the picker controls (wraps around).
+    pub(in crate::app) fn cycle_focus(&mut self, delta: i32) {
         let current = FOCUS_ORDER
             .iter()
             .position(|f| *f == self.focus)
             .unwrap_or(0);
-        self.focus = FOCUS_ORDER[wrapped(current, d, FOCUS_ORDER.len())];
+        self.focus = FOCUS_ORDER[wrapped(current, delta, FOCUS_ORDER.len())];
         if self.focus != Focus::List {
             self.layout.picker_visible = true;
         }

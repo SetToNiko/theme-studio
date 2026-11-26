@@ -205,14 +205,21 @@ impl App {
         }
     }
 
-    // Long function: the palette and the font preset are saved one after the other, each with its own name check and error.
     /// Saves the palette and the font preset when they changed (under
     /// `name` when new or forked, see [`Self::theme_save_as`]). False when a
     /// part could not be saved; its message says why.
     fn save_theme_parts(&mut self, name: &str, fork: bool) -> bool {
-        let palettes = self.store.load_all().unwrap_or_default();
-        let presets = self.fonts.store.load_all().unwrap_or_default();
+        if !self.save_palette_part(name, fork) || !self.save_fonts_part(name, fork) {
+            return false;
+        }
+        // a part's save can have failed (its message says why)
+        !(self.dirty() || self.fonts.dirty())
+    }
+
+    /// The palette half of [`Self::save_theme_parts`]. False when the name is taken.
+    fn save_palette_part(&mut self, name: &str, fork: bool) -> bool {
         if self.is_new || (fork && self.dirty()) {
+            let palettes = self.store.load_all().unwrap_or_default();
             if palettes.contains_key(name) && name != self.name {
                 self.messages.error(format!(
                     "There's a palette \"{name}\" already: pick another theme name"
@@ -221,28 +228,35 @@ impl App {
             }
             self.save_as(name, false);
         } else if self.dirty() {
-            let n = self.name.clone();
-            self.save_as(&n, false);
+            let current = self.name.clone();
+            self.save_as(&current, false);
         }
-        if self.fonts.is_new || self.fonts.dirty() {
-            let n = if self.fonts.is_new || fork {
-                name.to_string()
-            } else {
-                self.fonts.name.clone()
-            };
-            if n != self.fonts.name && presets.contains_key(&n) {
-                self.messages.error(format!(
-                    "There's a font preset \"{n}\" already: pick another theme name"
-                ));
-                return false;
-            }
-            if let Err(e) = self.fonts.save_as(&n) {
-                self.messages.error(format!("Saving the fonts: {e:#}"));
-                return false;
-            }
+        true
+    }
+
+    /// The font preset half of [`Self::save_theme_parts`]. False when the name
+    /// is taken or the save failed.
+    fn save_fonts_part(&mut self, name: &str, fork: bool) -> bool {
+        if !(self.fonts.is_new || self.fonts.dirty()) {
+            return true;
         }
-        // a part's save can have failed (its message says why)
-        !(self.dirty() || self.fonts.dirty())
+        let preset = if self.fonts.is_new || fork {
+            name.to_string()
+        } else {
+            self.fonts.name.clone()
+        };
+        let presets = self.fonts.store.load_all().unwrap_or_default();
+        if preset != self.fonts.name && presets.contains_key(&preset) {
+            self.messages.error(format!(
+                "There's a font preset \"{preset}\" already: pick another theme name"
+            ));
+            return false;
+        }
+        if let Err(e) = self.fonts.save_as(&preset) {
+            self.messages.error(format!("Saving the fonts: {e:#}"));
+            return false;
+        }
+        true
     }
 
     /// Apply (a): saves if needed, then applies fonts and palette (one i3

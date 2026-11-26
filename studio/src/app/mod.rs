@@ -298,12 +298,7 @@ impl App {
     ) -> Result<()> {
         let mut redraw = true;
         while !self.quit {
-            // nvim in the preview re-reads this whenever it changes
-            self.preview.sync_draft(&self.editor.palette);
-            if self.page == Page::Main && self.layout.sample_visible {
-                self.update_sample();
-            }
-            if self.poll_background() {
+            if self.refresh_before_draw() {
                 redraw = true;
             }
             if self.preview.take_dirty() || redraw {
@@ -320,23 +315,26 @@ impl App {
         Ok(())
     }
 
+    /// Brings the preview and the sample up to date before a frame is drawn.
+    /// True when the screen must be drawn again.
+    fn refresh_before_draw(&mut self) -> bool {
+        // nvim in the preview re-reads this whenever it changes
+        self.preview.sync_draft(&self.editor.palette);
+        if self.page == Page::Main && self.layout.sample_visible {
+            self.update_sample();
+        }
+        self.poll_background()
+    }
+
     /// Checks the background work and the timers. True when the screen must
     /// be drawn again.
     fn poll_background(&mut self) -> bool {
-        let mut redraw = false;
+        // `|=` runs every poll even when an earlier one asked for a redraw
         // downloads: the catalogue, progress, finished installs
-        if self.poll_downloads() {
-            redraw = true;
-        }
-        if self.poll_prefetch() {
-            redraw = true;
-        }
-        if self.poll_tournament() {
-            redraw = true;
-        }
-        if self.messages.expire(self.settings.messages.seconds) {
-            redraw = true;
-        }
+        let mut redraw = self.poll_downloads();
+        redraw |= self.poll_prefetch();
+        redraw |= self.poll_tournament();
+        redraw |= self.messages.expire(self.settings.messages.seconds);
         // a role's size, once h / l have been still for a moment: saved
         // to the theme and applied (one i3 restart, not one per step)
         if self
