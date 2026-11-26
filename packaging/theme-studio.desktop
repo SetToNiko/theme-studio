@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Theme Studio
+Comment=Colour palettes and fonts with a live preview of the desktop
+# install.sh replaces Exec with the full path of the installed command.
+Exec=theme-studio
+Terminal=true
+Categories=Settings;DesktopSettings;
