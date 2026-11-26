@@ -5,7 +5,9 @@ here=$(dirname "$(readlink -f "$0")")
 . "$here/lib/paths.sh" # data_file, share_file
 palettes="${PALETTES:-$(data_file palettes.json)}"
 out="$HOME/.config/colors"
-. "$here/lib/rofi-picker.sh" # json_picker, json_data (either palettes.json layout)
+# shellcheck disable=SC1091 # the other lib files are not followed either
+. "$here/lib/data.sh"        # json_data (either file layout)
+. "$here/lib/rofi-picker.sh" # json_picker
 
 # Menu rows: bold name, one swatch per main colour,
 # and "(active)" after the current scheme

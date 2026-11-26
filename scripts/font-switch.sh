@@ -19,7 +19,9 @@ here=$(dirname "$(readlink -f "$0")")
 . "$here/lib/paths.sh" # data_file, share_file
 fonts="${FONTS:-$(data_file fonts.json)}"
 out="$HOME/.config/fonts"
-. "$here/lib/rofi-picker.sh" # json_picker, json_data (either fonts.json layout)
+# shellcheck disable=SC1091 # the other lib files are not followed either
+. "$here/lib/data.sh"        # json_data (either file layout)
+. "$here/lib/rofi-picker.sh" # json_picker
 
 # Menu rows: bold name, then each font's family written in that font, and
 # "(active)" after the current preset

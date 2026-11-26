@@ -15,19 +15,12 @@
 # JQ_ARGS (an array, optional) adds arguments to the rows' jq call, e.g.
 # (--slurpfile p palettes.json) so rows can show another file's data.
 #
+# Needs data.sh sourced first (it uses JQ_DATA).
+#
 # Prints the chosen key; returns 1 if the menu was closed without choosing.
 #
-# The files are either the plain map (version 1) or, from version 2,
-# {"version": 2, "palettes" / "presets": { ... }}; everything here reads and
-# edits the map inside, whichever it is.
-
-# jq: `data` is the map of presets in either layout
-JQ_DATA='def data: if type == "object" and has("version") then (to_entries | map(select(.key != "version")) | .[0].value) else . end;'
-
-# json_data FILE: prints the map of presets (either layout)
-json_data() {
-  jq "$JQ_DATA data" "$1"
-}
+# The files have the two layouts that data.sh describes; the delete edits
+# the map inside, whichever it is.
 
 # Escape text for rofi's Pango markup
 markup_escape() {
