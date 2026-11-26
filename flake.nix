@@ -61,7 +61,7 @@
         # Shellcheck gate: any finding in a script fails the check. A disabled
         # finding needs a comment with the reason on the line before.
         shellcheck = pkgs.runCommand "theme-studio-shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-          shellcheck ${./scripts}/*.sh ${./scripts}/lib/*.sh ${./scripts}/dev/*.sh ${./tests/scripts}/run.sh
+          shellcheck ${./scripts}/*.sh ${./scripts}/lib/*.sh ${./scripts}/dev/*.sh ${./tests/scripts}/run.sh ${./tests/install}/run.sh ${./install.sh}
           touch $out
         '';
 
@@ -95,6 +95,38 @@
               cp -r ${./tests/scripts} tests/scripts
               chmod -R u+w .
               bash tests/scripts/run.sh
+              touch $out
+            '';
+
+        # Install test (tests/install/run.sh): install.sh into a temporary
+        # PREFIX with the package's binary (THEME_STUDIO_BIN, so no cargo and no
+        # network), golden tests against the installed commands, uninstall.
+        install =
+          pkgs.runCommand "theme-studio-install-test"
+            {
+              nativeBuildInputs = [
+                pkgs.bash
+                pkgs.coreutils
+                pkgs.jq
+                pkgs.gawk
+                pkgs.gnused
+                pkgs.gnugrep
+                pkgs.findutils
+                pkgs.diffutils
+              ];
+              THEME_STUDIO_BIN = "${theme-studio.bin}/bin/theme-studio";
+            }
+            ''
+              mkdir -p project/docs project/packaging project/tests
+              cp -r ${./scripts} project/scripts
+              cp -r ${./share} project/share
+              cp ${./docs/theme-studio.md} project/docs/theme-studio.md
+              cp ${./packaging/theme-studio.desktop} project/packaging/theme-studio.desktop
+              cp ${./install.sh} project/install.sh
+              cp -r ${./tests/scripts} project/tests/scripts
+              cp -r ${./tests/install} project/tests/install
+              chmod -R u+w project
+              bash project/tests/install/run.sh
               touch $out
             '';
       };
