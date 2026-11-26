@@ -697,11 +697,12 @@ impl Preview {
         );
     }
 
-    /// The theme picker as rofi would show it, with this palette's roles.
+    /// A rofi window with a neutral list of entries, drawn with this palette's rofi roles.
+    // Long function: one linear drawing sequence (window, swatches, row, lines) that shares the role colours.
     fn draw_rofi(&self, f: &mut Frame, area: Rect, p: &Palette, name: &str) {
         let role = |r: &str| self.roles.get(p, &format!("rofi.{r}"), 0);
         let w = 54.min(area.width);
-        let h = 11.min(area.height);
+        let h = 8.min(area.height);
         let r = Rect {
             x: area.x + (area.width - w) / 2,
             y: area.y + (area.height - h) / 2,
@@ -755,23 +756,9 @@ impl Preview {
         };
         let lines = vec![
             Line::from(vec![
-                Span::styled(" Theme: ", Style::new().fg(fg.color())),
+                Span::styled(" Search: ", Style::new().fg(fg.color())),
                 Span::styled("▏", Style::new().fg(fg.color())),
             ]),
-            Line::styled(
-                "─".repeat(inner.width as usize),
-                Style::new().fg(role("separatorcolor").color()),
-            ),
-            Line::styled(
-                " Palette \"Old Theme\" deleted",
-                Style::new()
-                    .fg(p.get("red").color())
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Line::styled(
-                " Enter: apply   Alt+BackSpace: delete",
-                Style::new().fg(fg.color()),
-            ),
             Line::styled(
                 "─".repeat(inner.width as usize),
                 Style::new().fg(role("separatorcolor").color()),

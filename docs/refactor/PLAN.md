@@ -133,7 +133,7 @@ Completes: criterion 4 (the check command exists)
 - [x] R.4 Shared data reader: move `json_data` from `rofi-picker.sh` into `scripts/lib/data.sh` (no behavior change) | Files: `scripts/lib/rofi-picker.sh`, `scripts/lib/data.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: T1 | Check: golden files unchanged
 - [x] R.5 [removal] rofi picker: remove `scripts/lib/rofi-picker.sh` and the picker branches. No name: a usage message, exit 2 | Files: `scripts/lib/rofi-picker.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh`, `tests/scripts/run.sh` (new no-name cases) | Target: goal | Check: golden files unchanged, new no-name cases pass
 - [x] R.6 [removal] Picker documentation: README and the guide describe the switch commands with a name only | Files: `README.md`, `docs/theme-studio.md`, `packaging/nix/package.nix`, `studio/src/store.rs` | Target: goal | Check: `grep -i "rofi menu\|picker" README.md docs/theme-studio.md` names only rofi as a themed app
-- [ ] R.7 [removal] Neutral rofi menu in the preview: the preview's rofi window keeps rofi's colours and font, without the delete message, the Alt+BackSpace hint, and the "theme picker" wording | Files: `studio/src/preview.rs` | Target: goal (review finding, Phase R) | Check: cargo test, the preview still draws a rofi window
+- [x] R.7 [removal] Neutral rofi menu in the preview: the preview's rofi window keeps rofi's colours and font, without the delete message, the Alt+BackSpace hint, and the "theme picker" wording | Files: `studio/src/preview.rs` | Target: goal (review finding, Phase R) | Check: cargo test, the preview still draws a rofi window
 Completes: the removals of GOAL.md. Criterion 3 for the scripts (the system paths of font-switch.sh go with R.2)
 
 ### Phase 1: One source for paths
@@ -232,8 +232,8 @@ Completes: criterion 6
 |---|---|
 | Plan | done |
 | Phase 0 safety net | done |
-| Phase R steps | open |
-| Phase R review | open |
+| Phase R steps | done |
+| Phase R review | done |
 | Phase 1 steps | open |
 | Phase 1 review | open |
 | Phase 2 steps | open |
