@@ -29,34 +29,6 @@ use crate::model::color::Rgb;
 use crate::settings_page::{TABS, Tab};
 use crate::ui::widgets::{to_u8, to_u16};
 
-/// Keeps `sel` on screen in a list `height` rows tall.
-fn follow(scroll: &mut usize, sel: usize, height: usize) {
-    if height == 0 {
-        return;
-    }
-    if sel < *scroll {
-        *scroll = sel;
-    } else if sel >= *scroll + height {
-        *scroll = sel + 1 - height;
-    }
-}
-
-fn row_rect(area: Rect, i: usize) -> Rect {
-    Rect {
-        y: area.y + to_u16(i),
-        height: 1,
-        ..area
-    }
-}
-
-fn selected_style(on: bool, focused: bool) -> Style {
-    match (on, focused) {
-        (true, true) => Style::new().reversed(),
-        (true, false) => Style::new().bold().underlined(),
-        _ => Style::new(),
-    }
-}
-
 fn colour_span(c: Rgb, text: &str) -> Span<'static> {
     Span::styled(text.to_string(), Style::new().fg(Color::Rgb(c.0, c.1, c.2)))
 }

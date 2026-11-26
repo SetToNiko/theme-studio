@@ -7,9 +7,10 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
-use super::{colour_span, follow, row_rect, selected_style, truncate, value_spans};
+use super::super::rows::{RowLook, draw_selectable_row, follow, row_rect};
+use super::{colour_span, truncate, value_spans};
 use crate::app::App;
-use crate::app::state::hit::{Target, hover_line, hover_row};
+use crate::app::state::hit::Target;
 use crate::model::color::Rgb;
 use crate::model::history::SnapshotInfo;
 use crate::settings_page::{DiffLine, DiffView, FILES, HistFocus};
@@ -37,42 +38,72 @@ pub(super) fn draw_history(f: &mut Frame, app: &mut App, area: Rect) {
     draw_preview(f, app, preview, &list);
 }
 
-/// The Files box: one row per file that has a history.
-// Long function: the row loop needs the block's inner rectangle, and each row's style depends on the click-area result of the same row.
-fn draw_files(f: &mut Frame, app: &mut App, files: Rect, focus: HistFocus) {
-    let block = Block::bordered()
-        .title(" Files ")
-        .border_style(if focus == HistFocus::Files {
-            Style::new().yellow()
-        } else {
-            Style::new().dark_gray()
-        });
-    let inner = block.inner(files);
-    f.render_widget(block, files);
-    for (i, name) in FILES.iter().enumerate().take(inner.height as usize) {
-        let r = row_rect(inner, i);
-        let on = i == app.settings_page.hist_file;
-        let mut style = selected_style(on, focus == HistFocus::Files);
-        let mut line = Line::raw(format!(" {name}"));
-        if app.hits.add(r, Target::HistFile(i)) && !(on && focus == HistFocus::Files) {
-            style = hover_row(style);
-            line = hover_line(line, 0);
-        }
-        // the cursor covers the text, not padding or swatches
-        let (line, style) = if on {
-            (
-                crate::app::state::hit::cursor_line(line, style),
-                Style::new(),
-            )
-        } else {
-            (line, style)
-        };
-        f.render_widget(Paragraph::new(line).style(style), r);
+/// The border of a box: yellow while the box has the keyboard.
+fn focus_border(focused: bool) -> Style {
+    if focused {
+        Style::new().yellow()
+    } else {
+        Style::new().dark_gray()
     }
 }
 
+/// The Files box: one row per file that has a history.
+fn draw_files(f: &mut Frame, app: &mut App, files: Rect, focus: HistFocus) {
+    let focused = focus == HistFocus::Files;
+    let block = Block::bordered()
+        .title(" Files ")
+        .border_style(focus_border(focused));
+    let inner = block.inner(files);
+    f.render_widget(block, files);
+    for (i, name) in FILES.iter().enumerate().take(inner.height as usize) {
+        let look = RowLook {
+            selected: i == app.settings_page.hist_file,
+            focused,
+            target: Some(Target::HistFile(i)),
+            underline_skip: 0,
+            hover_when_selected: !focused,
+        };
+        let line = Line::raw(format!(" {name}"));
+        draw_selectable_row(f, app, row_rect(inner, i), line, look);
+    }
+}
+
+/// The note in the Versions box when the file has no saved version.
+fn draw_no_versions_note(f: &mut Frame, inner: Rect) {
+    f.render_widget(
+        Paragraph::new(vec![
+            Line::raw(" No earlier versions yet."),
+            Line::styled(
+                " Every save keeps the file as it was.",
+                Style::new().dark_gray(),
+            ),
+        ]),
+        inner,
+    );
+}
+
+/// The text of one version row: the time, then the name or summary cut to the width `w`.
+fn version_line(s: &SnapshotInfo, w: usize) -> Line<'static> {
+    let when = s.when.get(5..16).unwrap_or(&s.when).to_string();
+    let (text, st) = match &s.name {
+        Some(name) => (format!("★ {name}"), Style::new().yellow().bold()),
+        None => (s.summary.clone(), Style::new()),
+    };
+    Line::from(vec![
+        Span::styled(format!(" {when}  "), Style::new().dark_gray()),
+        Span::styled(truncate(&text, w.saturating_sub(15)), st),
+    ])
+}
+
+/// The frame of the Versions box: the file's name, the version count and the key hint.
+fn versions_block(file: &str, n: usize, focused: bool) -> Block<'static> {
+    Block::bordered()
+        .title(format!(" Versions of {file} ({n}) "))
+        .title_bottom(" n name the current file ")
+        .border_style(focus_border(focused))
+}
+
 /// The Versions box: one row per saved version of the selected file.
-// Long function: the scroll offset follows the selection and the box height, and the row loop then uses that offset and registers each row's click area.
 fn draw_versions(
     f: &mut Frame,
     app: &mut App,
@@ -80,69 +111,31 @@ fn draw_versions(
     focus: HistFocus,
     list: &[(std::path::PathBuf, SnapshotInfo)],
 ) {
-    let n = list.len();
-    app.settings_page.hist_sel = app.settings_page.hist_sel.min(n.saturating_sub(1));
+    let count = list.len();
+    app.settings_page.hist_sel = app.settings_page.hist_sel.min(count.saturating_sub(1));
     let sel = app.settings_page.hist_sel;
     let file = FILES[app.settings_page.hist_file];
-    let block = Block::bordered()
-        .title(format!(" Versions of {file} ({n}) "))
-        .title_bottom(" n name the current file ")
-        .border_style(if focus == HistFocus::Versions {
-            Style::new().yellow()
-        } else {
-            Style::new().dark_gray()
-        });
+    let focused = focus == HistFocus::Versions;
+    let block = versions_block(file, count, focused);
     let inner = block.inner(versions);
     f.render_widget(block, versions);
     if list.is_empty() {
-        f.render_widget(
-            Paragraph::new(vec![
-                Line::raw(" No earlier versions yet."),
-                Line::styled(
-                    " Every save keeps the file as it was.",
-                    Style::new().dark_gray(),
-                ),
-            ]),
-            inner,
-        );
+        draw_no_versions_note(f, inner);
     }
-    let mut scroll = app.settings_page.hist_scroll;
-    follow(&mut scroll, sel, inner.height as usize);
-    app.settings_page.hist_scroll = scroll;
+    let height = inner.height as usize;
+    follow(&mut app.settings_page.hist_scroll, sel, height);
+    let scroll = app.settings_page.hist_scroll;
     let w = inner.width as usize;
-    for (i, (_, s)) in list
-        .iter()
-        .enumerate()
-        .skip(scroll)
-        .take(inner.height as usize)
-    {
+    for (i, (_, s)) in list.iter().enumerate().skip(scroll).take(height) {
+        let look = RowLook {
+            selected: i == sel,
+            focused,
+            target: Some(Target::SettingsRow(i)),
+            underline_skip: 1,
+            hover_when_selected: !focused,
+        };
         let r = row_rect(inner, i - scroll);
-        let when = s.when.get(5..16).unwrap_or(&s.when).to_string();
-        let (text, st) = match &s.name {
-            Some(name) => (format!("★ {name}"), Style::new().yellow().bold()),
-            None => (s.summary.clone(), Style::new()),
-        };
-        let line = Line::from(vec![
-            Span::styled(format!(" {when}  "), Style::new().dark_gray()),
-            Span::styled(truncate(&text, w.saturating_sub(15)), st),
-        ]);
-        let on = i == sel;
-        let mut style = selected_style(on, focus == HistFocus::Versions);
-        let mut line = line;
-        if app.hits.add(r, Target::SettingsRow(i)) && !(on && focus == HistFocus::Versions) {
-            style = hover_row(style);
-            line = hover_line(line, 1);
-        }
-        // the cursor covers the text, not padding or swatches
-        let (line, style) = if on {
-            (
-                crate::app::state::hit::cursor_line(line, style),
-                Style::new(),
-            )
-        } else {
-            (line, style)
-        };
-        f.render_widget(Paragraph::new(line).style(style), r);
+        draw_selectable_row(f, app, r, version_line(s, w), look);
     }
 }
 

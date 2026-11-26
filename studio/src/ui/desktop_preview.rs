@@ -17,13 +17,46 @@ use super::widgets::{f64_to_u16, to_u16};
 use crate::model::color::Rgb;
 use crate::model::palette::Palette;
 use crate::model::store::TerminalMap;
-use crate::preview_term::pane::TermColors;
+use crate::preview_term::pane::{Pane, TermColors};
 use crate::preview_term::{PaneId, Preview};
+use crate::system::desktop::Roles;
+
+/// The i3 border of window `id`: the number and name on it, and the colour
+/// of the focused or unfocused client.
+fn window_block(id: PaneId, focused: bool, palette: &Palette, roles: &Roles) -> Block<'static> {
+    // column 4 is child_border, what a `border pixel` window shows
+    let border = if focused {
+        roles.get(palette, "client.focused", 4)
+    } else {
+        roles.get(palette, "client.unfocused", 4)
+    };
+    // Number and name on the border: 6 / 7 jump here (i3 itself shows no
+    // title with `border pixel`; this is studio chrome).
+    let (number, label) = match id {
+        PaneId::Nvim => (6, "nvim"),
+        PaneId::Shell => (7, "shell"),
+        PaneId::Yazi => (7, "yazi"),
+    };
+    let label_fg = if focused {
+        border
+    } else {
+        palette.get("grey1")
+    };
+    Block::bordered()
+        .title(Line::from(vec![
+            crate::ui::widgets::panel_number(number),
+            Span::styled(format!("{label} "), Style::new().fg(label_fg.color())),
+        ]))
+        .border_style(
+            Style::new()
+                .fg(border.color())
+                .bg(palette.get("bg_dim").color()),
+        )
+}
 
 impl Preview {
     /// Draws the model desktop: two tiled windows with i3 borders, the bar,
     /// and optionally the rofi menu on top.
-    // Long function: the order of the drawing calls is the order on screen: desk, bar, windows, errors, rofi on top.
     pub fn draw_desktop(
         &mut self,
         f: &mut Frame,
@@ -52,12 +85,27 @@ impl Preview {
         self.draw_bar(f, bar_area, palette);
 
         // Two windows: side by side when wide enough, else stacked
+        let rects = split_windows(desk, windows.stack, windows.split).0;
+        self.draw_windows(f, rects, palette, &colors);
+        self.draw_errors(f, desk, palette);
+        if self.show_rofi {
+            self.draw_rofi(f, desk, palette, name);
+        }
+    }
+
+    /// Draws the two windows in `(left_rect, right_rect)` and remembers where they are.
+    fn draw_windows(
+        &mut self,
+        f: &mut Frame,
+        (left_rect, right_rect): (Rect, Rect),
+        palette: &Palette,
+        colors: &TermColors,
+    ) {
         let right_id = if self.show_yazi {
             PaneId::Yazi
         } else {
             PaneId::Shell
         };
-        let (left_rect, right_rect) = split_windows(desk, windows.stack, windows.split).0;
         self.rects.clear();
         // The window with the keyboard looks focused; otherwise nvim does.
         let focused = self.focus.unwrap_or(PaneId::Nvim);
@@ -65,29 +113,39 @@ impl Preview {
             if rect.width < 4 || rect.height < 3 {
                 continue;
             }
-            self.draw_window(f, (id, rect), id == focused, palette, &colors);
+            self.draw_window(f, (id, rect), id == focused, palette, colors);
             self.rects.push((id, rect));
         }
-        if !self.errors.is_empty() {
-            let rect = Rect {
-                height: to_u16(self.errors.len()).min(desk.height),
-                ..desk
-            };
-            let lines: Vec<Line> = self
-                .errors
-                .iter()
-                .map(|e| Line::styled(e.clone(), Style::new().fg(palette.get("red").color())))
-                .collect();
-            f.render_widget(Paragraph::new(lines), rect);
+    }
+
+    /// Draws the error lines of the hidden terminals at the top of `desk`, in red.
+    fn draw_errors(&self, f: &mut Frame, desk: Rect, palette: &Palette) {
+        if self.errors.is_empty() {
+            return;
         }
-        if self.show_rofi {
-            self.draw_rofi(f, desk, palette, name);
+        let rect = Rect {
+            height: to_u16(self.errors.len()).min(desk.height),
+            ..desk
+        };
+        let lines: Vec<Line> = self
+            .errors
+            .iter()
+            .map(|e| Line::styled(e.clone(), Style::new().fg(palette.get("red").color())))
+            .collect();
+        f.render_widget(Paragraph::new(lines), rect);
+    }
+
+    /// The screen of the hidden terminal `id`, if it runs.
+    fn pane_for(&self, id: PaneId) -> Option<&Pane> {
+        match id {
+            PaneId::Nvim => self.nvim.as_ref(),
+            PaneId::Shell => self.shell.as_ref(),
+            PaneId::Yazi => self.yazi.as_ref(),
         }
     }
 
     /// Draws one window (`id` in `rect`): the i3 border with its number and
     /// name, then the screen of the hidden terminal inside it.
-    // Long function: the border, the terminal screen and the placeholder are drawn in this order into the same rectangle.
     fn draw_window(
         &mut self,
         f: &mut Frame,
@@ -96,34 +154,7 @@ impl Preview {
         palette: &Palette,
         colors: &TermColors,
     ) {
-        // column 4 is child_border, what a `border pixel` window shows
-        let border = if focused {
-            self.roles.get(palette, "client.focused", 4)
-        } else {
-            self.roles.get(palette, "client.unfocused", 4)
-        };
-        // Number and name on the border: 6 / 7 jump here (i3 itself shows no
-        // title with `border pixel`; this is studio chrome).
-        let (number, label) = match id {
-            PaneId::Nvim => (6, "nvim"),
-            PaneId::Shell => (7, "shell"),
-            PaneId::Yazi => (7, "yazi"),
-        };
-        let label_fg = if focused {
-            border
-        } else {
-            palette.get("grey1")
-        };
-        let block = Block::bordered()
-            .title(Line::from(vec![
-                crate::ui::widgets::panel_number(number),
-                Span::styled(format!("{label} "), Style::new().fg(label_fg.color())),
-            ]))
-            .border_style(
-                Style::new()
-                    .fg(border.color())
-                    .bg(palette.get("bg_dim").color()),
-            );
+        let block = window_block(id, focused, palette, &self.roles);
         let inner = block.inner(rect);
         f.render_widget(block, rect);
         self.ensure(id, inner.height, inner.width);
@@ -134,11 +165,7 @@ impl Preview {
             Block::new().style(Style::new().bg(colors.bg.color()).fg(colors.fg.color())),
             inner,
         );
-        if let Some(pane) = match id {
-            PaneId::Nvim => self.nvim.as_ref(),
-            PaneId::Shell => self.shell.as_ref(),
-            PaneId::Yazi => self.yazi.as_ref(),
-        } {
+        if let Some(pane) = self.pane_for(id) {
             pane.render(f.buffer_mut(), inner, colors, focused);
         } else if self.headless {
             f.render_widget(Paragraph::new(format!("{id:?}")), inner);

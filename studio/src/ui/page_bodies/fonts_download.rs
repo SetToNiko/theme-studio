@@ -13,6 +13,7 @@ use serde_json::{Map, Value};
 
 use super::fonts_download_details::draw_details;
 use super::fonts_download_preview::draw_preview;
+use super::rows::{RowLook, draw_selectable_row, follow, row_rect};
 use crate::app::App;
 use crate::app::state::hit::{Target, hover, hover_line, hover_row};
 use crate::fonts::download_page::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb};
@@ -144,18 +145,20 @@ fn draw_tabs(f: &mut Frame, app: &mut App, area: Rect) {
     }
 }
 
-/// The search line (" / search" and the number of fonts) on the first row of
-/// `area`; the search text is clickable.
-// Long function: the search text, the count text and the click area are built from the same `app.dl` state in one row.
-fn draw_search_line(f: &mut Frame, app: &mut App, area: Rect, row_count: usize) {
-    let count = match (&app.dl.catalogue, app.dl.tab) {
+/// The count text after the search: how many fonts are listed, or that the lists load.
+fn count_text(app: &App, row_count: usize) -> String {
+    match (&app.dl.catalogue, app.dl.tab) {
         (None, DlTab::Google | DlTab::Nerd) => " loading the font lists…".to_string(),
         (Some(c), DlTab::Nerd) if !c.nerd_tag.is_empty() => {
             format!("   {row_count} fonts   release {}", c.nerd_tag)
         }
         _ => format!("   {row_count} fonts"),
-    };
-    let search = if app.dl.searching || !app.dl.search.is_empty() {
+    }
+}
+
+/// The search text: the typed search (with a cursor while typing) or a hint.
+fn search_text(app: &App) -> String {
+    if app.dl.searching || !app.dl.search.is_empty() {
         format!(
             " / {}{}",
             app.dl.search,
@@ -163,7 +166,14 @@ fn draw_search_line(f: &mut Frame, app: &mut App, area: Rect, row_count: usize) 
         )
     } else {
         " / search".to_string()
-    };
+    }
+}
+
+/// The search line (" / search" and the number of fonts) on the first row of
+/// `area`; the search text is clickable.
+fn draw_search_line(f: &mut Frame, app: &mut App, area: Rect, row_count: usize) {
+    let count = count_text(app, row_count);
+    let search = search_text(app);
     let search_area = Rect {
         height: 1,
         width: to_u16(search.chars().count()).min(area.width),
@@ -211,18 +221,13 @@ fn draw_category_chips(f: &mut Frame, app: &mut App, area: Rect, y: u16) {
     }
 }
 
-/// One row of the list: name, kind and status, clickable. The cursor row is
-/// highlighted when the list has the keyboard.
-// Long function: one row picks its texts, its cursor or hover style and its click area in order; the style depends on the click-area result.
-fn draw_list_row(
-    f: &mut Frame,
-    app: &mut App,
-    rect: Rect,
-    (index, row): (usize, &DlRow),
+/// The name, kind and status texts of one list row.
+fn row_texts(
+    app: &App,
+    row: &DlRow,
     listed: &Map<String, Value>,
-    name_w: usize,
-) {
-    let (name, kind, status) = match row {
+) -> (String, String, Span<'static>) {
+    match row {
         DlRow::Entry(n) => {
             let entry = &app.dl_entries()[*n];
             (
@@ -243,38 +248,63 @@ fn draw_list_row(
                 status_span(&DlStatus::Listed),
             )
         }
-    };
-    let mut line = Line::from(vec![
+    }
+}
+
+/// One row of the list: name, kind and status, clickable. The cursor row is
+/// highlighted when the list has the keyboard.
+fn draw_list_row(
+    f: &mut Frame,
+    app: &mut App,
+    rect: Rect,
+    (index, row): (usize, &DlRow),
+    listed: &Map<String, Value>,
+    name_w: usize,
+) {
+    let (name, kind, status) = row_texts(app, row, listed);
+    let line = Line::from(vec![
         Span::raw(format!(" {:<name_w$}", truncate(&name, name_w))),
         Span::styled(format!(" {kind:<12}"), Style::new().dark_gray()),
         status,
     ]);
-    let on = index == app.dl.sel && !app.dl.tabs_focused && !app.layout.page_tabs_focused;
-    let mut style = if on {
-        Style::new().reversed()
-    } else {
-        Style::new()
+    let look = RowLook {
+        selected: index == app.dl.sel && !app.dl.tabs_focused && !app.layout.page_tabs_focused,
+        focused: true,
+        target: Some(Target::DlRow(index)),
+        underline_skip: 0,
+        hover_when_selected: false,
     };
-    if app.hits.add(rect, Target::DlRow(index)) && !on {
-        style = hover_row(style);
-        line = hover_line(line, 0);
-    }
-    // the cursor covers the text, not padding or swatches
-    let (line, style) = if on {
-        (
-            crate::app::state::hit::cursor_line(line, style),
-            Style::new(),
-        )
-    } else {
-        (line, style)
-    };
-    f.render_widget(Paragraph::new(line).style(style), rect);
+    draw_selectable_row(f, app, rect, line, look);
 }
 
-// Long function: search line, chips, error and list rows are stacked from one running `y`, and the scroll window uses the list height that results.
+/// The red note about a failed font-list download, three rows from row `y`.
+/// Returns the row below the note.
+fn draw_load_error(f: &mut Frame, error: &str, area: Rect, y: u16) -> u16 {
+    f.render_widget(
+        Paragraph::new(format!(" Couldn't load the font lists: {error}"))
+            .red()
+            .wrap(Wrap { trim: false }),
+        Rect {
+            y,
+            height: 3.min(area.bottom().saturating_sub(y)),
+            ..area
+        },
+    );
+    y + 3
+}
+
+/// The note under an empty list on tab `tab`.
+fn empty_list_note(tab: DlTab) -> &'static str {
+    if tab == DlTab::Installed {
+        " Nothing installed by the studio yet."
+    } else {
+        " No fonts match."
+    }
+}
+
+/// Draws the list column: search line, chips, load error, then the rows.
 fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {
     let rows = app.dl_rows();
-    // search line
     draw_search_line(f, app, area, rows.len());
     let mut y = area.y + 1;
     // category chips (Google)
@@ -283,17 +313,7 @@ fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {
         y += 1;
     }
     if let Some(error) = &app.dl.load_error {
-        f.render_widget(
-            Paragraph::new(format!(" Couldn't load the font lists: {error}"))
-                .red()
-                .wrap(Wrap { trim: false }),
-            Rect {
-                y,
-                height: 3.min(area.bottom().saturating_sub(y)),
-                ..area
-            },
-        );
-        y += 3;
+        y = draw_load_error(f, error, area, y);
     }
     let list = Rect {
         y,
@@ -303,27 +323,15 @@ fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {
     let height = usize::from(list.height);
     app.dl.sel = app.dl.sel.min(rows.len().saturating_sub(1));
     let sel = app.dl.sel;
-    if sel < app.dl.scroll {
-        app.dl.scroll = sel;
-    } else if height > 0 && sel >= app.dl.scroll + height {
-        app.dl.scroll = sel + 1 - height;
-    }
+    follow(&mut app.dl.scroll, sel, height);
     let listed = app.dl_listed();
     let name_w = usize::from(list.width).saturating_sub(30).clamp(16, 40);
     for (index, row) in rows.iter().enumerate().skip(app.dl.scroll).take(height) {
-        let rect = Rect {
-            y: list.y + to_u16(index - app.dl.scroll),
-            height: 1,
-            ..list
-        };
+        let rect = row_rect(list, index - app.dl.scroll);
         draw_list_row(f, app, rect, (index, row), &listed, name_w);
     }
     if rows.is_empty() && app.dl.catalogue.is_some() {
-        let text = if app.dl.tab == DlTab::Installed {
-            " Nothing installed by the studio yet."
-        } else {
-            " No fonts match."
-        };
-        f.render_widget(Paragraph::new(text).dark_gray(), Rect { height: 1, ..list });
+        let note = empty_list_note(app.dl.tab);
+        f.render_widget(Paragraph::new(note).dark_gray(), Rect { height: 1, ..list });
     }
 }

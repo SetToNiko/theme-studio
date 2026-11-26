@@ -64,10 +64,40 @@ fn more_text(page: usize, fit: usize, total: usize) -> String {
     }
 }
 
+/// What each role's font has to be (the list shows only those).
+fn role_needs_lines() -> Vec<Line<'static>> {
+    crate::fonts::types::ROLE_NAMES
+        .iter()
+        .zip(crate::fonts::types::ROLE_NEEDS)
+        .map(|(name, need)| {
+            Line::from(vec![
+                Span::styled(format!("   {name:<20}"), Style::new().dark_gray()),
+                Span::raw(format!("needs {need}")),
+            ])
+        })
+        .collect()
+}
+
+/// The last line of the help: the leader key and how to scroll or close.
+fn help_footer_line(app: &App) -> Line<'static> {
+    Line::styled(
+        format!(
+            " Leader: {}   Text fields take keys as typing.   ←/→ more columns; any other key closes.",
+            crate::keymap::key::display_seq(
+                &[app.keymap.leader],
+                crate::keymap::key::Key::new(
+                    ratatui::crossterm::event::KeyCode::Null,
+                    ratatui::crossterm::event::KeyModifiers::NONE
+                )
+            )
+        ),
+        Style::new().dark_gray(),
+    )
+}
+
 /// All lines of the key list: one block per context, then the footer.
 ///
 /// Generated from the keymap, so it shows what the keys really are.
-// Long function: one pass over `Context::ALL` in the order the keys are shown, then the role-needs rows and the footer.
 fn help_lines(app: &App) -> Vec<Line<'static>> {
     let mut lines: Vec<Line> = Vec::new();
     for ctx in Context::ALL {
@@ -87,24 +117,10 @@ fn help_lines(app: &App) -> Vec<Line<'static>> {
         }
         // what each role's font has to be (the list shows only those)
         if ctx == Context::FontRoles {
-            for (name, need) in crate::fonts::types::ROLE_NAMES
-                .iter()
-                .zip(crate::fonts::types::ROLE_NEEDS)
-            {
-                lines.push(Line::from(vec![
-                    Span::styled(format!("   {name:<20}"), Style::new().dark_gray()),
-                    Span::raw(format!("needs {need}")),
-                ]));
-            }
+            lines.extend(role_needs_lines());
         }
     }
-    lines.push(Line::styled(
-        format!(
-            " Leader: {}   Text fields take keys as typing.   ←/→ more columns; any other key closes.",
-            crate::keymap::key::display_seq(&[app.keymap.leader], crate::keymap::key::Key::new(ratatui::crossterm::event::KeyCode::Null, ratatui::crossterm::event::KeyModifiers::NONE))
-        ),
-        Style::new().dark_gray(),
-    ));
+    lines.push(help_footer_line(app));
     lines
 }
 

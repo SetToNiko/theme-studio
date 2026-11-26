@@ -62,61 +62,77 @@ pub(super) fn draw_roles(
     f.render_widget(Paragraph::new(lines), inner);
 }
 
-/// The two text lines of a role: the name with its font, and the use with the
-/// size. Wide layouts put the size beside the name, narrow ones below it.
-// Long function: the wide and the narrow layout build the same pieces in a different order and width.
-fn role_text_lines(app: &App, role: usize, boxed: &RolesBox) -> (Line<'static>, Line<'static>) {
+/// The size of a role as text: "12", or "12 → 10 here" when the layout shrinks it.
+fn role_size_text(app: &App, role: usize) -> String {
     let t = &app.fonts;
-    let font = &t.preset.fonts[role];
-    let selected = role == t.slot;
+    let size = t.preset.fonts[role].size;
+    let effective = t.effective_size(role, size);
+    if effective == size {
+        size.to_string()
+    } else {
+        format!("{size} → {effective} here")
+    }
+}
+
+/// The start of a role's first line: the marker, the name of the role, and
+/// `family`, the font's name (only that is under the cursor).
+fn role_start_spans(app: &App, role: usize, name_w: usize, family: String) -> Vec<Span<'static>> {
+    let selected = role == app.fonts.slot;
     let name_style = if selected {
         Style::new().add_modifier(Modifier::REVERSED)
     } else {
         Style::new()
     };
-    let effective = t.effective_size(role, font.size);
-    let size = if effective == font.size {
-        font.size.to_string()
-    } else {
-        format!("{} → {effective} here", font.size)
-    };
-    let name_w = boxed.name_w;
-    let start = vec![
+    vec![
         Span::styled(if selected { " ▸ " } else { "   " }, Style::new().yellow()),
         Span::styled(
             format!("{:<name_w$}", ROLE_NAMES[role]),
             Style::new().bold(),
         ),
-    ];
-    if app.layout.wide {
-        let room = usize::from(boxed.inner.width)
-            .saturating_sub(3 + name_w + 1 + 2 + size.chars().count());
-        let mut first = start;
         // the cursor on the name only, not the space before it
-        first.push(" ".into());
-        first.push(Span::styled(
-            truncate(&font.family, room.max(4)),
-            name_style,
-        ));
-        first.push(Span::raw(format!("  {size}")));
-        (
-            Line::from(first),
-            Line::from(vec![
-                Span::raw("   "),
-                Span::styled(ROLE_USE[role], Style::new().dark_gray()),
-            ]),
-        )
+        " ".into(),
+        Span::styled(family, name_style),
+    ]
+}
+
+/// The two lines of a role in the wide layout: the size beside the font.
+fn wide_role_lines(app: &App, role: usize, boxed: &RolesBox) -> (Line<'static>, Line<'static>) {
+    let font = &app.fonts.preset.fonts[role];
+    let size = role_size_text(app, role);
+    let room = usize::from(boxed.inner.width)
+        .saturating_sub(3 + boxed.name_w + 1 + 2 + size.chars().count());
+    let family = truncate(&font.family, room.max(4));
+    let mut first = role_start_spans(app, role, boxed.name_w, family);
+    first.push(Span::raw(format!("  {size}")));
+    (
+        Line::from(first),
+        Line::from(vec![
+            Span::raw("   "),
+            Span::styled(ROLE_USE[role], Style::new().dark_gray()),
+        ]),
+    )
+}
+
+/// The two lines of a role in the narrow layout: the size below the font.
+fn narrow_role_lines(app: &App, role: usize, name_w: usize) -> (Line<'static>, Line<'static>) {
+    let family = app.fonts.preset.fonts[role].family.clone();
+    let size = role_size_text(app, role);
+    (
+        Line::from(role_start_spans(app, role, name_w, family)),
+        Line::from(vec![
+            Span::raw(format!("   {size:<12}")),
+            Span::styled(ROLE_USE[role], Style::new().dark_gray()),
+        ]),
+    )
+}
+
+/// The two text lines of a role: the name with its font, and the use with the
+/// size. Wide layouts put the size beside the name, narrow ones below it.
+fn role_text_lines(app: &App, role: usize, boxed: &RolesBox) -> (Line<'static>, Line<'static>) {
+    if app.layout.wide {
+        wide_role_lines(app, role, boxed)
     } else {
-        let mut first = start;
-        first.push(" ".into());
-        first.push(Span::styled(font.family.clone(), name_style));
-        (
-            Line::from(first),
-            Line::from(vec![
-                Span::raw(format!("   {size:<12}")),
-                Span::styled(ROLE_USE[role], Style::new().dark_gray()),
-            ]),
-        )
+        narrow_role_lines(app, role, boxed.name_w)
     }
 }
 

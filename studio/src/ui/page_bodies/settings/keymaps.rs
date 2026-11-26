@@ -7,20 +7,19 @@ use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 
-use super::{follow, row_rect, selected_style, truncate};
+use super::super::rows::{RowLook, draw_selectable_row, follow, row_rect};
+use super::truncate;
 use crate::app::App;
-use crate::app::state::hit::{Target, hover_line, hover_row};
+use crate::app::state::hit::Target;
 use crate::keymap::Context;
 use crate::keymap::Keymap;
 use crate::keymap::action::Action;
 use crate::keymap::key::display_seq;
 use crate::settings_page::KmRow;
 use crate::ui::widgets::to_u16;
-
-// Long function: layout, the preset browser, the row loop with hover and cursor handling, and the info column run in one pass over shared state.
-pub(super) fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
-    let side = area.width >= 100;
-    let (list, info) = if side {
+/// Splits the tab area into the list and, when the width allows, the info column.
+fn split_keymaps_area(area: Rect) -> (Rect, Option<Rect>) {
+    if area.width >= 100 {
         let [l, _, i] = Layout::horizontal([
             Constraint::Min(56),
             Constraint::Length(1),
@@ -30,44 +29,54 @@ pub(super) fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
         (l, Some(i))
     } else {
         (area, None)
-    };
-    // the preset list: the difference on the left, the list on the right
-    // (stacked when narrow)
-    if app.settings_page.browse.is_some() {
-        let (diff, presets) = if let Some(info) = info {
-            (list, info)
-        } else {
-            let h = to_u16(app.presets.len()) + 10;
-            let [p, _, d] = Layout::vertical([
-                Constraint::Length(h),
-                Constraint::Length(1),
-                Constraint::Min(3),
-            ])
-            .areas(area);
-            (d, p)
-        };
-        return crate::settings_page::keymap_presets::draw_browse(
-            f,
-            crate::settings_page::keymap_presets::BrowseParts {
-                hits: &mut app.hits,
-                presets: &app.presets,
-                keymap: &app.keymap,
-            },
-            &mut app.settings_page,
-            diff,
-            presets,
-        );
     }
-    let rows = app.keymap_rows();
-    let n = rows.len();
-    app.settings_page.km_sel = app.settings_page.km_sel.min(n.saturating_sub(1));
+}
+
+/// The preset browser: the difference on the left, the list of presets on the
+/// right (stacked when narrow, where `info` is `None`).
+fn draw_keymap_browse(
+    f: &mut Frame,
+    app: &mut App,
+    area: Rect,
+    (list, info): (Rect, Option<Rect>),
+) {
+    let (diff, presets) = if let Some(info) = info {
+        (list, info)
+    } else {
+        let h = to_u16(app.presets.len()) + 10;
+        let [p, _, d] = Layout::vertical([
+            Constraint::Length(h),
+            Constraint::Length(1),
+            Constraint::Min(3),
+        ])
+        .areas(area);
+        (d, p)
+    };
+    crate::settings_page::keymap_presets::draw_browse(
+        f,
+        crate::settings_page::keymap_presets::BrowseParts {
+            hits: &mut app.hits,
+            presets: &app.presets,
+            keymap: &app.keymap,
+        },
+        &mut app.settings_page,
+        diff,
+        presets,
+    );
+}
+
+/// The visible binding rows of the list, scrolled to keep the selected row on screen.
+fn draw_keymap_rows(
+    f: &mut Frame,
+    app: &mut App,
+    list: Rect,
+    rows: &[KmRow],
+    shipped: Option<&Keymap>,
+) {
     let sel = app.settings_page.km_sel;
     let mut scroll = app.settings_page.km_scroll;
     follow(&mut scroll, sel, list.height as usize);
     app.settings_page.km_scroll = scroll;
-    let shipped = Keymap::builtin()
-        .into_iter()
-        .find(|b| b.name == app.keymap.name);
     let w = list.width as usize;
     for (i, row) in rows
         .iter()
@@ -75,39 +84,53 @@ pub(super) fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
         .skip(scroll)
         .take(list.height as usize)
     {
-        let r = row_rect(list, i - scroll);
-        let on = i == sel;
-        let line = keymaps_row_line(app, row, shipped.as_ref(), w);
-        let clickable = !matches!(row, KmRow::Gap);
-        let mut style = selected_style(on, true);
-        let mut line = line;
-        if clickable && app.hits.add(r, Target::SettingsRow(i)) && !on {
-            // only the name is underlined
-            style = hover_row(style);
-            line = hover_line(line, usize::from(matches!(row, KmRow::Header(_))));
-        }
-        // the cursor covers the text, not padding or swatches
-        let (line, style) = if on {
-            (
-                crate::app::state::hit::cursor_line(line, style),
-                Style::new(),
-            )
-        } else {
-            (line, style)
+        let look = RowLook {
+            selected: i == sel,
+            focused: true,
+            target: (!matches!(row, KmRow::Gap)).then_some(Target::SettingsRow(i)),
+            underline_skip: usize::from(matches!(row, KmRow::Header(_))),
+            hover_when_selected: false,
         };
-        f.render_widget(Paragraph::new(line).style(style), r);
+        let line = keymaps_row_line(app, row, shipped, w);
+        draw_selectable_row(f, app, row_rect(list, i - scroll), line, look);
     }
-    let lines = km_info_lines(app, rows.get(sel), shipped.as_ref());
-    if let Some(info) = info {
-        f.render_widget(
-            Paragraph::new(lines).wrap(Wrap { trim: false }).block(
+}
+
+/// The info column (when there is room): the selected row, what to do, and warnings.
+fn draw_keymap_info(
+    f: &mut Frame,
+    app: &App,
+    info: Option<Rect>,
+    row: Option<&KmRow>,
+    shipped: Option<&Keymap>,
+) {
+    let Some(info) = info else { return };
+    f.render_widget(
+        Paragraph::new(km_info_lines(app, row, shipped))
+            .wrap(Wrap { trim: false })
+            .block(
                 Block::new()
                     .borders(ratatui::widgets::Borders::LEFT)
                     .border_style(Style::new().dark_gray()),
             ),
-            info,
-        );
+        info,
+    );
+}
+
+/// Draws the Keymaps tab: the browser, or the rows with an info column.
+pub(super) fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
+    let (list, info) = split_keymaps_area(area);
+    if app.settings_page.browse.is_some() {
+        return draw_keymap_browse(f, app, area, (list, info));
     }
+    let rows = app.keymap_rows();
+    app.settings_page.km_sel = app.settings_page.km_sel.min(rows.len().saturating_sub(1));
+    let shipped = Keymap::builtin()
+        .into_iter()
+        .find(|b| b.name == app.keymap.name);
+    draw_keymap_rows(f, app, list, &rows, shipped.as_ref());
+    let selected = rows.get(app.settings_page.km_sel);
+    draw_keymap_info(f, app, info, selected, shipped.as_ref());
 }
 
 /// The text of one row of the list: the preset, a gap, a context title or a binding.
