@@ -12,6 +12,7 @@ description: Gives the stack, commands, refactor settings, coding rules, and doc
   Until clippy, rustfmt, and shellcheck are in the dev shell, the lint commands can fail. The plan adds them first.
 - Test style: inline `#[cfg(test)] mod tests` at the bottom of each .rs file. snake_case names that state the behavior.
 - Naming: Rust standard. Scripts: kebab-case files, snake_case functions. British spelling as in the code (colour, behaviour).
+- Tools not available yet: clippy, rustfmt, and shellcheck (not in the dev shell), cargo-modules, cargo-llvm-cov, jscpd.
 
 ## Refactor settings
 - Refactor folder: `docs/refactor/` (GOAL.md, PRINCIPLES.md, SUCCESS_CRITERIA.md, PLAN.md)
