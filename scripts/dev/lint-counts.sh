@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Lint ratchet: the number of warnings must never go up
+# (docs/refactor/GOAL.md, criterion 7, and PRINCIPLES.md, project rule 3).
+#
+# Usage:
+#   scripts/dev/lint-counts.sh                     measure clippy and shellcheck
+#                                                  now (in the dev shell) and
+#                                                  compare with the baseline
+#   scripts/dev/lint-counts.sh compare NAME COUNT  compare one count with the
+#                                                  baseline (`nix flake check`
+#                                                  uses this)
+#
+# The baseline file has one line for each tool: "<name> <count>".
+# LINT_BASELINE gives another path for it. When a count goes down, lower the
+# number in the baseline file in the same commit. Then it can't go up again.
+set -euo pipefail
+
+here=$(dirname "$(readlink -f "$0")")
+project="$here/../.."
+baseline_file="${LINT_BASELINE:-$project/docs/refactor/lint-baseline.txt}"
+
+# Prints the allowed count for one tool, or nothing if the file has no line for it.
+baseline_of() {
+  awk -v name="$1" '$1 == name { print $2 }' "$baseline_file"
+}
+
+# Fails if COUNT is higher than the baseline of NAME.
+compare() {
+  local name=$1
+  local count=$2
+  local allowed
+  allowed=$(baseline_of "$name")
+  if [ -z "$allowed" ]; then
+    echo "lint-counts: no line for '$name' in $baseline_file" >&2
+    return 1
+  fi
+  if [ "$count" -gt "$allowed" ]; then
+    echo "$name: $count warnings, baseline $allowed. Fix the new warnings." >&2
+    return 1
+  fi
+  echo "$name: $count warnings (baseline $allowed)"
+  if [ "$count" -lt "$allowed" ]; then
+    echo "  lower than the baseline: change the line to \"$name $count\" in $baseline_file"
+  fi
+}
+
+# Prints the number of clippy warnings of the program (not counting the
+# duplicates that the test build reports again).
+clippy_count() {
+  local output
+  output=$(cd "$project/studio" && cargo clippy --all-targets 2>&1) || true
+  local line
+  line=$(printf '%s\n' "$output" | grep -aoE '\(bin "theme-studio"\) generated [0-9]+ warning' || true)
+  if [ -z "$line" ]; then
+    echo 0
+  else
+    printf '%s\n' "$line" | grep -oE '[0-9]+' | head -1
+  fi
+}
+
+# Prints the number of shellcheck findings in the scripts.
+shellcheck_count() {
+  (shellcheck -f gcc "$project"/scripts/*.sh "$project"/scripts/lib/*.sh || true) | wc -l
+}
+
+if [ "${1:-}" = "compare" ]; then
+  compare "$2" "$3"
+  exit
+fi
+
+status=0
+compare clippy "$(clippy_count)" || status=1
+compare shellcheck "$(shellcheck_count)" || status=1
+exit $status

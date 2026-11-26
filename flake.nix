@@ -18,6 +18,44 @@
         inherit theme-studio;
         default = theme-studio;
       };
+      # `nix flake check` runs all of these (docs/refactor/GOAL.md, Verification).
+      checks.${system} = {
+        # The package. Building the studio also runs its tests (cargo test).
+        build = theme-studio;
+
+        # Formatting: rustfmt follows the `mod` lines from main.rs.
+        fmt = pkgs.runCommand "theme-studio-fmt" { nativeBuildInputs = [ pkgs.rustfmt ]; } ''
+          rustfmt --check --edition 2024 ${./studio/src}/main.rs
+          touch $out
+        '';
+
+        # Clippy ratchet: the warning count must not go above the baseline in
+        # docs/refactor/lint-baseline.txt. It reuses the package's build setup,
+        # so the crate's dependencies are already there (no network needed).
+        clippy = theme-studio.bin.overrideAttrs (old: {
+          pname = "theme-studio-clippy";
+          nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.clippy ];
+          buildPhase = ''
+            runHook preBuild
+            output=$(cargo clippy --all-targets 2>&1) || { printf '%s\n' "$output"; exit 1; }
+            count=$(printf '%s\n' "$output" | grep -aoE '\(bin "theme-studio"\) generated [0-9]+ warning' | grep -oE '[0-9]+' | head -1)
+            LINT_BASELINE=${./docs/refactor/lint-baseline.txt} \
+              bash ${./scripts/dev/lint-counts.sh} compare clippy "''${count:-0}"
+            runHook postBuild
+          '';
+          doCheck = false;
+          installPhase = "touch $out";
+        });
+
+        # Shellcheck ratchet, the same way.
+        shellcheck = pkgs.runCommand "theme-studio-shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
+          count=$( (shellcheck -f gcc ${./scripts}/*.sh ${./scripts}/lib/*.sh || true) | wc -l)
+          LINT_BASELINE=${./docs/refactor/lint-baseline.txt} \
+            bash ${./scripts/dev/lint-counts.sh} compare shellcheck "$count"
+          touch $out
+        '';
+      };
+
       # programs.theme-studio (home-manager) and services.theme-studio.loginFont
       homeManagerModules.default = ./packaging/nix/home-module.nix;
       nixosModules.default = ./packaging/nix/nixos-module.nix;
