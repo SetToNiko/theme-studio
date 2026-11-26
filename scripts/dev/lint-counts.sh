@@ -3,7 +3,8 @@
 # (docs/refactor/GOAL.md, criterion 7, and PRINCIPLES.md, project rule 3).
 #
 # Usage:
-#   scripts/dev/lint-counts.sh                     measure clippy and shellcheck
+#   scripts/dev/lint-counts.sh                     measure clippy, shellcheck, and
+#                                                  the modules in dependency cycles
 #                                                  now (in the dev shell) and
 #                                                  compare with the baseline
 #   scripts/dev/lint-counts.sh compare NAME COUNT  compare one count with the
@@ -35,10 +36,10 @@ compare() {
     return 1
   fi
   if [ "$count" -gt "$allowed" ]; then
-    echo "$name: $count warnings, baseline $allowed. Fix the new warnings." >&2
+    echo "$name: $count, baseline $allowed. It went up: fix the new ones." >&2
     return 1
   fi
-  echo "$name: $count warnings (baseline $allowed)"
+  echo "$name: $count (baseline $allowed)"
   if [ "$count" -lt "$allowed" ]; then
     echo "  lower than the baseline: change the line to \"$name $count\" in $baseline_file"
   fi
@@ -63,6 +64,11 @@ shellcheck_count() {
   (shellcheck -f gcc "$project"/scripts/*.sh "$project"/scripts/lib/*.sh || true) | wc -l
 }
 
+# Prints the number of modules in dependency cycles (scripts/dev/module-cycles.py).
+cycles_count() {
+  python3 "$here/module-cycles.py" "$project/studio/src" | sed -n '1s/.*modules in cycles: //p'
+}
+
 if [ "${1:-}" = "compare" ]; then
   compare "$2" "$3"
   exit
@@ -71,4 +77,5 @@ fi
 status=0
 compare clippy "$(clippy_count)" || status=1
 compare shellcheck "$(shellcheck_count)" || status=1
+compare cycles "$(cycles_count)" || status=1
 exit $status

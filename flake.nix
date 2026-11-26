@@ -55,6 +55,15 @@
           touch $out
         '';
 
+        # Cycle ratchet: the modules in dependency cycles must not go above the
+        # baseline (scripts/dev/module-cycles.py, plan step P4.14).
+        cycles = pkgs.runCommand "theme-studio-cycles" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          count=$(python3 ${./scripts/dev/module-cycles.py} ${./studio/src} | sed -n '1s/.*modules in cycles: //p')
+          LINT_BASELINE=${./docs/refactor/lint-baseline.txt} \
+            bash ${./scripts/dev/lint-counts.sh} compare cycles "$count"
+          touch $out
+        '';
+
         # Golden-file tests of the switch scripts (tests/scripts/run.sh).
         # The tools are the ones that the tests link into their own PATH.
         scripts =
