@@ -120,6 +120,21 @@ pub fn timing_log_dir() -> PathBuf {
         .join("theme-studio")
 }
 
+/// Where the preview keeps its draft files while it runs:
+/// `$XDG_RUNTIME_DIR`, default the system temporary folder.
+///
+/// Honours `$XDG_RUNTIME_DIR` with any value that is set, even an empty or
+/// relative one. Only an unset variable gives the temporary folder.
+pub fn runtime_dir() -> PathBuf {
+    runtime_dir_from(std::env::var_os("XDG_RUNTIME_DIR"))
+}
+
+/// [`runtime_dir`] with the variable's value given, so tests need not change
+/// the environment.
+fn runtime_dir_from(var: Option<std::ffi::OsString>) -> PathBuf {
+    var.map_or_else(std::env::temp_dir, PathBuf::from)
+}
+
 /// The system fontconfig file (`/etc/fonts/fonts.conf`) that the generated
 /// preview fontconfig files include, so previews still see the system fonts.
 pub const SYSTEM_FONTCONFIG: &str = "/etc/fonts/fonts.conf";
@@ -285,6 +300,15 @@ mod tests {
         // a plain file is written in place
         assert_eq!(write_target(&d.join("new/x.json")), d.join("new/x.json"));
         std::fs::remove_dir_all(d).unwrap();
+    }
+
+    #[test]
+    fn runtime_dir_is_the_variable_else_the_temp_folder() {
+        assert_eq!(
+            runtime_dir_from(Some("/run/user/1000".into())),
+            PathBuf::from("/run/user/1000")
+        );
+        assert_eq!(runtime_dir_from(None), std::env::temp_dir());
     }
 
     #[test]

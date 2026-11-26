@@ -322,7 +322,7 @@ pub fn dir() -> PathBuf {
             std::process::id()
         ));
     }
-    crate::model::history::default_dir()
+    crate::model::paths::history_dir()
         .parent()
         .map(|p| p.join("tournaments"))
         .unwrap_or_default()

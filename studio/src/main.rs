@@ -51,7 +51,7 @@ More: docs/theme-studio.md (also the Settings page's README tab)";
 
 fn main() -> Result<()> {
     // every write the studio makes keeps the old file in the history
-    model::history::init(model::history::default_dir());
+    model::history::init(model::paths::history_dir());
     let mut args: Vec<String> = std::env::args().skip(1).collect();
     let fonts_tab = args.iter().any(|a| a == "--fonts");
     args.retain(|a| a != "--fonts");
@@ -62,7 +62,7 @@ fn main() -> Result<()> {
         }
         Some("--new") => Start::New,
         Some("--init-config") => {
-            let dir = config::dir();
+            let dir = model::paths::studio_config_dir();
             let loaded = config::load(&dir, true);
             // palettes.json / fonts.json to their current file formats too
             let store = Store::locate();

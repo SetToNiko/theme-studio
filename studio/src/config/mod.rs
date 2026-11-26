@@ -13,11 +13,6 @@ use crate::keymap::Keymap;
 pub mod settings;
 use settings::Settings;
 
-/// `$XDG_CONFIG_HOME/theme-studio`, or `~/.config/theme-studio`.
-pub fn dir() -> PathBuf {
-    crate::model::paths::studio_config_dir()
-}
-
 /// What loading the config produced, and anything worth telling the user.
 pub struct Loaded {
     pub keymap: Keymap,
@@ -423,7 +418,7 @@ mod tests {
     #[test]
     fn xdg_config_home_is_respected() {
         // only checks the path rule; doesn't change the environment
-        let d = dir();
+        let d = crate::model::paths::studio_config_dir();
         assert!(d.ends_with("theme-studio"));
     }
 }
