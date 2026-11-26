@@ -36,7 +36,7 @@ inputs.theme-studio = {
 #                programs.theme-studio.enable = true;
 ```
 
-The Nix package brings most of its programs with it. Your palettes, font
+The Nix package brings most of its programs with it. The studio itself still needs `magick`, `curl`, `tar` and fontconfig from the system (see [Runtime dependencies](docs/theme-studio.md#runtime-dependencies)). Your palettes, font
 presets and themes are not part of the project: they are read from
 `$THEME_STUDIO_DATA`, by default `~/.config/theme-studio/`.
 
@@ -50,6 +50,9 @@ PREFIX=/usr/local ./install.sh    # installs into another prefix
 
 The default `PREFIX` is `$HOME/.local`. Make sure `$PREFIX/bin` is in your
 `PATH`.
+
+`--uninstall` removes only what `install.sh` installed; your settings and the
+downloaded previews stay.
 
 To build, you need a Rust toolchain (`cargo`). To run, you need these
 programs:

@@ -29,6 +29,18 @@ PREFIX=${PREFIX:-$HOME/.local}
 DESTDIR=${DESTDIR:-}
 here=$(dirname "$(readlink -f "$0")")
 
+# PREFIX goes into a sed command and into the desktop file (`Exec=`), and
+# DESTDIR into paths. Allow only an absolute path of safe characters.
+check_path() {
+  local name=$1 value=$2
+  if [[ ! $value =~ ^/[A-Za-z0-9._/+@:,=-]*$ ]]; then
+    echo "install.sh: $name ('$value') must be an absolute path that uses only the characters A-Z a-z 0-9 . _ / + @ : , = - (no space, quote, | & or backslash). Set $name to such a path." >&2
+    exit 2
+  fi
+}
+check_path PREFIX "$PREFIX"
+[ -z "$DESTDIR" ] || check_path DESTDIR "$DESTDIR"
+
 root=$DESTDIR$PREFIX
 bindir=$root/bin
 sharedir=$root/share/theme-studio
@@ -74,22 +86,41 @@ install_all() {
   esac
 }
 
-# Warn about each program that the scripts or the studio run and that is missing.
+# Warn about each program that is missing. The two lists mirror the table
+# "Runtime dependencies" in docs/theme-studio.md: change both together.
 warn_missing() {
   local tool
-  for tool in bash jq fc-list pkill sed awk grep ghostty i3-msg; do
-    if ! command -v "$tool" >/dev/null 2>&1; then
+  local required=(bash jq awk sed grep mktemp cat dirname readlink nice sha256sum kill
+    fc-list fc-cache fc-scan magick curl tar)
+  local -A optional=(
+    [pkill]="the Ghostty reload" [ghostty]="Ghostty" [i3-msg]="the i3 reload"
+    [pywalfox]="the Firefox reload" [nvim]="the preview pane" [yazi]="the preview pane"
+    [git]="the preview shell" [ls]="the preview shell" [xrdb]="font previews (Xft.dpi)"
+  )
+  for tool in "${required[@]}"; do
+    command -v "$tool" >/dev/null 2>&1 ||
       echo "Warning: '$tool' is not on PATH. Theme Studio needs it; install it with your package manager."
-    fi
+  done
+  for tool in "${!optional[@]}"; do
+    command -v "$tool" >/dev/null 2>&1 ||
+      echo "Note: '$tool' is not on PATH (optional: only for ${optional[$tool]})."
   done
 }
 
 uninstall_all() {
   local name
-  for name in theme-studio "${commands[@]}"; do
-    if [ -e "$bindir/$name" ] || [ -L "$bindir/$name" ]; then
+  if [ -e "$bindir/theme-studio" ]; then
+    rm -f "$bindir/theme-studio"
+    echo "Removed $bindir/theme-studio"
+  fi
+  for name in "${commands[@]}"; do
+    [ -e "$bindir/$name" ] || [ -L "$bindir/$name" ] || continue
+    # A switch command is ours only if it links to our script.
+    if [ "$(readlink "$bindir/$name" || true)" = "../share/theme-studio/scripts/$name.sh" ]; then
       rm -f "$bindir/$name"
       echo "Removed $bindir/$name"
+    else
+      echo "Left $bindir/$name (it is not a link that install.sh made)."
     fi
   done
   if [ -e "$appsdir/theme-studio.desktop" ]; then
