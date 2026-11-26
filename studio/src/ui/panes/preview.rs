@@ -164,8 +164,7 @@ fn terminal_lines(lines: &mut Vec<Line<'static>>, app: &App) {
                 .ansi
                 .get(i)
                 .and_then(|k| palette::key(k))
-                .map(|k| p.get(k))
-                .unwrap_or(bg);
+                .map_or(bg, |k| p.get(k));
             spans.push(Span::styled(format!("{i:>2} "), fg(p, "grey0")));
             spans.push(swatch(c, 4));
             spans.push(" ".into());
@@ -265,7 +264,10 @@ fn editor_lines(lines: &mut Vec<Line<'static>>, p: &Palette) {
         )
     };
     for (n, (tokens, line_bg)) in code_sample().into_iter().enumerate() {
-        let mut spans = vec![num(n as u32 + 1, line_bg == Some("bg1"))];
+        let mut spans = vec![num(
+            u32::try_from(n + 1).unwrap_or(u32::MAX),
+            line_bg == Some("bg1"),
+        )];
         for (text, k) in tokens {
             let mut st = fg(p, k);
             if let Some(b) = line_bg {

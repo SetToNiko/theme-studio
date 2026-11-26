@@ -9,8 +9,10 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
 use crate::app::App;
+use crate::ui::widgets::to_u16;
 
 pub mod dialogs;
+mod help;
 
 /// A save confirmation in a box (settings.messages.saved = "popup").
 pub fn draw_notice(f: &mut Frame, app: &App, area: Rect) {
@@ -18,7 +20,7 @@ pub fn draw_notice(f: &mut Frame, app: &App, area: Rect) {
         return;
     };
     let hint = "press any key to dismiss";
-    let w = text.chars().count().max(hint.len()) as u16 + 4;
+    let w = to_u16(text.chars().count().max(hint.len())) + 4;
     let lines = vec![
         Line::styled(format!(" {text}"), Style::new().green().bold()),
         Line::raw(""),
@@ -29,8 +31,6 @@ pub fn draw_notice(f: &mut Frame, app: &App, area: Rect) {
     let block = Block::bordered().border_style(Style::new().green());
     f.render_widget(Paragraph::new(lines).block(block), r);
 }
-
-/// The page tabs (F1 Main, F2 Fonts, F3 Settings), clickable; returns the
 
 pub fn centered(area: Rect, w: u16, h: u16) -> Rect {
     let w = w.min(area.width);
@@ -69,8 +69,8 @@ pub fn draw_pending(f: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
     lines.push(Line::styled(" Esc cancels", Style::new().dark_gray()));
-    let w = lines.iter().map(|l| l.width()).max().unwrap_or(10) as u16 + 4;
-    let h = lines.len() as u16 + 2;
+    let w = to_u16(lines.iter().map(Line::width).max().unwrap_or(10)) + 4;
+    let h = to_u16(lines.len()) + 2;
     let r = Rect {
         x: area.x + area.width.saturating_sub(w + 1),
         y: area.y + area.height.saturating_sub(h + 1),

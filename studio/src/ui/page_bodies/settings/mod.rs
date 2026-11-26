@@ -23,8 +23,11 @@ use ratatui::widgets::{Block, Paragraph};
 
 use crate::app::App;
 use crate::app::state::hit::{Target, hover, hover_line, hover_row};
+use crate::keymap::Context;
+use crate::keymap::action::Action;
 use crate::model::color::Rgb;
 use crate::settings_page::{TABS, Tab};
+use crate::ui::widgets::{to_u8, to_u16};
 
 /// Keeps `sel` on screen in a list `height` rows tall.
 fn follow(scroll: &mut usize, sel: usize, height: usize) {
@@ -40,7 +43,7 @@ fn follow(scroll: &mut usize, sel: usize, height: usize) {
 
 fn row_rect(area: Rect, i: usize) -> Rect {
     Rect {
-        y: area.y + i as u16,
+        y: area.y + to_u16(i),
         height: 1,
         ..area
     }
@@ -70,7 +73,38 @@ fn value_spans(v: &str, style: Style) -> Vec<Span<'static>> {
     out
 }
 
-// Long function: frame, the two tab-strip positions and the tab strip are laid out in one top-to-bottom pass.
+/// Draws the tab strip on `tabs`; the current tab is yellow while the
+/// keyboard is on the tabs.
+fn draw_tab_strip(f: &mut Frame, app: &mut App, tabs: Rect) {
+    let tabs_focused = app.settings_page.tabs_focused && !app.layout.page_tabs_focused;
+    let mut x = tabs.x + 1;
+    for (index, (tab, name)) in TABS.iter().enumerate() {
+        let text = format!(" {name} ");
+        let width = to_u16(text.chars().count());
+        let rect = Rect {
+            x,
+            y: tabs.y,
+            width: width.min(tabs.right().saturating_sub(x)),
+            height: 1,
+        };
+        // with the keyboard on the tabs, the current one is yellow
+        let mut style = match (*tab == app.settings_page.tab, tabs_focused) {
+            (true, true) => Style::new().black().on_yellow().bold(),
+            (true, false) => Style::new().reversed().bold(),
+            _ => Style::new().dark_gray(),
+        };
+        let mut line = Line::from(Span::styled(text, style));
+        if app.hits.add(rect, Target::SettingsTab(to_u8(index))) {
+            style = hover_row(style);
+            line = hover_line(line, 0);
+        }
+        f.render_widget(Paragraph::new(line).style(style), rect);
+        x += width + 1;
+    }
+}
+
+/// Draws the Settings page: the frame, the tab strip and the current tab.
+// Long function: frame, tab strip position (top or bottom) and tab dispatch are decided from the same inner rectangle in one top-to-bottom pass.
 pub fn draw_settings(f: &mut Frame, app: &mut App, area: Rect) {
     let block = Block::bordered()
         .title(" Settings ")
@@ -82,48 +116,23 @@ pub fn draw_settings(f: &mut Frame, app: &mut App, area: Rect) {
     }
     // the page's tabs: on top or at the bottom (a setting)
     let (tabs, body) = if app.settings.layout.inner_tabs_on_top() {
-        let [t, _, b] = Layout::vertical([
+        let [tabs, _, body] = Layout::vertical([
             Constraint::Length(1),
             Constraint::Length(1),
             Constraint::Min(0),
         ])
         .areas(inner);
-        (t, b)
+        (tabs, body)
     } else {
-        let [b, _, t] = Layout::vertical([
+        let [body, _, tabs] = Layout::vertical([
             Constraint::Min(0),
             Constraint::Length(1),
             Constraint::Length(1),
         ])
         .areas(inner);
-        (t, b)
+        (tabs, body)
     };
-    let tabs_focused = app.settings_page.tabs_focused && !app.layout.page_tabs_focused;
-    // tab strip
-    let mut x = tabs.x + 1;
-    for (i, (tab, name)) in TABS.iter().enumerate() {
-        let text = format!(" {name} ");
-        let w = text.chars().count() as u16;
-        let r = Rect {
-            x,
-            y: tabs.y,
-            width: w.min(tabs.right().saturating_sub(x)),
-            height: 1,
-        };
-        // with the keyboard on the tabs, the current one is yellow
-        let mut style = match (*tab == app.settings_page.tab, tabs_focused) {
-            (true, true) => Style::new().black().on_yellow().bold(),
-            (true, false) => Style::new().reversed().bold(),
-            _ => Style::new().dark_gray(),
-        };
-        let mut line = Line::from(Span::styled(text, style));
-        if app.hits.add(r, Target::SettingsTab(i as u8)) {
-            style = hover_row(style);
-            line = hover_line(line, 0);
-        }
-        f.render_widget(Paragraph::new(line).style(style), r);
-        x += w + 1;
-    }
+    draw_tab_strip(f, app, tabs);
     match app.settings_page.tab {
         Tab::Keymaps => keymaps::draw_keymaps(f, app, body),
         Tab::Behaviour => behaviour::draw_behaviour(f, app, body),
@@ -141,26 +150,28 @@ fn truncate(s: &str, n: usize) -> String {
     }
 }
 
+/// The width of `text` in cells, as a terminal size.
+fn text_width(text: &str) -> u16 {
+    to_u16(text.chars().count())
+}
+
 /// The Save and Discard buttons on the frame's bottom edge, while there are
 /// unsaved changes; drawn with the live keymap (keys change only on Save).
-// Long function: lays out the note and two buttons in one row, left to right.
+// Long function: the note and two buttons are placed left to right in one row; each x comes from the width of the previous one.
 pub fn draw_save_buttons(f: &mut Frame, app: &mut App, area: Rect, changes: usize) {
     if changes == 0 || area.height < 2 {
         return;
     }
-    use crate::keymap::Context;
-    use crate::keymap::action::Action;
-    let key = |a: Action| {
+    let key = |action: Action| {
         app.keymap
-            .key_for(&[Context::Settings, Context::Global], a)
+            .key_for(&[Context::Settings, Context::Global], action)
             .map(|k| crate::ui::widgets::friendly(&k))
             .unwrap_or_default()
     };
     let note = format!(" ● {changes} unsaved ");
     let save = format!(" {} Save ", key(Action::Save));
     let discard = format!(" {} Discard ", key(Action::Discard));
-    let w = |s: &str| s.chars().count() as u16;
-    let total = w(&note) + w(&save) + w(&discard) + 2;
+    let total = text_width(&note) + text_width(&save) + text_width(&discard) + 2;
     let y = area.bottom() - 1;
     let mut x = area.right().saturating_sub(total + 2);
     f.render_widget(
@@ -168,27 +179,27 @@ pub fn draw_save_buttons(f: &mut Frame, app: &mut App, area: Rect, changes: usiz
         Rect {
             x,
             y,
-            width: w(&note),
+            width: text_width(&note),
             height: 1,
         },
     );
-    x += w(&note) + 1;
+    x += text_width(&note) + 1;
     for (text, id, base) in [
         (save, 's', Style::new().black().on_yellow().bold()),
         (discard, 'd', Style::new().reversed()),
     ] {
-        let r = Rect {
+        let rect = Rect {
             x,
             y,
-            width: w(&text),
+            width: text_width(&text),
             height: 1,
         };
-        let style = if app.hits.add(r, Target::SettingsButton(id)) {
+        let style = if app.hits.add(rect, Target::SettingsButton(id)) {
             hover(base)
         } else {
             base
         };
-        f.render_widget(Paragraph::new(Span::styled(text.clone(), style)), r);
-        x += w(&text) + 1;
+        f.render_widget(Paragraph::new(Span::styled(text.clone(), style)), rect);
+        x += text_width(&text) + 1;
     }
 }

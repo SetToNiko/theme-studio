@@ -15,7 +15,7 @@ use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
 use crate::model::color::{self, Rgb};
 use crate::model::palette::{self, GROUPS, TEXT_KEYS};
 use crate::ui::pane_chrome::pane_title;
-use crate::ui::widgets::panel_number;
+use crate::ui::widgets::{panel_number, to_u16};
 use crate::ui::{focused_block, swatch};
 
 /// Draws the Palette pane: frame, dropdown row, then the scrolled colour rows.
@@ -215,7 +215,7 @@ fn add_row_hits<'a>(
         .enumerate()
         .map(|(i, line)| {
             let r = Rect {
-                y: inner.y + i as u16,
+                y: inner.y + to_u16(i),
                 height: 1,
                 ..inner
             };
@@ -237,7 +237,7 @@ fn add_row_hits<'a>(
 /// colours. Enter (with the keyboard on it) or a click opens the list.
 fn draw_palette_menu(f: &mut Frame, app: &mut App, area: Rect, cursor: bool) {
     let text = format!(" {} ▾ ", app.name);
-    let w = (text.chars().count() as u16).min(area.width);
+    let w = to_u16(text.chars().count()).min(area.width);
     let hit = Rect { width: w, ..area };
     let base = Style::new().yellow().bold();
     let mut spans = if cursor {

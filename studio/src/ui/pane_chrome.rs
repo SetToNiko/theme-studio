@@ -12,6 +12,7 @@ use ratatui::text::Line;
 
 use crate::app::App;
 use crate::app::state::hit::{Target, hover};
+use crate::ui::widgets::to_u16;
 
 /// A pane's border: yellow when it has the keyboard, the hover colour when
 /// the mouse is over it, else grey.
@@ -30,7 +31,7 @@ pub fn pane_title(app: &mut App, area: Rect, title: Line<'static>, pane: u8) -> 
     let r = Rect {
         x: area.x + 1,
         y: area.y,
-        width: (title.width() as u16).min(area.width.saturating_sub(2)),
+        width: to_u16(title.width()).min(area.width.saturating_sub(2)),
         height: 1,
     };
     if app.hits.add(r, Target::PaneTitle(pane)) {

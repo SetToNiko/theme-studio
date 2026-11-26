@@ -58,14 +58,7 @@ pub(super) fn draw_behaviour(f: &mut Frame, app: &mut App, area: Rect) {
         if row.selectable() && app.hits.add(r, Target::SettingsRow(i)) && !on {
             // only the name is underlined
             style = hover_row(style);
-            line = hover_line(
-                line,
-                if matches!(row, BhRow::Header(_)) {
-                    1
-                } else {
-                    0
-                },
-            );
+            line = hover_line(line, usize::from(matches!(row, BhRow::Header(_))));
         }
         // the cursor covers the text, not padding or swatches
         let (line, style) = if on {
