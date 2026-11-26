@@ -207,7 +207,7 @@ relative to `studio/src/`. `mod.rs` files only list the files of their folder
 | `packaging/nix/` | The Nix package and the home-manager module. |
 | `install.sh` | Install without Nix. |
 | `tests/scripts/`, `tests/install/` | Golden-file tests of the switch scripts; the install test. |
-| `scripts/dev/` | Developer tools: `module-cycles.py` (finds dependency cycles), `lint-counts.sh`, `file-limits.sh` (lists `.rs` files over 500 production lines). |
+| `scripts/dev/` | Developer tools: `module-cycles.py` (finds dependency cycles), `lint-counts.sh`, `file-limits.sh` (lists `.rs` files over 500 production lines), `errors-doc.sh` (lists `Result` functions without `# Errors`). |
 
 ### Dependency direction
 
@@ -588,10 +588,18 @@ Where: `tests/scripts/`, `tests/install/`.
 ### Flake checks as gates
 `nix flake check` runs: `build` (and the Rust tests), `fmt` (rustfmt), `clippy` (with
 `-D warnings`), `doc` (rustdoc with `-D warnings`), `shellcheck` (all scripts), `cycles`
-(no dependency cycles), `file-limits` (no `.rs` file over 500 production lines), `scripts`
+(no dependency cycles), `file-limits` (no `.rs` file over 500 production lines),
+`errors-doc` (each function that returns `Result` has a `# Errors` section), `scripts`
 (golden tests) and `install` (install test). Any failure fails the check.
 Where: `flake.nix`, `scripts/dev/module-cycles.py`, `scripts/dev/lint-counts.sh`,
-`scripts/dev/file-limits.sh`, `docs/refactor/lint-baseline.txt`.
+`scripts/dev/file-limits.sh`, `scripts/dev/errors-doc.sh`, `docs/refactor/lint-baseline.txt`.
+
+### The errors-doc gate
+In a binary crate, clippy does not check that a function which returns `Result` says
+when it fails. `scripts/dev/errors-doc.sh` does: it lists each production function that
+returns `Result` and has no `# Errors` section in its doc comment, and exits with 1.
+The flake check `errors-doc` runs it on `studio/src`.
+Where: `scripts/dev/errors-doc.sh`, `flake.nix` (`errors-doc`).
 
 ### The file-limits gate
 `scripts/dev/file-limits.sh` counts the production lines of each `.rs` file (the lines
