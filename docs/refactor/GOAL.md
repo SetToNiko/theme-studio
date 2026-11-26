@@ -9,7 +9,7 @@ After the refactor, a junior developer can read the codebase, quickly find the p
 Theme Studio configures colours and themes (palettes and font presets) for the system, and the programs that it is set up to configure.
 
 ## Reason
-The codebase is disorganized and has much coupling. Thus, it is difficult to maintain and to add functionality. Example: `studio/src/app.rs` has 4,948 lines and changed in 46 of 96 commits.
+The codebase is disorganized and has much coupling. Thus, it is difficult to maintain and to add functionality. Example: before the refactor, `studio/src/app.rs` had 4,948 lines and changed in 46 of 96 commits.
 
 ## Success criteria
 `docs/refactor/SUCCESS_CRITERIA.md` has the measurement, baseline, and target of each criterion.

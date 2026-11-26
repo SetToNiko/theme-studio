@@ -19,6 +19,7 @@ Goal locations:
 Theme Studio has a 25k-line Rust TUI (35 modules in one flat folder) and 4 bash switch scripts. The app integrations are hard-coded in two scripts: about 8 apps, each with its own output and reload command. `App` (`app.rs`, about 2,450 production lines, 60 public fields) is a god object: nearly every module depends on it, and it depends on them, so the module graph is full of cycles. 12 files are over the 500-line limit, `home()` exists 5 times, and user paths are spread over 4 modules and 3 scripts. The studio applies themes only through the switch scripts (`paths::switch_command`), so the integration logic exists only in bash.
 
 ## 2. Architecture map (before the refactor)
+<!-- Sections 2 and 4 and the checked steps keep the paths from before the folder moves of Phase 5. Section 3 has the current layout. -->
 <!-- The plan action writes this section one time. Do not change it later. The final action compares it with the code after the refactor (BEFORE_AFTER.md). -->
 
 | Module | Purpose | Responsibilities | Depends on |
@@ -73,13 +74,13 @@ Key numbers: 35 Rust modules in 1 folder, 6 scripts, about 25k Rust lines, 12 fi
 - `share/integrations.json`: the data list. For each app: its theme and font outputs (file + generator) and its reload command.
 - `share/integrations/`: one small jq, template, or hook file for each output.
 - `scripts/lib/integrations.sh`: the runner. It writes the outputs and runs the reloads one time. It is the only location that runs reload commands.
-- `scripts/lib/paths.sh` and `studio/src/paths.rs`: each user and system path, with one `home()`. The login-screen paths can be changed with environment variables.
-- `studio/src/app/`: App divided by concern: `palette_editor`, `layout`, `messages`, `overlay`, `mouse`, `actions`, `nav` (Page, Overlay, For, Side).
-- `studio/src/model/`, `system/`, `ui/`: folders by layer, 10 modules or fewer each. Direction: ui → app → model and system. No cycles.
+- `scripts/lib/paths.sh` and `studio/src/model/paths.rs`: each user and system path, with one `home()`.
+- `studio/src/app/`: App and its input: `state/` (palette_editor, layout, messages, nav, hit), `input/` (actions, focus, mouse, overlay, colours), `pages/` (the key handlers of each page).
+- `studio/src/model/` (data and rules), `system/` (other programs, network, terminal), `ui/` (drawing), and the feature folders `fonts/`, `keymap/`, `config/`, `settings_page/`, `preview_term/`: 10 modules or fewer each. Direction: ui → app → model, system and the feature folders. No cycles (the flake check fails on a cycle).
 
 Advanced techniques that the refactor adds:
-- Module re-exports (`pub use`) | `main.rs` during the folder moves | keep `crate::x` paths valid, so one move changes 5 files or fewer. A comment explains each re-export.
-- Hook generators | `share/integrations/*.sh` | GTK, fontconfig, and the login screen need logic that a jq file cannot express.
+- Module re-exports (`pub use`): not used. Each move changed the access paths directly (access-path edits do not count toward the step size, decided in Phase 3).
+- Hook generators | `share/integrations/*.sh` | GTK and fontconfig need logic that a jq file cannot express.
 
 ## 4. Findings
 | # | File(s) | Problem | Target violated | Impact |
@@ -222,12 +223,13 @@ Completes: criterion 5 (with the docs action), no dependency cycles
 
 ### Phase 6: Lint and errors to zero
 Also: `palette_menu_focused` and `page_tabs_focused` may become one `enum TopFocus { None, PaletteMenu, PageTabs }` (check first that both are never true at once; Phase 3 review, note 3).
-- [ ] P6.1 Clippy pedantic to zero in core | Files: core modules (5 or fewer per step, more steps if necessary) | Target: goal 7 | Check: count decreases
-- [ ] P6.2 Clippy pedantic to zero in system | Files: system modules | Target: goal 7 | Check: count decreases
+- [ ] P6.1 Clippy pedantic to zero in model/, config/, keymap/ | Files: those modules (5 or fewer per step, more steps if necessary) | Target: goal 7 | Check: count decreases
+- [ ] P6.2 Clippy pedantic to zero in system/, preview_term/, fonts/, settings_page/ | Files: those modules | Target: goal 7 | Check: count decreases
 - [ ] P6.3 Clippy pedantic to zero in app | Files: app modules | Target: goal 7 | Check: count decreases
 - [ ] P6.4 Clippy pedantic to zero in ui, then `-D warnings` as the gate | Files: ui modules, `flake.nix` | Target: goal 7 | Check: count = 0
-- [ ] P6.5 Errors in download.rs: handle or report the 18 ignored results | Files: `system/download.rs` | Target: T7 | Check: tests, each `let _ =` has a reason or is gone
+- [ ] P6.5 Errors in system/download/: handle or report the 18 ignored results | Files: `system/download/*` | Target: T7 | Check: tests, each `let _ =` has a reason or is gone
 - [ ] P6.6 Shellcheck to zero | Files: `scripts/*.sh`, `scripts/lib/*.sh` | Target: rule 3 | Check: count = 0
+- [ ] P6.7 Long functions (Phase 5 review): each function over 30 body lines gets a true `// Long function: <reason>.` or is divided; the reviewer verifies the reasons. Divide first: fonts_column draw_fonts (343), settings_page/readme render (244), keymap_presets draw_browse (156), layout arrange (153), app with_config (137), fonts/render sample_markup (100), dialogs draw_help and draw_open, status context_hints. One step per folder (several in parallel: different files) | Files: all folders | Target: limits | Check: a scan lists no function over 30 lines without a marker
 Completes: criterion 7
 
 ### Phase 7: [feature] Install without Nix
@@ -263,6 +265,11 @@ Completes: criterion 6
 
 ## 9. Architecture notes (pending)
 <!-- The review action adds notes here. The revise action processes them. -->
+- N1 (Phase 5 review) The `Preview` type lives in two folders: preview_term/ has the state, ui/desktop_preview.rs has a second `impl Preview` for the drawing, so 8 fields are pub(crate). Option: move that drawing into preview_term/ (a draw module on a ratatui Buffer), fields private again. Cost M.
+- N2 (Phase 5 review) model/history.rs `local_time` runs the `date` program: model/ should start no programs. Option: format the time with SystemTime in Rust, or get it from system/ and pass it in. Cost S.
+- N3 (Phase 5 review) fonts/types.rs `kind()` returns strings ("nf-mono", "propo"): a typo compiles. Option: a small enum. Cost S.
+- N4 (Phase 5 review) A new action touches 4 or 5 places in keymap/ (the enum, all_actions, id, describe, group); the compiler checks only some. Option: one table with id, label and group for each action. Cost M.
+- N5 (Phase 5 review) `Action::legacy` returns `Option<Option<Action>>`. Option: an enum (`Renamed(Action)`, `Dropped`). Cost S.
 
 ## 10. Plan changelog
 | Phase | Note | Decision | Reason |
@@ -282,6 +289,7 @@ Completes: criterion 6
 | 6 | ui/desktop_preview.rs (about 1000 lines) holds terminal state and drawing | ACCEPT: new step P5.11 before P5.9 | Found in P5.4. |
 | 7 | After P5.9: `core` hides Rust's core crate; 7 page-state modules have no place in P5.10 | USER: rename to `model/` (P5.12); page-state folder `settings_page/`, tour_page to fonts/, hit to app/state/ (P5.13) | Decided by the user. |
 | 8 | After P5.10: 4 production files are still over the 500-line hard limit | ACCEPT: P5.14a-d, one file each, in parallel | Phase 5 has the limits as its target. |
+| 9 | Phase 5 review: about 80 functions over 30 lines without a reason; stale paths in current plan text | ACCEPT: new step P6.7 (long functions, one step per folder); section 3 and Phase 6 updated to the new folders | No bugs found by the 3 reviewers. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
@@ -299,8 +307,8 @@ Completes: criterion 6
 | Phase 3 review | done |
 | Phase 4 steps | done |
 | Phase 4 review | done |
-| Phase 5 steps | open |
-| Phase 5 review | open |
+| Phase 5 steps | done |
+| Phase 5 review | done (3 reviewers in parallel; no bugs; fixes applied; notes N1-N5 pending) |
 | Phase 6 steps | open |
 | Phase 6 review | open |
 | Phase 7 steps | open |
