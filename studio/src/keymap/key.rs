@@ -38,6 +38,9 @@ impl Key {
     }
 
     /// Parses one key sequence, e.g. `<leader>cp`, `gg`, `<C-x><C-s>`.
+    ///
+    /// # Errors
+    /// Fails when `s` is empty, or a `<...>` key name is not known (see `Key::parse_named`).
     pub fn parse_seq(s: &str, leader: Key) -> Result<Vec<Key>> {
         let mut out = Vec::new();
         let mut chars = s.chars().peekable();
@@ -62,6 +65,9 @@ impl Key {
     }
 
     /// `leader`, `space`, `CR`, `C-r`, `S-Tab`, `M-x`, `F5`, `Up`, ….
+    ///
+    /// # Errors
+    /// Fails when `name` is not a known key name.
     fn parse_named(name: &str, leader: Key) -> Result<Key> {
         let lower = name.to_lowercase();
         if lower == "leader" {

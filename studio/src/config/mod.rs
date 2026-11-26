@@ -23,10 +23,18 @@ pub struct Loaded {
     pub dir: PathBuf,
 }
 
+/// Writes a JSON file in jq's format (see `write_json_file`).
+///
+/// # Errors
+/// Fails when the file or its folder cannot be written.
 fn write_json(path: &Path, v: &Value) -> Result<()> {
     crate::model::store::write_json_file(path, v)
 }
 
+/// Reads a JSON file. A file that does not exist gives `None`.
+///
+/// # Errors
+/// Fails when the file exists but cannot be read, or is not valid JSON.
 fn read_json(path: &Path) -> Result<Option<Value>> {
     match std::fs::read_to_string(path) {
         Ok(text) => Ok(Some(
@@ -176,6 +184,9 @@ fn read_presets(v: &Value, warnings: &mut Vec<String>) -> Vec<Keymap> {
 }
 
 /// Writes settings.json.
+///
+/// # Errors
+/// Fails when `s` cannot be turned into JSON, or settings.json cannot be written.
 pub fn save_settings(dir: &Path, s: &Settings) -> Result<()> {
     write_json(&dir.join("settings.json"), &serde_json::to_value(s)?)
 }

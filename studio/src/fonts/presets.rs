@@ -74,6 +74,9 @@ impl Preset {
     /// to the Proportional one, like font-switch.sh. Sizes are read when
     /// the preset still has them (before fonts.json version 4), else the
     /// defaults; the theme's sizes replace them (`set_sizes`).
+    ///
+    /// # Errors
+    /// Fails when the object has no monospace font or no proportional font.
     pub fn from_json(obj: &Map<String, Value>) -> Result<Preset> {
         let font = |role: usize| -> Option<Font> {
             let f = role_entry(obj, role)?;
@@ -170,6 +173,9 @@ impl FontStore {
     }
 
     /// All presets, in file order (either layout of fonts.json).
+    ///
+    /// # Errors
+    /// Fails when fonts.json cannot be read, is not valid JSON, or has no presets.
     pub fn load_all(&self) -> Result<Map<String, Value>> {
         let text = std::fs::read_to_string(self.path())
             .with_context(|| format!("reading {}", self.path().display()))?;
@@ -182,6 +188,10 @@ impl FontStore {
     /// 4: no sizes, they're the theme's), and the host offset files
     /// (configs/hosts/*/fonts.json) with it. Run after themes.json's
     /// migration, which takes the sizes from here first.
+    ///
+    /// # Errors
+    /// Fails when fonts.json exists but is not valid JSON or cannot be rewritten, or when a host
+    /// offset file cannot be rewritten. A missing fonts.json is not an error.
     pub fn migrate(&self) -> Result<Option<u64>> {
         let done = crate::model::store::migrate_data_file(&self.path(), "presets", |presets| {
             presets
@@ -198,6 +208,10 @@ impl FontStore {
 
     /// The host offset files with the old role keys get the new ones (not
     /// kept in the history: it's by file name, and fonts.json is taken).
+    ///
+    /// # Errors
+    /// Fails when a host offset file that needs the new role keys cannot be written. A file that
+    /// cannot be read or parsed is skipped.
     fn migrate_offsets(&self) -> Result<()> {
         // a hosts folder beside fonts.json (the old layout kept them
         // together; font-switch reads both key names either way)
@@ -221,6 +235,11 @@ impl FontStore {
         Ok(())
     }
 
+    /// Reads one preset by name.
+    ///
+    /// # Errors
+    /// Fails when fonts.json cannot be loaded (see `FontStore::load_all`), has no preset with that
+    /// name, or the preset is not valid.
     pub fn load(&self, name: &str) -> Result<Preset> {
         let all = self.load_all()?;
         let obj = all
@@ -231,6 +250,9 @@ impl FontStore {
     }
 
     /// Writes one preset (re-reading the file first), keeping jq's formatting.
+    ///
+    /// # Errors
+    /// Fails when fonts.json cannot be written. A fonts.json that cannot be read counts as empty.
     pub fn save(&self, name: &str, preset: &Preset) -> Result<()> {
         let mut all = self.load_all().unwrap_or_default();
         all.insert(name.to_string(), Value::Object(preset.to_json()));
@@ -243,12 +265,18 @@ impl FontStore {
     /// Runs font-switch to make a saved preset the system fonts, at the
     /// theme's sizes (`FONT_SIZES`; without it font-switch would use the
     /// active theme's, which may be another theme).
+    ///
+    /// # Errors
+    /// Fails when font-switch cannot start or exits with an error (see `apply_fonts`).
     pub fn apply(&self, name: &str, sizes: [u32; 3]) -> Result<()> {
         crate::system::switch::apply_fonts(&self.dir, &self.share, name, sizes, false)
     }
 
     /// Applies without restarting Ghostty and i3 (a theme's palette, applied
     /// next, restarts them once for both).
+    ///
+    /// # Errors
+    /// Fails when font-switch cannot start or exits with an error (see `apply_fonts`).
     pub fn apply_quietly(&self, name: &str, sizes: [u32; 3]) -> Result<()> {
         crate::system::switch::apply_fonts(&self.dir, &self.share, name, sizes, true)
     }

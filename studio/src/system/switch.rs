@@ -52,6 +52,10 @@ pub fn apply_fonts(
 
 /// Runs a switch command without input and without output, and waits.
 /// `what` names the script in the error text.
+///
+/// # Errors
+/// Fails when the command cannot start, or exits with an error. The error holds what the command
+/// wrote to stderr.
 fn run(mut cmd: Command, what: &str) -> Result<()> {
     let out = cmd
         .stdin(Stdio::null())

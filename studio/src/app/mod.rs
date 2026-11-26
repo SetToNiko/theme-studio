@@ -136,6 +136,10 @@ pub enum Start {
 impl App {
     /// Starts with the settings in ~/.config/theme-studio (creating or
     /// topping up the files).
+    ///
+    /// # Errors
+    /// Fails when a palette named on the command line cannot be loaded and no theme has that name
+    /// (see [`App::with_config`]).
     pub fn new(store: Store, start: Start) -> Result<App> {
         App::with_config(
             store,
@@ -412,6 +416,9 @@ impl App {
 
 /// Picks the palette to start with: the name, the active palette, or a blank
 /// one. Returns its name, the palette, and whether it is new (not saved yet).
+///
+/// # Errors
+/// Fails when `start` names a palette that cannot be loaded and no theme has that name.
 fn first_palette(
     store: &Store,
     start: Start,

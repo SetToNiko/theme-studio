@@ -85,6 +85,9 @@ pub fn read_name_file(path: &std::path::Path) -> Option<String> {
 
 /// Writes a JSON file in jq's format, first keeping what it held in the
 /// history (labelled with the file's name).
+///
+/// # Errors
+/// Fails when the folder cannot be created, or the file cannot be written or put in place.
 pub fn write_json_file(path: &std::path::Path, value: &Value) -> Result<()> {
     let label = path
         .file_name()
@@ -105,6 +108,10 @@ pub fn write_json_file(path: &std::path::Path, value: &Value) -> Result<()> {
 
 /// Rewrites an older data file as the current version (once), passing its
 /// map through `update` on the way. The version it now has, if it did.
+///
+/// # Errors
+/// Fails when the file exists but is not valid JSON, is not a JSON object, or cannot be written. A
+/// file that cannot be read gives `Ok(None)`.
 pub fn migrate_data_file(
     path: &std::path::Path,
     field: &str,
@@ -150,6 +157,9 @@ impl Store {
 
     /// All palettes, in file order.
     /// All palettes, in file order (either layout).
+    ///
+    /// # Errors
+    /// Fails when palettes.json cannot be read, is not valid JSON, or has no palettes.
     pub fn load_all(&self) -> Result<Map<String, Value>> {
         let path = self.palettes_path();
         let text = std::fs::read_to_string(&path)
@@ -160,10 +170,18 @@ impl Store {
     }
 
     /// Rewrites palettes.json as version 2 if it's still version 1.
+    ///
+    /// # Errors
+    /// Fails in the same cases as `migrate_data_file`.
     pub fn migrate(&self) -> Result<Option<u64>> {
         migrate_data_file(&self.palettes_path(), "palettes", |m| m)
     }
 
+    /// Reads one palette by name.
+    ///
+    /// # Errors
+    /// Fails when palettes.json cannot be loaded, has no palette with that name, or the palette is
+    /// not valid.
     pub fn load(&self, name: &str) -> Result<Palette> {
         let all = self.load_all()?;
         let obj = all
@@ -181,12 +199,20 @@ impl Store {
     /// Writes one palette into palettes.json (re-read first, so changes made
     /// elsewhere meanwhile, like a delete made by another tool, are kept).
     /// An existing palette keeps its place; a new one goes at the end.
+    ///
+    /// # Errors
+    /// Fails when palettes.json cannot be loaded or cannot be written.
     pub fn save(&self, name: &str, palette: &Palette) -> Result<()> {
         let mut all = self.load_all()?;
         all.insert(name.to_string(), Value::Object(palette.to_json()));
         write_json_file(&self.palettes_path(), &data_file("palettes", all))
     }
 
+    /// Reads the terminal colours from terminal-colors.json in the share folder.
+    ///
+    /// # Errors
+    /// Fails when the file cannot be read or is not valid JSON, or when its `palette`, `background`
+    /// or `foreground` entry is missing or not text.
     pub fn terminal_map(&self) -> Result<TerminalMap> {
         let path = crate::model::paths::share_file(&self.share, "terminal-colors.json");
         let text = std::fs::read_to_string(&path)

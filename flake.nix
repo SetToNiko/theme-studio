@@ -74,6 +74,13 @@
           touch $out
         '';
 
+        # Doc gate: each function that returns Result has a `# Errors` section
+        # (scripts/dev/errors-doc.sh).
+        errors-doc = pkgs.runCommand "theme-studio-errors-doc" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          bash ${./scripts/dev/errors-doc.sh} ${./studio/src}
+          touch $out
+        '';
+
         # File size gate: no .rs file over 500 production lines
         # (scripts/dev/file-limits.sh).
         file-limits = pkgs.runCommand "theme-studio-file-limits" { } ''
@@ -153,7 +160,7 @@
           pkgs.cargo-modules # dependency cycles between modules
           pkgs.cargo-llvm-cov # test coverage
           pkgs.python3Packages.lizard # function length, complexity, duplicates
-          pkgs.python3 # scripts/dev/module-cycles.py
+          pkgs.python3 # scripts/dev/module-cycles.py, errors-doc.sh
         ];
         # cargo-llvm-cov needs the llvm-cov and llvm-profdata of rustc's own LLVM.
         LLVM_COV = "${pkgs.rustc.llvm}/bin/llvm-cov";

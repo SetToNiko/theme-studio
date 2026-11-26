@@ -15,6 +15,10 @@ pub fn read_list(path: &Path) -> Map<String, Value> {
         .unwrap_or_default()
 }
 
+/// Writes the list of installed fonts (file version 1) to `path`.
+///
+/// # Errors
+/// Fails when `path` cannot be written (see `write_json_file`).
 pub fn write_list(path: &Path, fonts: Map<String, Value>) -> Result<()> {
     let mut file = Map::new();
     file.insert("version".to_string(), json!(1));

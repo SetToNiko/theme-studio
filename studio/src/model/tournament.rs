@@ -300,6 +300,11 @@ impl Tournament {
 
     // ----- saving ------------------------------------------------------------
 
+    /// Writes the tournament to its file in `dir`.
+    ///
+    /// # Errors
+    /// Fails when `dir` cannot be created, the tournament cannot be turned into JSON, or the file
+    /// cannot be written.
     pub fn save(&self, dir: &Path) -> Result<()> {
         std::fs::create_dir_all(dir)?;
         let path = dir.join(&self.file);
@@ -307,6 +312,10 @@ impl Tournament {
             .with_context(|| format!("saving {}", path.display()))
     }
 
+    /// Reads a tournament from a file.
+    ///
+    /// # Errors
+    /// Fails when the file cannot be read or does not hold a valid tournament.
     pub fn load(path: &Path) -> Result<Tournament> {
         let text = std::fs::read_to_string(path)?;
         serde_json::from_str(&text).with_context(|| format!("reading {}", path.display()))

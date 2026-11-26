@@ -30,6 +30,9 @@ pub fn google_dirs(e: &Entry) -> Vec<String> {
 }
 
 /// sha256 as a Nix SRI hash (for fetchurl in packaging/nix/fonts.nix).
+///
+/// # Errors
+/// Fails when `sha256sum` cannot start or prints no checksum.
 fn sri(file: &Path) -> Result<String> {
     let out = low("sha256sum")
         .arg(file)
@@ -47,6 +50,9 @@ fn sri(file: &Path) -> Result<String> {
 }
 
 /// Downloads `files` (name, url, size) into `dir`, reporting progress.
+///
+/// # Errors
+/// Fails when one download fails (see `fetch`).
 fn fetch_all(
     id: &str,
     files: &[(String, String, u64)],
@@ -101,6 +107,10 @@ fn is_ttf(name: &str) -> bool {
 }
 
 /// Google: every .ttf of the font's folder in the google/fonts repo.
+///
+/// # Errors
+/// Fails when the folder listing is not valid JSON, a download fails, or the Fontsource fallback
+/// fails. A failed GitHub request is skipped.
 fn install_google(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<Value> {
     for repo_dir in google_dirs(e) {
         let Ok(text) = get(&format!(
@@ -121,6 +131,10 @@ fn install_google(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<Value> {
 }
 
 /// Fontsource: a ttf per weight and style, latin and latin-ext.
+///
+/// # Errors
+/// Fails when the Fontsource answer cannot be fetched or parsed, lists no files, a download fails,
+/// or a checksum cannot be made.
 fn install_fontsource(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<Value> {
     let v: Value = serde_json::from_str(&get(&format!(
         "https://api.fontsource.org/v1/fonts/{}",
@@ -175,6 +189,10 @@ fn fontsource_files(e: &Entry, v: &Value) -> Vec<(String, String, u64)> {
 }
 
 /// Nerd Fonts: the release's `<asset>.tar.xz`, unpacked.
+///
+/// # Errors
+/// Fails when `e` is not a Nerd Font, the download fails, or `tar` cannot start or cannot unpack
+/// the archive.
 pub(super) fn install_nerd(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<Value> {
     let Source::Nerd { asset, url, size } = &e.source else {
         bail!("not a Nerd Font")
@@ -263,6 +281,9 @@ fn refresh_warning(program: &str, root: &Path) -> Option<String> {
 }
 
 /// Runs `program` (fc-cache) on `root` so that fontconfig sees the changed fonts.
+///
+/// # Errors
+/// Fails when `program` cannot start (for example it is not installed) or exits with an error.
 fn refresh_font_cache(program: &str, root: &Path) -> Result<()> {
     let out = low(program)
         .arg(root)

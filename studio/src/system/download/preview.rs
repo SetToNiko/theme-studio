@@ -81,6 +81,9 @@ pub fn previews_size() -> u64 {
 }
 
 /// Deletes every preview font (they're fetched again when needed).
+///
+/// # Errors
+/// Fails when the preview folder exists but cannot be removed.
 pub fn clear_previews() -> Result<()> {
     // The setups are made again when a preview needs one.
     remove_dir_if_present(&download_cache_dir().join("fontconfig-confs"));
@@ -167,6 +170,10 @@ pub fn fetch_preview(e: Entry, tx: Sender<Msg>) {
 
 /// Gets the preview font into `dir` (unless it is there) and returns its
 /// family name.
+///
+/// # Errors
+/// Fails when the folder cannot be created, the font cannot be fetched, no font file is there
+/// afterwards, or the file has no family name.
 fn fetch_preview_family(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<String> {
     if let Some(f) = preview_file(dir) {
         return family_of(&f).ok_or_else(|| anyhow!("no family name in {}", f.display()));

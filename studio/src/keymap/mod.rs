@@ -169,6 +169,9 @@ fn resolve_action(name: &str, aid: &str, warnings: &mut Vec<String>) -> Option<A
 
 impl Keymap {
     /// Builds a keymap from (context, action, sequences) rows.
+    ///
+    /// # Errors
+    /// Fails when one key sequence cannot be parsed (see `Key::parse_seq`).
     pub fn from_rows(
         name: &str,
         leader: Key,

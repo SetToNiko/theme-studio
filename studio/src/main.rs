@@ -49,6 +49,11 @@ Environment:
 
 More: docs/theme-studio.md (also the Settings page's README tab)";
 
+/// Starts the studio, or does the job that the command line names (`--help`, `--init-config`).
+///
+/// # Errors
+/// Fails when the start palette cannot be loaded (see `App::new`), or the terminal cannot be set
+/// up, or the main loop fails.
 fn main() -> Result<()> {
     // every write the studio makes keeps the old file in the history
     model::history::init(model::paths::history_dir());

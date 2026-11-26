@@ -356,6 +356,11 @@ fn magick_command(job: &Job) -> Command {
     cmd
 }
 
+/// Draws one sample with `ImageMagick` into `job.out` and returns that path.
+///
+/// # Errors
+/// Returns the message of the problem when the markup file cannot be written, `ImageMagick` cannot
+/// start, or `ImageMagick` exits with an error.
 fn render_sample(job: &Job) -> std::result::Result<PathBuf, String> {
     let markup_file = job.out.with_extension("markup");
     std::fs::write(&markup_file, &job.markup).map_err(|e| e.to_string())?;
