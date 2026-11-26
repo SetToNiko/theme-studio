@@ -74,6 +74,13 @@
           touch $out
         '';
 
+        # File size gate: no .rs file over 500 production lines
+        # (scripts/dev/file-limits.sh).
+        file-limits = pkgs.runCommand "theme-studio-file-limits" { } ''
+          bash ${./scripts/dev/file-limits.sh} ${./studio/src}
+          touch $out
+        '';
+
         # Golden-file tests of the switch scripts (tests/scripts/run.sh).
         # The tools are the ones that the tests link into their own PATH.
         scripts =

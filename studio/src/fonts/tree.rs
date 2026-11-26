@@ -1,10 +1,12 @@
 //! Groups installed font families into a two-level tree for the font list:
 //! design (`JetBrains Mono`, Noto, `TeX Gyre`) → variant (Nerd Font, Sans CJK)
 //! → families. Groups with a single member are flattened into their parent.
+//! `rows` turns the tree into the rows that the list shows.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
-use crate::fonts::types::Installed;
+use crate::fonts::filters::Filters;
+use crate::fonts::types::{Installed, Row};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Node {
@@ -192,6 +194,91 @@ fn leaf_name(n: &Node, fonts: &[Installed]) -> String {
     match n {
         Node::Leaf(i) => fonts[*i].family.to_lowercase(),
         Node::Group { name, .. } => name.to_lowercase(),
+    }
+}
+
+/// What the row builder reads from the font tab: the installed fonts, the
+/// filters and the open groups. (A struct of references, so this file does
+/// not depend on `FontsTab`.)
+pub struct RowCtx<'a> {
+    pub installed: &'a [Installed],
+    pub filters: &'a Filters,
+    pub expanded: &'a HashSet<String>,
+}
+
+/// The rows the list shows: the grouped `tree` (open groups expanded) when
+/// not searching, a flat list of matching fonts while searching. Groups
+/// with no font passing the filters are left out.
+pub fn rows(t: &RowCtx, tree: &[Node], search: &str) -> Vec<Row> {
+    if !search.is_empty() {
+        let q = search.to_lowercase();
+        return (0..t.installed.len())
+            .filter(|&i| {
+                t.filters.allows(&t.installed[i])
+                    && t.installed[i].family.to_lowercase().contains(&q)
+            })
+            .map(|index| Row::Font { depth: 0, index })
+            .collect();
+    }
+    let mut out = Vec::new();
+    walk_rows(t, tree, 0, "", &mut out);
+    out
+}
+
+/// Adds the rows of `nodes` (and of their open groups) to `out`.
+fn walk_rows(t: &RowCtx, nodes: &[Node], depth: usize, parent: &str, out: &mut Vec<Row>) {
+    for n in nodes {
+        match n {
+            Node::Leaf(i) => {
+                if t.filters.allows(&t.installed[*i]) {
+                    out.push(Row::Font { depth, index: *i });
+                }
+            }
+            Node::Group { .. } => group_rows(t, n, depth, parent, out),
+        }
+    }
+}
+
+/// The path of a group: its name under the path of its parent.
+fn group_path(parent: &str, name: &str) -> String {
+    if parent.is_empty() {
+        name.to_string()
+    } else {
+        format!("{parent}/{name}")
+    }
+}
+
+/// Adds the rows of one group: nothing when the filters leave no font, the
+/// font itself when they leave one, else the group's row and (if it is
+/// open) the rows inside it.
+fn group_rows(t: &RowCtx, group: &Node, depth: usize, parent: &str, out: &mut Vec<Row>) {
+    let Node::Group { name, children } = group else {
+        return;
+    };
+    let allowed: Vec<usize> = group
+        .leaves()
+        .into_iter()
+        .filter(|&i| t.filters.allows(&t.installed[i]))
+        .collect();
+    // one font left by the filters: the font, not a group
+    if let [index] = allowed[..] {
+        out.push(Row::Font { depth, index });
+        return;
+    }
+    if allowed.is_empty() {
+        return;
+    }
+    let path = group_path(parent, name);
+    let expanded = t.expanded.contains(&path);
+    out.push(Row::Group {
+        depth,
+        path: path.clone(),
+        name: name.clone(),
+        expanded,
+        count: allowed.len(),
+    });
+    if expanded {
+        walk_rows(t, children, depth + 1, &path, out);
     }
 }
 

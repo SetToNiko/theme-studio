@@ -277,6 +277,25 @@ impl FontStore {
     }
 }
 
+/// The active preset from the store: its name, its fonts, whether it is
+/// new (not saved yet), and why it could not be loaded, if so. Without an
+/// active preset, or when it fails to load, the default one stands in.
+pub fn load_active(
+    store: &FontStore,
+    active: Option<&str>,
+) -> (String, Preset, bool, Option<String>) {
+    match active.map(|n| (n, store.load(n))) {
+        Some((n, Ok(p))) => (n.to_string(), p, false, None),
+        Some((n, Err(e))) => (
+            n.to_string(),
+            Preset::default_preset(),
+            true,
+            Some(format!("{e:#}")),
+        ),
+        None => ("untitled".to_string(), Preset::default_preset(), true, None),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

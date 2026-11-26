@@ -9,7 +9,7 @@
 //! - `pages/settings/`: `settings_actions.rs` (the page as a whole), `settings_keymaps_actions.rs`, `settings_history_actions.rs`, `draft_actions.rs` (Settings drafts), `behaviour_actions.rs`, `behaviour_colours_actions.rs`, `behaviour_labels_actions.rs` (Behaviour tab)
 //! - `pages/fonts/`: `fonts_dl_actions.rs` (Download fonts), `fonts_preview_actions.rs`, `prefetch_actions.rs`, `tour_actions.rs` and `tour_rounds.rs` (Tournament)
 //! - `pages/themes/`: `theme_actions.rs`, `presets_actions.rs`
-//! - this folder: this file (`App` and its core methods), `persist.rs` (save, open, unsaved-changes prompt), `tests.rs` (tests of the above)
+//! - this folder: this file (`App` and its core methods), `run.rs` (the main loop), `persist.rs` (save, open, unsaved-changes prompt), `tests.rs` (tests of the above)
 //!
 //! The run loop (`App::run`) does not draw by itself: `main.rs` passes in `ui::draw`.
 //!
@@ -19,16 +19,15 @@
 mod input;
 mod pages;
 mod persist;
+mod run;
 pub mod state;
 
 use std::io::Write;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use anyhow::Result;
 /// The terminal the studio draws on.
 pub type Term = ratatui::Terminal<ratatui::backend::CrosstermBackend<crate::system::out::Out>>;
-use ratatui::Frame;
-use ratatui::crossterm::event::{self, Event, KeyEventKind};
 use ratatui::layout::Rect;
 
 use crate::fonts::FontsTab;
@@ -288,85 +287,6 @@ impl App {
                 Ok(None) => {}
                 Err(e) => self.messages.error(format!("{what}: {e:#}")),
             }
-        }
-    }
-
-    /// Runs the main loop until the user quits: timers, drawing, one event.
-    ///
-    /// # Errors
-    /// Fails when drawing or reading terminal events fails.
-    pub fn run(
-        &mut self,
-        terminal: &mut Term,
-        // The drawing code is in ui.rs; main.rs passes it in, so app does not depend on ui.
-        draw: fn(&mut Frame, &mut App),
-    ) -> Result<()> {
-        let mut redraw = true;
-        while !self.quit {
-            if self.refresh_before_draw() {
-                redraw = true;
-            }
-            if self.preview.take_dirty() || redraw {
-                terminal.draw(|f| draw(f, self))?;
-                self.update_pointer();
-                redraw = false;
-            }
-            // Short poll: the preview's programs can print at any time.
-            if event::poll(Duration::from_millis(25))? {
-                self.handle_event(&event::read()?);
-                redraw = true;
-            }
-        }
-        Ok(())
-    }
-
-    /// Brings the preview and the sample up to date before a frame is drawn.
-    /// True when the screen must be drawn again.
-    fn refresh_before_draw(&mut self) -> bool {
-        // nvim in the preview re-reads this whenever it changes
-        self.preview.sync_draft(&self.editor.palette);
-        if self.page == Page::Main && self.layout.sample_visible {
-            self.update_sample();
-        }
-        self.poll_background()
-    }
-
-    /// Checks the background work and the timers. True when the screen must
-    /// be drawn again.
-    fn poll_background(&mut self) -> bool {
-        // `|=` runs every poll even when an earlier one asked for a redraw
-        // downloads: the catalogue, progress, finished installs
-        let mut redraw = self.poll_downloads();
-        redraw |= self.poll_prefetch();
-        redraw |= self.poll_tournament();
-        redraw |= self.messages.expire(self.settings.messages.seconds);
-        // a role's size, once h / l have been still for a moment: saved
-        // to the theme and applied (one i3 restart, not one per step)
-        if self
-            .fonts
-            .sized_at
-            .is_some_and(|t| t.elapsed() >= Duration::from_millis(400))
-        {
-            self.apply_sizes();
-            redraw = true;
-        }
-        // an image waiting for its pane's size to settle
-        if self.redraw_at.is_some_and(|t| Instant::now() >= t) {
-            redraw = true;
-        }
-        redraw
-    }
-
-    /// Sends one terminal event to the key, mouse or paste handler.
-    fn handle_event(&mut self, event: &Event) {
-        match event {
-            Event::Key(k) if k.kind == KeyEventKind::Press => self.on_key(*k),
-            Event::Mouse(m) => self.on_mouse(*m),
-            Event::Paste(s) => {
-                self.on_paste(s);
-                self.sync_palette_preview();
-            }
-            _ => {}
         }
     }
 
