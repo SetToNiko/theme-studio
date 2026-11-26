@@ -28,13 +28,19 @@
 #                        stdout becomes the file. The runner runs
 #                          theme output: bash <hook> NAME DATA_FILE SHARE_DIR
 #                          fonts output: bash <hook> FONTS_FILE SHARE_DIR
+#                A hook that needs a path can source
+#                        "$SHARE_DIR/../scripts/lib/paths.sh" (the scripts folder
+#                        is beside the share folder, in the checkout and in the
+#                        package) and call its functions.
 #                "script" (fonts outputs only) the generator is a bash script
 #                        for apps that edit existing files in place (GTK). The
 #                        runner runs `bash <script> FONTS_FILE SHARE_DIR`. The
 #                        script writes its own files, and the runner writes
 #                        nothing. It has no "dir" and no "file".
-#   dir        which state folder gets the file: "colors_dir", "cache_dir",
-#              "fonts_dir" or "fontconfig_dir" (functions of paths.sh).
+#   dir        which state folder gets the file. It must be one of the existing
+#              folders: "colors_dir", "cache_dir", "fonts_dir" or
+#              "fontconfig_dir" (functions of paths.sh). A new folder needs a
+#              function in lib/paths.sh and a line in `output_folder` below.
 #   file       the file name in that folder
 #   generator  the file in share/integrations/
 # An app that reloads after a switch also has (on the app, not on an output):
@@ -48,31 +54,47 @@
 # share/integrations/. No change to this file.
 
 # write_theme_outputs NAME DATA_FILE
+# Returns 1 for a list or format error (the list cannot be read, an unknown
+# kind or dir). It never returns 1 because a generator failed.
 write_theme_outputs() {
-  local name=$1 data=$2 kind dir file generator folder
+  local name=$1 data=$2 kind dir file generator folder list share list_file
+  list_file=$(share_file integrations.json)
+  share=$(share_dir)
+  list=$(jq -r '.apps[].outputs[] | select(.switch == "theme")
+    | [.kind, .dir, .file, .generator] | @tsv' "$list_file") \
+    || { echo "write_theme_outputs: cannot read $list_file" >&2; return 1; }
   while IFS=$'\t' read -r kind dir file generator; do
-    folder=$(output_folder "$dir" "$file") || return 1
     case "$kind" in
       jq)
+        folder=$(output_folder "$dir" "$file") || return 1
         mkdir -p "$folder"
         jq -r --arg n "$name" -f "$(share_file "integrations/$generator")" \
           "$data" > "$folder/$file" ;;
       hook)
+        folder=$(output_folder "$dir" "$file") || return 1
         mkdir -p "$folder"
         run_hook_to_file "$folder/$file" bash "$(share_file "integrations/$generator")" \
-          "$name" "$data" "$(dirname "$(share_file integrations.json)")" ;;
+          "$name" "$data" "$share" ;;
       *) echo "integrations.json: unknown kind '$kind' for $file" >&2; return 1 ;;
     esac
-  done < <(jq -r '.apps[].outputs[] | select(.switch == "theme")
-    | [.kind, .dir, .file, .generator] | @tsv' "$(share_file integrations.json)")
+  done <<<"$list"
+  # A generator that fails is ignored (as the old inline code did), so the
+  # status of the last generator must not become the status of this function.
+  return 0
 }
 
 # write_font_outputs FONTS_FILE
+# Returns 1 for a list or format error. It never returns 1 because a generator
+# failed.
 write_font_outputs() {
-  local fonts=$1 kind dir file generator folder share
-  share=$(dirname "$(share_file integrations.json)")
+  local fonts=$1 kind dir file generator folder share list list_file
+  list_file=$(share_file integrations.json)
+  share=$(share_dir)
   # A "script" output has no dir and no file: "-" fills the two columns, because
   # `read` would merge two tabs in a row.
+  list=$(jq -r '.apps[].outputs[] | select(.switch == "fonts")
+    | [.kind, .dir // "-", .file // "-", .generator] | @tsv' "$list_file") \
+    || { echo "write_font_outputs: cannot read $list_file" >&2; return 1; }
   while IFS=$'\t' read -r kind dir file generator; do
     case "$kind" in
       jq)
@@ -90,25 +112,35 @@ write_font_outputs() {
         bash "$(share_file "integrations/$generator")" "$fonts" "$share" ;;
       *) echo "integrations.json: unknown kind '$kind' for $generator" >&2; return 1 ;;
     esac
-  done < <(jq -r '.apps[].outputs[] | select(.switch == "fonts")
-    | [.kind, .dir // "-", .file // "-", .generator] | @tsv' "$(share_file integrations.json)")
+  done <<<"$list"
+  # A generator that fails is ignored (as the old inline code did): see
+  # write_theme_outputs.
+  return 0
 }
 
 # reload_apps SWITCH
+# Returns 1 if the list cannot be read or has an unknown reload_output.
+# Otherwise the status is the one of the last reload command.
 reload_apps() {
-  local switch=$1 line mode
+  local switch=$1 line mode list list_file
   local -a cmd
+  list_file=$(share_file integrations.json)
+  list=$(jq -c --arg s "$switch" '.apps[]
+    | select(.reload and any(.outputs[]; .switch == $s))
+    | [.reload_output // "show"] + .reload' "$list_file") \
+    || { echo "reload_apps: cannot read $list_file" >&2; return 1; }
+  # Each line is a JSON array: the output mode, then the command, for example
+  # ["hide","i3-msg","restart"].
   while IFS= read -r line; do
     mode=$(jq -r '.[0]' <<<"$line")
     mapfile -t cmd < <(jq -r '.[1:][]' <<<"$line")
     case "$mode" in
+      show) "${cmd[@]}" ;;
       hide) "${cmd[@]}" >/dev/null ;;
       hide-all) "${cmd[@]}" >/dev/null 2>&1 ;;
-      *) "${cmd[@]}" ;;
+      *) echo "integrations.json: unknown reload_output '$mode' for ${cmd[*]}" >&2; return 1 ;;
     esac
-  done < <(jq -c --arg s "$switch" '.apps[]
-    | select(.reload and any(.outputs[]; .switch == $s))
-    | [.reload_output // "show"] + .reload' "$(share_file integrations.json)")
+  done <<<"$list"
 }
 
 # run_hook_to_file TARGET COMMAND...: runs COMMAND and saves its stdout as TARGET.

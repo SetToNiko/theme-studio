@@ -77,7 +77,7 @@ jq -n --arg m "$mono" --arg ms "$mono_size" --arg u "$ui" --arg us "$ui_size" \
   --arg b "$bar" --arg bs "$bar_size" \
   '{monospace: {family: $m, size: $ms}, proportional: {family: $u, size: $us},
     icons: {family: $b, size: $bs}}' > "$fonts_json"
-write_font_outputs "$fonts_json"
+write_font_outputs "$fonts_json" || exit 1
 
 if [ -z "$NO_RESTART" ]; then
   reload_apps fonts

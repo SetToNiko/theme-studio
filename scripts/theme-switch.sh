@@ -22,7 +22,7 @@ jq -e --arg n "$name" 'has($n)' "$data" >/dev/null || { echo "no scheme '$name'"
 mkdir -p "$out"
 # The colour files (i3, rofi, colors.sh, Ghostty, Pywalfox) come from
 # share/integrations.json
-write_theme_outputs "$name" "$data"
+write_theme_outputs "$name" "$data" || exit 1
 echo "$name" > "$out/current"
 
 if [ -z "$NO_RESTART" ]; then

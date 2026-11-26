@@ -7,6 +7,9 @@
 #   SHARE_DIR  the share folder (it holds terminal-colors.json)
 # The Ghostty config lines go to stdout. The runner saves them as the file.
 name=$1 data=$2 share=$3
+# paths.sh is beside the share folder, in the checkout and in the package.
+# shellcheck disable=SC1091 # found at run time, relative to SHARE_DIR
+here=$share/../scripts; . "$here/lib/paths.sh" # ghostty_themes_dir
 
 # Ghostty: the palette sets background, foreground and all 16 ANSI colours,
 # so programs using named terminal colours (starship, ls, git, yazi) match it.
@@ -20,7 +23,7 @@ name=$1 data=$2 share=$3
 theme_line=1
 if ghostty_bin=$(command -v ghostty); then
   themes="$(dirname "$(readlink -f "$ghostty_bin")")/../share/ghostty/themes"
-  [ -f "$themes/$name" ] || [ -f "$HOME/.config/ghostty/themes/$name" ] || theme_line=
+  [ -f "$themes/$name" ] || [ -f "$(ghostty_themes_dir)/$name" ] || theme_line=
 fi
 { [ -n "$theme_line" ] && printf 'theme = %s\n' "$name"
   jq -r --arg n "$name" --arg theme "$theme_line" \

@@ -240,6 +240,7 @@ Completes: criterion 6
 | R | Review: the preview still draws the removed rofi theme picker (delete message, Alt+BackSpace hint) | ACCEPT: new step R.7 | The user chose a neutral rofi menu on 2026-11-26. rofi stays a themed app. |
 | 1 | Move the xdg() helper of download.rs and its 3 folders into paths.rs | ACCEPT: new step P1.5 | Criterion 3 for the Rust code. Small, no behavior change. |
 | 1 | Rename one of the two fonts_dir functions | DONE in the review (download::installed_fonts_dir) | Audience test: same name, different meaning. |
+| 2 | One place for the share folder and the state folders, also for the hooks (share_dir, gtk_settings_file, ghostty_themes_dir) | DONE in the review | Criterion 3 for the scripts. Small. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
@@ -252,7 +253,7 @@ Completes: criterion 6
 | Phase 1 steps | done |
 | Phase 1 review | done |
 | Phase 2 steps | done |
-| Phase 2 review | open |
+| Phase 2 review | done |
 | Phase 3 steps | open |
 | Phase 3 review | open |
 | Phase 4 steps | open |

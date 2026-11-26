@@ -4,14 +4,17 @@
 # ~/.config/gtk-3.0/settings.ini and ~/.config/gtk-4.0/settings.ini.
 # Usage: gtk-font.sh FONTS_FILE SHARE_DIR
 #   FONTS_FILE  JSON object with the three fonts (see lib/integrations.sh)
-#   SHARE_DIR   the share folder (not used here)
+#   SHARE_DIR   the share folder (it leads to scripts/lib/paths.sh)
 fonts=$1
+# paths.sh is beside the share folder, in the checkout and in the package.
+# shellcheck disable=SC1091 # found at run time, relative to SHARE_DIR
+here=$2/../scripts; . "$here/lib/paths.sh" # gtk_settings_file
 { read -r ui; read -r ui_size; } < <(jq -r '.proportional.family, .proportional.size' "$fonts")
 
 # GTK 3 and 4: set gtk-font-name in [Settings], keeping any other settings.
 # Apps pick it up when they next start.
 for v in 3.0 4.0; do
-  ini="$HOME/.config/gtk-$v/settings.ini"
+  ini=$(gtk_settings_file "$v")
   if [ -L "$ini" ]; then
     echo "warning: $ini is a link (managed elsewhere?), not changing it" >&2
     continue
