@@ -29,7 +29,7 @@ If you get no scope, review the full diff.
       - unclear names
       - implicit framework behavior without a comment that gives the location of the wiring
       - an abstraction that adds layers without a real benefit
-   3. **Goal:** code that works against the goal, or changes that are not related to the goal or to the step. In a `[removal]` step: a changed test or golden file that is not about the removed behavior, or a removed part that the documentation still describes.
+   3. **Goal:** code that works against the goal, or changes that are not related to the goal or to the step. A commit that is not atomic: it mixes unrelated changes, or a revert of it alone would break the project. Exception: a change group with `Change-Group:` trailers. Then check that the first and the last commit are marked, and that the last one leaves a working project. In a `[removal]` step: a changed test or golden file that is not about the removed behavior, or a removed part that the documentation still describes.
    4. **Interfaces:** an interface that exposes internals, an interface that is too broad, a dependency in the wrong direction.
    5. **Modularity:** cycles, code in the wrong location, low cohesion.
    6. **Extensibility:** conditionals that grow and that the plan said to remove. Speculative extension points that the plan did not request.

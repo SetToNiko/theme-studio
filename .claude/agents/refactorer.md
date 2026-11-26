@@ -58,7 +58,8 @@ The project-conventions skill gives the limits, their kinds, and the exception m
   - All other tests must pass without changes.
 - Do not add new dependencies.
 - Do not commit. The refactor-kit skill commits.
-- Stay in the scope of the step. If the step is larger than the step size of the skill, check the exceptions of the skill first (moves, test data, access-path-only edits, atomic steps). If it is still too large, change nothing and propose how to divide the step.
+- Make the step atomic: when you finish, one revert of its commit must undo it completely and leave a working project. Never leave half-moved code or a second, unrelated change. If the step cannot fit in one commit, do not commit (the coordinator commits). Reply NEEDS and propose the commits of a change group: what each commit contains, and which commit first leaves a working project again.
+- Stay in the scope of the step. The step size of the skill is a guideline. Atomicity is the rule. If the step cannot be done atomically, or it contains parts that could be reverted separately, change nothing and propose how to divide it.
 
 ## Reply (12 lines or fewer)
 Start with one status word:
