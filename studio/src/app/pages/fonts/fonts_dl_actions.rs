@@ -170,9 +170,18 @@ impl App {
                     self.prefetch.measured(bytes);
                     changed = true;
                 }
-                Msg::Installed { id, result } => {
+                Msg::Installed {
+                    id,
+                    result,
+                    warning,
+                } => {
                     changed = true;
+                    let installed = result.is_ok();
                     self.finish_install(id, result);
+                    if let (true, Some(w)) = (installed, warning) {
+                        self.messages
+                            .error(format!("Installed, but {w} (it may show up late)"));
+                    }
                 }
             }
         }
@@ -348,12 +357,13 @@ impl App {
             .to_string();
         let result =
             download::install::remove_files(&crate::model::paths::installed_fonts_dir(), &id)
-                .and_then(|()| download::list::write_list(&path, list));
+                .and_then(|w| download::list::write_list(&path, list).map(|()| w));
         self.dl.listed = None;
         match result {
-            Ok(()) => self
+            Ok(None) => self
                 .messages
                 .info(format!("Removed {name} (a rebuild drops it from Nix too)")),
+            Ok(Some(w)) => self.messages.error(format!("Removed {name}, but {w}")),
             Err(e) => self.messages.error(format!("{e:#}")),
         }
         self.fonts.refresh_installed();

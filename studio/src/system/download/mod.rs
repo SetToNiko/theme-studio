@@ -77,9 +77,12 @@ pub enum Msg {
         total: u64,
     },
     /// An install finished: the list entry to record (name, value).
+    /// `warning` is set when the files are installed but a later step
+    /// (the fontconfig cache refresh) failed: the font still works.
     Installed {
         id: String,
         result: Result<(String, Value), String>,
+        warning: Option<String>,
     },
     /// A preview font is ready: the family name to draw it with.
     Preview {
@@ -103,6 +106,27 @@ pub(super) fn low(program: &str) -> Command {
     let mut c = Command::new("nice");
     c.args(["-n", "10", program]);
     c
+}
+
+/// Sends a message to the page. The page may be closed already, so that the
+/// receiver is gone; then nobody needs the message and the error is ignored.
+pub(super) fn notify(tx: &Sender<Msg>, msg: Msg) {
+    // Ignored on purpose: a closed page means nobody waits for the answer.
+    let _ = tx.send(msg);
+}
+
+/// Removes a folder and everything in it. A missing folder, or a file that
+/// stays, does not matter: this only cleans up leftovers (a failed download,
+/// a cache that is made again when needed).
+pub(super) fn remove_dir_if_present(dir: &std::path::Path) {
+    // Ignored on purpose: clean-up of leftovers; the caller has a better error to report.
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// Removes a file that may not exist (see [`remove_dir_if_present`]).
+pub(super) fn remove_file_if_present(file: &std::path::Path) {
+    // Ignored on purpose: clean-up of a leftover file.
+    let _ = std::fs::remove_file(file);
 }
 
 /// Expands a leading `~/`.

@@ -47,6 +47,7 @@ pub(super) fn fetch(url: &str, out: &Path, mut progress: impl FnMut(u64)) -> Res
                 let mut err = String::new();
                 if let Some(mut e) = child.stderr.take() {
                     use std::io::Read;
+                    // Ignored on purpose: this only adds detail to the error below.
                     let _ = e.read_to_string(&mut err);
                 }
                 bail!("{url}: {}", err.trim());
@@ -74,6 +75,7 @@ pub(super) fn cached(name: &str, url: &str) -> Result<Value> {
     }
     match get(url).and_then(|t| Ok(serde_json::from_str::<Value>(&t)?)) {
         Ok(v) => {
+            // Ignored on purpose: the cache only saves a later download; the answer `v` is good.
             let _ = std::fs::create_dir_all(download_cache_dir());
             let _ = std::fs::write(&path, v.to_string());
             Ok(v)
