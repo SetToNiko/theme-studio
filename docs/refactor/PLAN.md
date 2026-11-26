@@ -156,7 +156,7 @@ Completes: criterion 3 for the Rust code. For the scripts, the per-app paths (GT
 - [x] P2.3 Ghostty, i3, and rofi font outputs in the list | Files: `share/integrations.json`, `scripts/font-switch.sh`, `share/integrations/ghostty-font.jq`, `i3-font.jq`, `rofi-font.jq`, `scripts/lib/integrations.sh` | Target: goal 2 | Check: golden tests unchanged
 - [x] P2.4 Lock screen, GTK, and fontconfig font outputs as hooks | Files: `share/integrations.json`, `scripts/font-switch.sh`, `share/integrations/lock-font.sh`, `gtk-font.sh`, `fontconfig-font.sh`, `scripts/lib/paths.sh` | Target: goal 2 | Check: golden tests unchanged
 - [x] P2.6 One reload location: reload commands come from the list, `reload_apps` runs them one time. themes-switch reloads once for both | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `scripts/theme-switch.sh`, `scripts/font-switch.sh` (`themes-switch.sh` unchanged) | Target: rule 2 | Check: golden reload logs unchanged
-- [ ] P2.7 Extensibility check: on a temporary branch, add a sample terminal. Record `git diff --stat` | Files: `docs/refactor/SUCCESS_CRITERIA.md` | Target: goal 1 | Check: 2 files or fewer, no script logic
+- [x] P2.7 Extensibility check: on a temporary branch, add a sample terminal. Record `git diff --stat` | Files: `docs/refactor/SUCCESS_CRITERIA.md` | Target: goal 1 | Check: 2 files or fewer, no script logic
 Completes: criteria 1, 2, project rule 2
 
 ### Phase 3: Divide App by concern
@@ -251,7 +251,7 @@ Completes: criterion 6
 | Phase R review | done |
 | Phase 1 steps | done |
 | Phase 1 review | done |
-| Phase 2 steps | open |
+| Phase 2 steps | done |
 | Phase 2 review | open |
 | Phase 3 steps | open |
 | Phase 3 review | open |
