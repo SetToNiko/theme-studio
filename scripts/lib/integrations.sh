@@ -9,6 +9,11 @@
 #       writes the font output of every app. FONTS_FILE is a JSON object
 #       that font-switch.sh makes: {"monospace": {"family": "...", "size": "14"},
 #       "proportional": {...}, "icons": {...}}.
+#   reload_apps SWITCH
+#       the one place that runs app reload commands. SWITCH is "theme" or
+#       "fonts". It reloads each app that has an output for that switch and a
+#       "reload" field, in list order. The scripts call it unless NO_RESTART is
+#       set. Its exit status is the one of the last reload command.
 #
 # integrations.json is the one list of apps. Each output has:
 #   switch     which switch writes it: "theme" (theme-switch.sh) or
@@ -32,6 +37,13 @@
 #              "fonts_dir" or "fontconfig_dir" (functions of paths.sh).
 #   file       the file name in that folder
 #   generator  the file in share/integrations/
+# An app that reloads after a switch also has (on the app, not on an output):
+#   reload         the reload command as an argument array, for example
+#                  ["i3-msg", "restart"]. No shell parses it.
+#   reload_output  what happens to the command's output: "show" (default),
+#                  "hide" (drop stdout) or "hide-all" (drop stdout and stderr)
+#   note           why the command works (for people who read the list)
+# The list order is the reload order: Ghostty, then i3, then Pywalfox.
 # To add an app: add an entry to the list and put its generator file in
 # share/integrations/. No change to this file.
 
@@ -80,6 +92,23 @@ write_font_outputs() {
     esac
   done < <(jq -r '.apps[].outputs[] | select(.switch == "fonts")
     | [.kind, .dir // "-", .file // "-", .generator] | @tsv' "$(share_file integrations.json)")
+}
+
+# reload_apps SWITCH
+reload_apps() {
+  local switch=$1 line mode
+  local -a cmd
+  while IFS= read -r line; do
+    mode=$(jq -r '.[0]' <<<"$line")
+    mapfile -t cmd < <(jq -r '.[1:][]' <<<"$line")
+    case "$mode" in
+      hide) "${cmd[@]}" >/dev/null ;;
+      hide-all) "${cmd[@]}" >/dev/null 2>&1 ;;
+      *) "${cmd[@]}" ;;
+    esac
+  done < <(jq -c --arg s "$switch" '.apps[]
+    | select(.reload and any(.outputs[]; .switch == $s))
+    | [.reload_output // "show"] + .reload' "$(share_file integrations.json)")
 }
 
 # run_hook_to_file TARGET COMMAND...: runs COMMAND and saves its stdout as TARGET.

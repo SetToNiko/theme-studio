@@ -2,7 +2,20 @@
   "version": 1,
   "apps": [
     {
+      "name": "ghostty",
+      "reload": ["pkill", "-USR2", "-f", "^ghostty( |$)"],
+      "reload_output": "show",
+      "note": "Ghostty reloads its config on SIGUSR2",
+      "outputs": [
+        { "kind": "hook", "switch": "theme", "dir": "colors_dir", "file": "ghostty", "generator": "ghostty-colors.sh" },
+        { "kind": "jq", "switch": "fonts", "dir": "fonts_dir", "file": "ghostty", "generator": "ghostty-font.jq" }
+      ]
+    },
+    {
       "name": "i3",
+      "reload": ["i3-msg", "restart"],
+      "reload_output": "hide",
+      "note": "the restart applies the colours, the window-title font and the bar font",
       "outputs": [
         { "kind": "jq", "switch": "theme", "dir": "colors_dir", "file": "i3", "generator": "i3-colors.jq" },
         { "kind": "jq", "switch": "fonts", "dir": "fonts_dir", "file": "i3", "generator": "i3-font.jq" }
@@ -19,13 +32,6 @@
       "name": "shell",
       "outputs": [
         { "kind": "jq", "switch": "theme", "dir": "colors_dir", "file": "colors.sh", "generator": "shell-colors.jq" }
-      ]
-    },
-    {
-      "name": "ghostty",
-      "outputs": [
-        { "kind": "hook", "switch": "theme", "dir": "colors_dir", "file": "ghostty", "generator": "ghostty-colors.sh" },
-        { "kind": "jq", "switch": "fonts", "dir": "fonts_dir", "file": "ghostty", "generator": "ghostty-font.jq" }
       ]
     },
     {
@@ -48,6 +54,8 @@
     },
     {
       "name": "pywalfox",
+      "reload": ["pywalfox", "update"],
+      "reload_output": "hide-all",
       "outputs": [
         { "kind": "jq", "switch": "theme", "dir": "cache_dir", "file": "colors.json", "generator": "pywalfox-colors.jq" }
       ]

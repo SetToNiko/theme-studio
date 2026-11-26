@@ -106,6 +106,7 @@ Advanced techniques that the refactor adds:
 | 20 | `studio/src/paths.rs` | `studio_config_dir`, `history_dir`, `timing_log_dir` have no tests for their different XDG rules (finding 18). Tests need care: env vars in parallel tests (Phase 1 review) | T4 (testability) | M |
 | 21 | `config::dir()`, `history::default_dir()` | One-line wrappers around paths.rs functions since P1.2. Callers could use paths:: directly (Phase 1 review) | T4 | L |
 | 22 | `studio/src/preview.rs:338` | Reads `XDG_RUNTIME_DIR` (else the temp folder) for the preview's runtime files outside paths.rs (found in P1.5) | rule 1 | L |
+| 23 | `scripts/theme-switch.sh` (and `reload_apps`) | The exit code of a switch is the exit code of its last reload command. Without Pywalfox, theme-switch exits 127 although all files were written. A caller that checks the exit code (the studio, home-manager activation) sees a failed switch (found in P2.6, kept unchanged) | correctness, T7 | M |
 
 ## 5. Test coverage
 - Rust: 119 tests in 25 modules (115 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
@@ -154,7 +155,7 @@ Completes: criterion 3 for the Rust code. For the scripts, the per-app paths (GT
 - [x] P2.2 colors.sh, Ghostty, and Pywalfox theme outputs in the list (Ghostty theme-line check as a hook; `share/pywalfox-colors.jq` moves to `share/integrations/` with `git mv`) | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `share/integrations/shell-colors.jq`, `share/integrations/ghostty-colors.sh`, `scripts/theme-switch.sh` | Target: goal 2 | Check: golden tests unchanged
 - [x] P2.3 Ghostty, i3, and rofi font outputs in the list | Files: `share/integrations.json`, `scripts/font-switch.sh`, `share/integrations/ghostty-font.jq`, `i3-font.jq`, `rofi-font.jq`, `scripts/lib/integrations.sh` | Target: goal 2 | Check: golden tests unchanged
 - [x] P2.4 Lock screen, GTK, and fontconfig font outputs as hooks | Files: `share/integrations.json`, `scripts/font-switch.sh`, `share/integrations/lock-font.sh`, `gtk-font.sh`, `fontconfig-font.sh`, `scripts/lib/paths.sh` | Target: goal 2 | Check: golden tests unchanged
-- [ ] P2.6 One reload location: reload commands come from the list, `reload_apps` runs them one time. themes-switch reloads once for both | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: rule 2 | Check: golden reload logs unchanged
+- [x] P2.6 One reload location: reload commands come from the list, `reload_apps` runs them one time. themes-switch reloads once for both | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `scripts/theme-switch.sh`, `scripts/font-switch.sh` (`themes-switch.sh` unchanged) | Target: rule 2 | Check: golden reload logs unchanged
 - [ ] P2.7 Extensibility check: on a temporary branch, add a sample terminal. Record `git diff --stat` | Files: `docs/refactor/SUCCESS_CRITERIA.md` | Target: goal 1 | Check: 2 files or fewer, no script logic
 Completes: criteria 1, 2, project rule 2
 

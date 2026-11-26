@@ -22,7 +22,7 @@ out=$(fonts_dir)
 # shellcheck disable=SC1091 # the other lib files are not followed either
 . "$here/lib/data.sh" # json_data (either file layout)
 # shellcheck disable=SC1091 # the lib files are found at run time, beside the script
-. "$here/lib/integrations.sh" # write_font_outputs
+. "$here/lib/integrations.sh" # write_font_outputs, reload_apps
 
 name=${1:-}
 [ -n "$name" ] || { echo "usage: font-switch.sh <font preset name>" >&2; exit 2; }
@@ -80,6 +80,5 @@ jq -n --arg m "$mono" --arg ms "$mono_size" --arg u "$ui" --arg us "$ui_size" \
 write_font_outputs "$fonts_json"
 
 if [ -z "$NO_RESTART" ]; then
-  pkill -USR2 -f '^ghostty( |$)'   # Ghostty reloads its config on SIGUSR2
-  i3-msg restart >/dev/null        # titles and bar
+  reload_apps fonts
 fi
