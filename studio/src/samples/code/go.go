@@ -46,7 +46,7 @@ func loadThemes(path string) ([]Theme, error) {
 }
 
 func main() {
-	themes, err := loadThemes(os.ExpandEnv("$HOME/dotfiles-nixos/configs/themes.json"))
+	themes, err := loadThemes(os.ExpandEnv("$XDG_CONFIG_HOME/theme-studio/themes.json"))
 	if errors.Is(err, ErrNoThemes) {
 		fmt.Println("nothing yet")
 		return

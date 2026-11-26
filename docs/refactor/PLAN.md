@@ -141,7 +141,7 @@ Completes: the removals of GOAL.md. Criterion 3 for the scripts (the system path
 - [x] P1.1 One `home()` and the output folders in paths.rs: remove the 4 copies of `home()`, add `colors_dir`, `fonts_dir`, `host_fonts_file`, move the `/etc/fonts/fonts.conf` constant | Files: `paths.rs`, `store.rs`, `fonts.rs`, `theme.rs`, `download.rs` | Target: goal 3, T2, rule 1 | Check: tests
 - [x] P1.2 Config and state folders through paths.rs | Files: `paths.rs`, `config.rs`, `history.rs`, `fonts.rs` | Target: rule 1 | Check: tests
 - [x] P1.3 Script folders in paths.sh: `colors_dir`, `fonts_dir`, `cache_dir` | Files: `scripts/lib/paths.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: goal 3 | Check: golden tests
-- [ ] P1.4 Sample text: replace the old dotfiles path in the Go sample with `$XDG_CONFIG_HOME/theme-studio/themes.json` | Files: `studio/src/samples/code/go.go` | Target: success criteria | Check: grep = 0, tests
+- [x] P1.4 Sample text: replace the old dotfiles path in the Go sample with `$XDG_CONFIG_HOME/theme-studio/themes.json` | Files: `studio/src/samples/code/go.go` | Target: success criteria | Check: grep = 0, tests
 Completes: criterion 3
 
 ### Phase 2: App integrations as data
@@ -235,7 +235,7 @@ Completes: criterion 6
 | Phase 0 safety net | done |
 | Phase R steps | done |
 | Phase R review | done |
-| Phase 1 steps | open |
+| Phase 1 steps | done |
 | Phase 1 review | open |
 | Phase 2 steps | open |
 | Phase 2 review | open |
