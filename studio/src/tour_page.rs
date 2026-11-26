@@ -10,7 +10,7 @@ use std::sync::atomic::AtomicBool;
 
 use ratatui_image::protocol::StatefulProtocol;
 
-use crate::fonts::SampleRenderer;
+use crate::fonts::render::SampleRenderer;
 use crate::samples::Kind;
 use crate::settle::Settle;
 use crate::tournament::{Entrant, Rng, Tournament};

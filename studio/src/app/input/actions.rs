@@ -255,9 +255,9 @@ impl App {
                 self.fonts.end_pick();
                 self.fonts.focus = FontFocus::Slots;
                 self.dl.tab = if r == 1 {
-                    crate::fonts_dl::DlTab::Google
+                    crate::fonts::download_page::DlTab::Google
                 } else {
-                    crate::fonts_dl::DlTab::Nerd
+                    crate::fonts::download_page::DlTab::Nerd
                 };
                 self.dl.sel = 0;
                 self.page = Page::Downloads;

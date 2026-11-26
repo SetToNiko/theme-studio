@@ -10,7 +10,7 @@ use ratatui_image::{Resize, StatefulImage};
 
 use crate::app::App;
 use crate::app::state::nav::Side;
-use crate::fonts::ROLE_USE;
+use crate::fonts::presets::ROLE_USE;
 use crate::fonts::types::{CHIPS, FontFocus, ROLE_NAMES, ROLE_NEEDS, Row};
 use crate::hit::{Target, hover};
 use crate::ui::pane_chrome::pane_title;

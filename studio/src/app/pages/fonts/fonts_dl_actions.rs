@@ -3,7 +3,7 @@
 //!
 //! This is another `impl App { ... }` block (see `behaviour_actions.rs` for
 //! the same style). The page's own data (`DlPage`, `DlTab`, `DlRow`,
-//! `DlStatus`, the tab and chip lists) stays in `fonts_dl.rs`; this file only
+//! `DlStatus`, the tab and chip lists) stays in `fonts/download_page.rs`; this file only
 //! holds the methods that need the whole `App`.
 
 use std::path::PathBuf;
@@ -15,7 +15,7 @@ use serde_json::Value;
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Overlay, Page};
 use crate::download::{self, Catalogue, Entry, Msg, Source};
-use crate::fonts_dl::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb, norm};
+use crate::fonts::download_page::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb, norm};
 use crate::keymap::action::Action;
 
 impl App {
@@ -227,7 +227,7 @@ impl App {
     /// After filling roles from a family (`F`, `r` on a role, a tournament
     /// result's 1 / 2 / 3): applies what changed, and offers the family's
     /// Nerd Font when it has no fitting face for a role.
-    pub fn after_fill(&mut self, fill: crate::fonts_pick::Fill) {
+    pub fn after_fill(&mut self, fill: crate::fonts::pick::Fill) {
         let offer = if fill.missing.is_empty() {
             None
         } else {
@@ -243,7 +243,7 @@ impl App {
             self.overlay = Overlay::Ask {
                 question: format!(
                     "{group} has no {} installed. Download {}{size}?",
-                    crate::fonts_pick::faces(&missing),
+                    crate::fonts::pick::faces(&missing),
                     e.family
                 ),
                 then: Deferred::NerdForRoles {
@@ -256,7 +256,7 @@ impl App {
     }
 
     /// Saves and applies a fill if a role changed; otherwise says why not.
-    fn apply_fill(&mut self, fill: crate::fonts_pick::Fill) {
+    fn apply_fill(&mut self, fill: crate::fonts::pick::Fill) {
         if fill.changed {
             self.apply_picked_fonts(fill.msg);
         } else {
@@ -271,7 +271,7 @@ impl App {
         if self.dl.catalogue.is_none() && !self.dl.loading {
             self.dl.start_catalogue_load();
         }
-        let key = norm(crate::fonts_pick::base_family(group));
+        let key = norm(crate::fonts::pick::base_family(group));
         self.dl
             .catalogue
             .as_ref()?

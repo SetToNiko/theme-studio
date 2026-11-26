@@ -1550,7 +1550,7 @@ fn settings_groups_fold_and_only_names_are_underlined() {
 #[test]
 fn download_page_lists_searches_and_removes() {
     use crate::download::{Catalogue, Entry, Source};
-    use crate::fonts_dl::{DlRow, DlStatus, DlTab};
+    use crate::fonts::download_page::{DlRow, DlStatus, DlTab};
     use crate::hit::Target as T;
     let store = temp_store("dl");
     let dir = store.dir.clone();
@@ -2316,7 +2316,7 @@ fn installed_fonts_preview_from_their_files() {
     )
     .unwrap();
     app.page = Page::Downloads;
-    app.dl.tab = crate::fonts_dl::DlTab::Installed;
+    app.dl.tab = crate::fonts::download_page::DlTab::Installed;
     app.dl.listed = None;
     app.dl.sel = 0;
     // the highlighted installed font is the preview's, with code by default
@@ -2429,7 +2429,7 @@ fn a_tournament_of_installed_fonts_from_setup_to_results() {
         })
         .collect();
     app.page = Page::Downloads;
-    app.dl.tab = crate::fonts_dl::DlTab::Tournament;
+    app.dl.tab = crate::fonts::download_page::DlTab::Tournament;
     let screen = |app: &mut App| render(app, 160, 45);
     assert!(screen(&mut app).contains("Installed monospaced"));
     // the installed monospaced pool: what it takes, then it starts

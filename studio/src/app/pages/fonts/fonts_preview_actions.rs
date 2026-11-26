@@ -3,14 +3,14 @@
 //!
 //! This is another `impl App { ... }` block (see `fonts_dl_actions.rs` for
 //! the same style). The preview's own data (`FontPreview`, its text kinds,
-//! pause and renderer) and the dropdown lists stay in `fonts_preview.rs`;
+//! pause and renderer) and the dropdown lists stay in `fonts/preview_page.rs`;
 //! this file only holds the methods that need the whole `App`.
 
 use crate::app::App;
 use crate::app::state::nav::{Overlay, Page};
 use crate::download::{self, Entry, Source};
-use crate::fonts_dl::{DlRow, DlTab, mb};
-use crate::fonts_preview::FontPreview;
+use crate::fonts::download_page::{DlRow, DlTab, mb};
+use crate::fonts::preview_page::FontPreview;
 use crate::keymap::action::Action;
 use crate::samples::{self, KINDS, Kind, LANGS};
 

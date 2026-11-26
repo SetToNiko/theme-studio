@@ -7,30 +7,7 @@
 //! straight away.
 
 use crate::fonts::FontsTab;
-use crate::fonts::types::{FontFocus, Installed, ROLE_NAMES, ROLE_NEEDS, Row};
-
-fn kind(f: &Installed) -> &'static str {
-    if f.family.ends_with("Nerd Font Mono") {
-        "nf-mono"
-    } else if f.family.ends_with("Nerd Font Propo") {
-        "nf-propo"
-    } else if f.nerd {
-        "nf"
-    } else if f.mono {
-        "mono"
-    } else {
-        "propo"
-    }
-}
-
-/// Whether a font meets a role's requirement.
-pub fn fits(role: usize, f: &Installed) -> bool {
-    match role {
-        0 => kind(f) == "nf-mono",
-        1 => !f.mono,
-        _ => kind(f) == "nf-propo",
-    }
-}
+use crate::fonts::types::{FontFocus, Installed, ROLE_NAMES, ROLE_NEEDS, Row, fits};
 
 /// Letters and digits only, lower case: how family names are compared.
 pub fn norm(s: &str) -> String {
@@ -200,36 +177,5 @@ impl FontsTab {
             ),
         };
         fill
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::fonts::types::Installed;
-
-    fn font(family: &str, mono: bool, nerd: bool) -> Installed {
-        Installed {
-            family: family.into(),
-            mono,
-            nerd,
-            bitmap: false,
-            special: false,
-        }
-    }
-
-    #[test]
-    fn kinds() {
-        assert_eq!(
-            kind(&font("JetBrainsMono Nerd Font Mono", true, true)),
-            "nf-mono"
-        );
-        assert_eq!(
-            kind(&font("JetBrainsMono Nerd Font Propo", false, true)),
-            "nf-propo"
-        );
-        assert_eq!(kind(&font("JetBrainsMono Nerd Font", true, true)), "nf");
-        assert_eq!(kind(&font("JetBrains Mono", true, false)), "mono");
-        assert_eq!(kind(&font("Inter", false, false)), "propo");
     }
 }

@@ -95,9 +95,11 @@ fn migrate(mut v: Value) -> Value {
                 *ctx = old
                     .into_iter()
                     .map(|(k, keys)| {
-                        let role = k
-                            .strip_prefix("use-for-")
-                            .and_then(|r| crate::fonts::OLD_ROLES.iter().position(|o| *o == r));
+                        let role = k.strip_prefix("use-for-").and_then(|r| {
+                            crate::fonts::presets::OLD_ROLES
+                                .iter()
+                                .position(|o| *o == r)
+                        });
                         match role {
                             Some(r) => (format!("use-for-{}", crate::fonts::types::ROLES[r]), keys),
                             None => (k, keys),
@@ -235,7 +237,7 @@ pub fn load(dir: &Path, write: bool) -> Loaded {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fonts::Spacing;
+    use crate::fonts::filters::Spacing;
     use crate::keymap::action::Action;
     use crate::keymap::key::Key;
     use crate::keymap::{Context, Lookup};
