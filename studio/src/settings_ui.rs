@@ -788,7 +788,7 @@ pub fn draw_save_buttons(f: &mut Frame, app: &mut App, area: Rect, changes: usiz
     let key = |a: Action| {
         app.keymap
             .key_for(&[Context::Settings, Context::Global], a)
-            .map(|k| crate::ui::friendly(&k))
+            .map(|k| crate::ui::widgets::friendly(&k))
             .unwrap_or_default()
     };
     let note = format!(" ● {changes} unsaved ");

@@ -13,13 +13,13 @@ use crate::app::state::nav::Side;
 use crate::fonts::ROLE_USE;
 use crate::fonts::types::{CHIPS, FontFocus, ROLE_NAMES, ROLE_NEEDS, Row};
 use crate::hit::{Target, hover};
-use crate::ui::pane_title;
-use crate::widgets::panel_number;
+use crate::ui::pane_chrome::pane_title;
+use crate::ui::widgets::panel_number;
 
 fn block(app: &App, area: Rect, title: Line<'static>, focused: bool) -> Block<'static> {
     Block::bordered()
         .title(title)
-        .border_style(crate::ui::pane_border(app, area, focused))
+        .border_style(crate::ui::pane_chrome::pane_border(app, area, focused))
 }
 
 /// ¹ the font roles and ² the installed fonts (the fonts column; the sample
@@ -82,7 +82,7 @@ pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rec
             &[crate::keymap::Context::FontRoles],
             crate::keymap::Action::FixRoleFont,
         )
-        .map(|k| crate::ui::friendly(&k));
+        .map(|k| crate::ui::widgets::friendly(&k));
     // the names are as wide as the longest
     let name_w = ROLE_NAMES.iter().map(|n| n.len()).max().unwrap_or(0);
     for (i, font) in t.preset.fonts.iter().enumerate() {
@@ -377,7 +377,7 @@ pub fn draw_sample(f: &mut Frame, app: &mut App, area: Rect) {
         && app.fonts.focus == FontFocus::Sample;
     let b = Block::bordered()
         .title(title)
-        .border_style(crate::ui::pane_border(app, area, focused));
+        .border_style(crate::ui::pane_chrome::pane_border(app, area, focused));
     let inner = b.inner(area);
     app.hits.add(inner, Target::PaneBody(3));
     f.render_widget(b, area);
