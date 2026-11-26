@@ -232,16 +232,16 @@ fn renders_at_full_size_and_warns_when_small() {
     // editing a colour shows the picker; Esc hides it again
     press(&mut app, "gj\n"); // g is the Base group row; j the first colour
     assert!(render(&mut app, 160, 45).contains("hex"));
-    assert!(app.picker_visible);
+    assert!(app.layout.picker_visible);
     press(&mut app, "\x1b");
-    assert!(!app.picker_visible);
+    assert!(!app.layout.picker_visible);
     // <leader>cp toggles it, <leader>fs the font sample
     press(&mut app, " cp");
-    assert!(app.picker_visible);
+    assert!(app.layout.picker_visible);
     press(&mut app, " cp");
-    assert!(!app.picker_visible);
+    assert!(!app.layout.picker_visible);
     press(&mut app, " 1 fs");
-    assert!(!app.sample_visible);
+    assert!(!app.layout.sample_visible);
     press(&mut app, " 4");
     // too small: what's needed
     press(&mut app, "o?");
@@ -265,13 +265,13 @@ fn renders_at_full_size_and_warns_when_small() {
 fn number_keys_jump_between_panels() {
     let mut app = test_app(temp_store("panels"), Start::Named("One".into()));
     render(&mut app, 200, 50); // lays out the preview windows
-    assert!(!app.picker_visible, "the picker starts hidden");
+    assert!(!app.layout.picker_visible, "the picker starts hidden");
     press(&mut app, " 5");
     assert_eq!((app.side, app.focus), (Side::Colours, Focus::Square));
-    assert!(app.picker_visible, "5 shows it");
+    assert!(app.layout.picker_visible, "5 shows it");
     press(&mut app, " 4");
     assert_eq!(app.focus, Focus::List);
-    assert!(!app.picker_visible, "leaving it hides it again");
+    assert!(!app.layout.picker_visible, "leaving it hides it again");
     press(&mut app, " 1");
     assert_eq!(
         (app.side, app.fonts.focus),
@@ -421,7 +421,7 @@ fn fonts_tab_edits_saves_and_opens_presets() {
     assert!(!app.dirty());
     press(&mut app, " 5");
     assert_eq!((app.side, app.focus), (Side::Colours, Focus::Square));
-    assert!(app.picker_visible);
+    assert!(app.layout.picker_visible);
     // the Fonts tab draws at every size (no image support in tests)
     let screen = render(&mut app, 160, 45);
     for t in [
@@ -499,7 +499,7 @@ fn esc_discards_picker_changes_enter_keeps_them() {
     );
     press(&mut app, "\x1b");
     assert_eq!(app.editor.palette, before);
-    assert!(!app.dirty() && !app.picker_visible);
+    assert!(!app.dirty() && !app.layout.picker_visible);
     assert!(
         app.message
             .as_ref()
@@ -622,7 +622,7 @@ fn hover_highlights_and_clicks_through_the_click_map() {
     // a colour row twice opens the picker; dragging in the square edits
     click_on(&mut app, T::ColourRow(1)); // bg0
     click_on(&mut app, T::ColourRow(1));
-    assert!(app.picker_visible && app.focus == Focus::Square);
+    assert!(app.layout.picker_visible && app.focus == Focus::Square);
     draw(&mut app);
     let before = app.editor.palette.get("bg0");
     let sq = app.hits.rect_of(T::Square).unwrap();
@@ -679,7 +679,7 @@ fn borders_drag_and_resize_mode_moves_edges() {
         b.x,
         b.y + 5,
     );
-    assert_eq!(app.dragging, Some(B::FontsColours));
+    assert_eq!(app.layout.dragging, Some(B::FontsColours));
     mouse(
         &mut app,
         MouseEventKind::Drag(MouseButton::Left),
@@ -692,7 +692,7 @@ fn borders_drag_and_resize_mode_moves_edges() {
         b.x + 10,
         b.y + 5,
     );
-    assert_eq!(app.dragging, None);
+    assert_eq!(app.layout.dragging, None);
     render(&mut app, 200, 50);
     assert_eq!(
         app.hits.rect_of(T::Border(B::FontsColours)).unwrap().x,
@@ -700,7 +700,7 @@ fn borders_drag_and_resize_mode_moves_edges() {
     );
     // resize mode on the colour list: l moves its right edge, = resets, Esc leaves
     press(&mut app, " 4 r");
-    assert!(app.resize_mode);
+    assert!(app.layout.resize_mode);
     let before = app.hits.rect_of(T::Border(B::ColoursPreview)).unwrap().x;
     press(&mut app, "lll");
     render(&mut app, 200, 50);
@@ -719,9 +719,9 @@ fn borders_drag_and_resize_mode_moves_edges() {
     press(&mut app, "j");
     press(&mut app, "=");
     render(&mut app, 200, 50);
-    assert_eq!(app.sizes, crate::config::Sizes::default());
+    assert_eq!(app.layout.sizes, crate::config::Sizes::default());
     press(&mut app, "\x1b");
-    assert!(!app.resize_mode);
+    assert!(!app.layout.resize_mode);
     // keys work normally again
     press(&mut app, "j");
     assert_eq!(app.row_sel, 2);
@@ -730,9 +730,9 @@ fn borders_drag_and_resize_mode_moves_edges() {
 #[test]
 fn extreme_sizes_render_at_every_window_size() {
     let mut app = test_app(temp_store("extreme"), Start::Named("One".into()));
-    app.picker_visible = true;
+    app.layout.picker_visible = true;
     for share in [0.0, 0.02, 0.5, 0.98, 1.0] {
-        app.sizes = crate::config::Sizes {
+        app.layout.sizes = crate::config::Sizes {
             fonts_width: share,
             colours_width: share,
             sample_height: share,
@@ -1017,7 +1017,7 @@ fn settings_behaviour_tab_edits_then_saves() {
     assert_eq!(app.settings.layout.tabs, "top");
     assert_eq!(on_disk(&dir).settings.layout.tabs, "top");
     // the current pane sizes become the default when saved
-    app.sizes.fonts_width = 0.4;
+    app.layout.sizes.fonts_width = 0.4;
     app.settings_page.bh_sel = rows.iter().position(|r| *r == BhRow::SaveSizes).unwrap();
     press(&mut app, "\ns");
     assert_eq!(on_disk(&dir).settings.layout.sizes.fonts_width, 0.4);
@@ -2023,7 +2023,7 @@ fn palette_list_hangs_from_its_row_and_previews() {
     click_on(&mut app, T::PaletteMenu);
     assert!(matches!(app.overlay, Overlay::Open { .. }));
     render(&mut app, 160, 45);
-    let pane = app.palette_pane.unwrap();
+    let pane = app.layout.palette_pane.unwrap();
     assert_eq!(app.hits.rect_of(T::OverlayRow(0)).unwrap().y, pane.y + 5);
     // moving shows the highlighted palette; it isn't an unsaved edit
     down(&mut app);
@@ -2136,22 +2136,22 @@ fn hints_and_previews_toggle_per_page() {
     // Main: <leader>tp hides the preview; the columns take its room
     assert!(screen(&mut app).contains("Preview"));
     press(&mut app, " tp");
-    assert!(!app.main_preview_visible);
+    assert!(!app.layout.main_preview_visible);
     let s = screen(&mut app);
     assert!(!s.contains("Space 6 / Space 7"), "{s}");
-    let pane = app.palette_pane.unwrap();
+    let pane = app.layout.palette_pane.unwrap();
     assert_eq!(pane.x + pane.width, 160, "colours reach the right edge");
     // jumping to nvim shows it again
     press(&mut app, " 6");
-    assert!(app.main_preview_visible);
+    assert!(app.layout.main_preview_visible);
     // (nvim has the keyboard now: take it back)
     app.preview.focus = None;
     press(&mut app, " tp");
     // the Fonts page's preview is its own
     app.on_key(KeyEvent::new(KeyCode::F(2), KeyModifiers::NONE));
-    assert!(app.fonts_preview_visible && !app.main_preview_visible);
+    assert!(app.layout.fonts_preview_visible && !app.layout.main_preview_visible);
     press(&mut app, " tp");
-    assert!(!app.fonts_preview_visible && !app.main_preview_visible);
+    assert!(!app.layout.fonts_preview_visible && !app.layout.main_preview_visible);
     // <leader>th hides the key hints anywhere; messages still show
     assert!(screen(&mut app).contains("? keys"));
     press(&mut app, " th");
@@ -2173,7 +2173,11 @@ fn hints_and_previews_toggle_per_page() {
     let mut app2 =
         App::with_config(Store::at(dir.clone()), Start::Named("One".into()), loaded).unwrap();
     app2.preview.set_headless();
-    assert!(!app2.hints_visible && !app2.main_preview_visible && app2.fonts_preview_visible);
+    assert!(
+        !app2.layout.hints_visible
+            && !app2.layout.main_preview_visible
+            && app2.layout.fonts_preview_visible
+    );
     std::fs::remove_dir_all(dir).unwrap();
 }
 
@@ -2232,42 +2236,42 @@ fn keyboard_reaches_the_palette_dropdown_and_the_page_tabs() {
     assert_eq!(app.row_sel, 0);
     // up from the first row: the dropdown row; Enter opens the list
     key(&mut app, KeyCode::Up);
-    assert!(app.palette_menu_focused);
+    assert!(app.layout.palette_menu_focused);
     key(&mut app, KeyCode::Enter);
     assert!(matches!(app.overlay, Overlay::Open { .. }));
     key(&mut app, KeyCode::Esc);
-    assert!(app.palette_menu_focused, "back on the row");
+    assert!(app.layout.palette_menu_focused, "back on the row");
     // up again: the page tabs; right changes pages, the keyboard stays
     key(&mut app, KeyCode::Up);
-    assert!(app.page_tabs_focused);
+    assert!(app.layout.page_tabs_focused);
     let s = render(&mut app, 160, 45);
     assert!(s.contains("F1 Main"), "{s}");
     key(&mut app, KeyCode::Right);
     assert_eq!(app.page, Page::Downloads);
-    assert!(app.page_tabs_focused);
+    assert!(app.layout.page_tabs_focused);
     // down: into the page (its tabs are on top, so the list)
     key(&mut app, KeyCode::Down);
-    assert!(!app.page_tabs_focused && !app.dl.tabs_focused);
+    assert!(!app.layout.page_tabs_focused && !app.dl.tabs_focused);
     // up: the page's tabs, then the page tabs; left back to Main
     key(&mut app, KeyCode::Up);
     assert!(app.dl.tabs_focused);
     key(&mut app, KeyCode::Up);
-    assert!(app.page_tabs_focused);
+    assert!(app.layout.page_tabs_focused);
     key(&mut app, KeyCode::Left);
     assert_eq!(app.page, Page::Main);
     key(&mut app, KeyCode::Down);
-    assert!(!app.page_tabs_focused && app.palette_menu_focused);
+    assert!(!app.layout.page_tabs_focused && app.layout.palette_menu_focused);
     key(&mut app, KeyCode::Down);
-    assert!(!app.palette_menu_focused && app.row_sel == 0);
+    assert!(!app.layout.palette_menu_focused && app.row_sel == 0);
     // tabs at the bottom: up from the dropdown row goes nowhere
     app.settings.layout.tabs = "bottom".into();
     key(&mut app, KeyCode::Up);
     key(&mut app, KeyCode::Up);
-    assert!(app.palette_menu_focused && !app.page_tabs_focused);
+    assert!(app.layout.palette_menu_focused && !app.layout.page_tabs_focused);
     // a click anywhere takes the keyboard off the page tabs
-    app.page_tabs_focused = true;
+    app.layout.page_tabs_focused = true;
     mouse(&mut app, MouseEventKind::Down(MouseButton::Left), 1, 1);
-    assert!(!app.page_tabs_focused);
+    assert!(!app.layout.page_tabs_focused);
     std::fs::remove_dir_all(dir).unwrap();
 }
 

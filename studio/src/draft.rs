@@ -145,7 +145,7 @@ impl App {
         }
         // new default pane sizes apply now too
         if self.settings.layout.sizes != old_sizes {
-            self.sizes = self.settings.layout.sizes.clone();
+            self.layout.sizes = self.settings.layout.sizes.clone();
         }
         if errors.is_empty() {
             self.notify_saved("Saved");
@@ -365,18 +365,18 @@ mod tests {
     fn save_applies_new_default_pane_sizes_to_the_running_layout() {
         let (mut app, _) = test_app("save-sizes");
         app.with_draft(|a| a.settings.layout.sizes.fonts_width = 0.123);
-        assert_ne!(app.sizes.fonts_width, 0.123);
+        assert_ne!(app.layout.sizes.fonts_width, 0.123);
         app.settings_save();
-        assert_eq!(app.sizes.fonts_width, 0.123);
+        assert_eq!(app.layout.sizes.fonts_width, 0.123);
     }
 
     #[test]
     fn save_keeps_running_sizes_when_the_default_sizes_did_not_change() {
         let (mut app, _) = test_app("save-keep-sizes");
-        app.sizes.fonts_width = 0.77; // the user dragged a border
+        app.layout.sizes.fonts_width = 0.77; // the user dragged a border
         flip_hide_bitmap(&mut app);
         app.settings_save();
-        assert_eq!(app.sizes.fonts_width, 0.77);
+        assert_eq!(app.layout.sizes.fonts_width, 0.77);
     }
 
     #[test]

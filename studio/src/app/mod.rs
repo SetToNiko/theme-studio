@@ -1,5 +1,6 @@
 //! Editor state and input handling.
 
+mod layout;
 mod palette_editor;
 
 use std::io::Write;
@@ -21,6 +22,7 @@ use crate::palette::{self, GROUPS, Palette};
 use crate::preview::{Mode as PreviewMode, PaneId, Preview};
 use crate::store::{Store, TerminalMap};
 use crate::theme::ThemeStore;
+use layout::Layout;
 use palette_editor::PaletteEditor;
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
@@ -156,6 +158,8 @@ pub struct App {
     pub is_new: bool,
     /// The palette being edited: colours, undo history, picker numbers.
     pub editor: PaletteEditor,
+    /// Pane sizes, borders, resize and drag state, and what is shown.
+    pub layout: Layout,
     /// Keys in display order (GROUPS flattened).
     pub keys: Vec<&'static str>,
     pub sel: usize,
@@ -175,34 +179,11 @@ pub struct App {
     pub overlay: Overlay,
     /// What's clickable where (from the last draw), and where the mouse is.
     pub hits: crate::hit::HitMap,
-    /// Pane sizes (shares), from settings.json; resizing changes them.
-    pub sizes: crate::config::Sizes,
-    /// The draggable borders from the last draw.
-    pub borders: Vec<crate::hit::Border>,
-    /// The border being dragged with the mouse.
-    pub dragging: Option<crate::hit::BorderId>,
-    /// Resize mode (`<leader>r`): keys move the focused pane's edges.
-    pub resize_mode: bool,
     /// The pointer is currently the hand (OSC 22).
     pointer_hand: bool,
     pub preview: Preview,
     pub side: Side,
     pub page: Page,
-    /// Three columns (false: the preview is a row underneath; no font sample).
-    pub wide: bool,
-    /// The colour picker (pane 5) is on screen.
-    pub picker_visible: bool,
-    /// The font sample (pane 3) is on screen.
-    pub sample_visible: bool,
-    /// The key hints in the status line, and the previews (Main: nvim and
-    /// the shell; Fonts page: the preview pane), for this session.
-    pub hints_visible: bool,
-    pub main_preview_visible: bool,
-    pub fonts_preview_visible: bool,
-    /// The keyboard is on the Palette pane's dropdown row, or on the page
-    /// tabs (F1 / F2 / F3).
-    pub palette_menu_focused: bool,
-    pub page_tabs_focused: bool,
     /// Cursor in the colour list (group and colour rows); `sel` is the colour.
     pub row_sel: usize,
     /// Open colour groups (indexes into GROUPS).
@@ -238,8 +219,6 @@ pub struct App {
     /// it while it's highlighted, and the palette from before the list opened.
     pub open_palettes: Vec<Option<Palette>>,
     pub open_original: Option<Palette>,
-    /// Where the Palette pane was last drawn (the palette list hangs from it).
-    pub palette_pane: Option<Rect>,
     /// A note for the status line about what the mouse is over (set while
     /// drawing, e.g. a font role.s requirement).
     pub hover_note: Option<String>,
@@ -315,15 +294,7 @@ impl App {
             preview,
             side: Side::Colours,
             page: Page::Main,
-            picker_visible: config.settings.colours.picker_shown(),
-            sample_visible: config.settings.fonts.sample_at_start != "hidden",
-            hints_visible: config.settings.layout.key_hints != "hidden",
-            main_preview_visible: config.settings.layout.main_preview != "hidden",
-            fonts_preview_visible: config.settings.layout.fonts_preview != "hidden",
-            palette_menu_focused: false,
-            page_tabs_focused: false,
             row_sel: 0,
-            wide: true,
             expanded_groups: GROUPS
                 .iter()
                 .enumerate()
@@ -347,7 +318,6 @@ impl App {
             overlay_for: For::Palette,
             open_palettes: Vec::new(),
             open_original: None,
-            palette_pane: None,
             hover_note: None,
             themes: ThemeStore {
                 dir: store.dir.clone(),
@@ -367,6 +337,7 @@ impl App {
             name,
             is_new,
             editor: PaletteEditor::new(palette),
+            layout: Layout::new(&config.settings),
             keys: GROUPS
                 .iter()
                 .flat_map(|(_, ks)| ks.iter().copied())
@@ -383,10 +354,6 @@ impl App {
             overlay: Overlay::None,
             hits: Default::default(),
             pointer_hand: false,
-            sizes: config.settings.layout.sizes.clone(),
-            borders: Vec::new(),
-            dragging: None,
-            resize_mode: false,
             quit: false,
         };
         app.load_picker();
@@ -427,7 +394,7 @@ impl App {
         while !self.quit {
             // nvim in the preview re-reads this whenever it changes
             self.preview.sync_draft(&self.editor.palette);
-            if self.page == Page::Main && self.sample_visible {
+            if self.page == Page::Main && self.layout.sample_visible {
                 self.update_sample();
             }
             // downloads: the catalogue, progress, finished installs
@@ -913,9 +880,9 @@ impl App {
     /// the page tabs if they're that way (settings: layout.tabs). True if so.
     pub fn focus_page_tabs(&mut self, up: bool) -> bool {
         if up == self.settings.layout.tabs_on_top() {
-            self.page_tabs_focused = true;
+            self.layout.page_tabs_focused = true;
         }
-        self.page_tabs_focused
+        self.layout.page_tabs_focused
     }
 
     /// Keys with the keyboard on the page tabs: left / right change pages
@@ -928,9 +895,9 @@ impl App {
         match a {
             Action::Left | Action::TabPrev => self.page = PAGES[(i + 2) % 3],
             Action::Right | Action::TabNext => self.page = PAGES[(i + 1) % 3],
-            Action::Down if top => self.page_tabs_focused = false,
-            Action::Up if !top => self.page_tabs_focused = false,
-            Action::Confirm | Action::Back => self.page_tabs_focused = false,
+            Action::Down if top => self.layout.page_tabs_focused = false,
+            Action::Up if !top => self.layout.page_tabs_focused = false,
+            Action::Confirm | Action::Back => self.layout.page_tabs_focused = false,
             // page keys, quitting and help work as anywhere
             Action::Quit
             | Action::Help
@@ -954,9 +921,9 @@ impl App {
                 match n {
                     1 => self.fonts.focus = FontFocus::Slots,
                     2 => self.fonts.open_list(),
-                    _ if !self.wide => {} // not drawn at this width
+                    _ if !self.layout.wide => {} // not drawn at this width
                     _ => {
-                        self.sample_visible = true;
+                        self.layout.sample_visible = true;
                         self.fonts.focus = FontFocus::Sample;
                     }
                 }
@@ -974,8 +941,8 @@ impl App {
             }
             6 | 7 => {
                 // jumping to a hidden preview shows it again
-                if !self.main_preview_visible {
-                    self.main_preview_visible = true;
+                if !self.layout.main_preview_visible {
+                    self.layout.main_preview_visible = true;
                     self.preview.rects.clear();
                 }
                 self.preview.mode = PreviewMode::Desktop;
@@ -1020,16 +987,7 @@ impl App {
     /// (the preview windows take the keyboard, so they're only entered on
     /// purpose: 6, 7, F12 or a click). Hidden panes are skipped.
     fn move_pane(&mut self, dx: i32, dy: i32) {
-        let columns: [Vec<u8>; 2] = [
-            [1, 2, 3]
-                .into_iter()
-                .filter(|&p| p != 3 || (self.sample_visible && self.wide))
-                .collect(),
-            [4, 5]
-                .into_iter()
-                .filter(|&p| p != 5 || self.picker_visible)
-                .collect(),
-        ];
+        let columns = self.layout.pane_columns();
         let cur = self.current_pane();
         let Some((c, r)) = columns
             .iter()
@@ -1054,7 +1012,7 @@ impl App {
     /// Shows the picker and gives it the keyboard (editing a colour).
     fn open_picker(&mut self) {
         self.side = Side::Colours;
-        self.picker_visible = true;
+        self.layout.picker_visible = true;
         if self.focus == Focus::List {
             self.focus = Focus::Square;
         }
@@ -1070,21 +1028,21 @@ impl App {
         }
         self.focus = Focus::List;
         if self.settings.colours.picker_hides_on_esc() {
-            self.picker_visible = false;
+            self.layout.picker_visible = false;
         }
     }
 
     /// The mouse is over this pane (and no pop-up or drag is in the way).
     pub fn pane_hovered(&self, area: Rect) -> bool {
         self.hits.over(area)
-            && self.dragging.is_none()
+            && self.layout.dragging.is_none()
             && matches!(self.overlay, Overlay::None | Overlay::CopyFrom { .. })
     }
 
     /// The keymap contexts for the pane with the keyboard, most specific first.
     pub fn contexts(&self) -> [Context; 3] {
         use crate::fonts::FontFocus;
-        if self.resize_mode {
+        if self.layout.resize_mode {
             return [Context::Resize; 3];
         }
         match self.page {
@@ -1109,56 +1067,6 @@ impl App {
 
     // ----- resizing --------------------------------------------------------
 
-    /// Sets the size share a border controls.
-    fn set_share(&mut self, id: crate::hit::BorderId, share: f64) {
-        use crate::hit::BorderId as B;
-        let s = &mut self.sizes;
-        let field = match id {
-            B::FontsColours => &mut s.fonts_width,
-            B::ColoursPreview => &mut s.colours_width,
-            B::ListSample => &mut s.sample_height,
-            B::ListPicker => &mut s.picker_height,
-            B::PreviewSplit => &mut s.preview_split,
-            B::TopPreview => &mut s.narrow_preview_height,
-            B::NarrowFontsColours => &mut s.narrow_fonts_width,
-        };
-        // keep a little away from the ends; the layout's minimums do the rest
-        *field = share.clamp(0.02, 0.98);
-    }
-
-    /// Moves a border to `pos` (a column for vertical borders, a row otherwise).
-    fn move_border(&mut self, id: crate::hit::BorderId, pos: u16) {
-        if let Some(b) = self.borders.iter_mut().find(|b| b.id == id) {
-            let share = b.share_at(pos);
-            // remember where it went, so quick repeats add up before the next draw
-            if b.vertical {
-                b.hit.x = pos
-            } else {
-                b.hit.y = pos
-            }
-            self.set_share(id, share);
-        }
-    }
-
-    /// The border resize mode moves for the focused pane: its side edge
-    /// (`vertical`) or its lower edge.
-    fn border_for_pane(&self, vertical: bool) -> Option<crate::hit::BorderId> {
-        use crate::hit::BorderId as B;
-        let pane = self.current_pane();
-        let id = match (self.wide, vertical, pane) {
-            (true, true, 1..=3) => B::FontsColours,
-            (true, true, _) => B::ColoursPreview,
-            (true, false, 1..=3) => B::ListSample,
-            (true, false, 4 | 5) => B::ListPicker,
-            (true, false, _) => B::PreviewSplit,
-            (false, true, 6 | 7) => B::PreviewSplit,
-            (false, true, _) => B::NarrowFontsColours,
-            (false, false, 4 | 5) if self.picker_visible => B::ListPicker,
-            (false, false, _) => B::TopPreview,
-        };
-        self.borders.iter().any(|b| b.id == id).then_some(id)
-    }
-
     /// Resize-mode keys: h/l move the focused pane's side edge, j/k its lower
     /// edge, by one cell (capitals: five); = resets; Esc / Enter leave.
     fn run_resize(&mut self, a: Action) {
@@ -1172,22 +1080,28 @@ impl App {
             Action::UpBig => (0, -1, 5),
             Action::DownBig => (0, 1, 5),
             Action::ResetSizes => {
-                self.sizes = self.settings.layout.sizes.clone();
+                self.layout.sizes = self.settings.layout.sizes.clone();
                 return;
             }
             Action::Back | Action::Confirm | Action::ResizeMode => {
-                self.resize_mode = false;
+                self.layout.resize_mode = false;
                 return;
             }
             _ => return,
         };
         let vertical = dx != 0;
-        let Some(id) = self.border_for_pane(vertical) else {
+        let Some(id) = self.layout.border_for_pane(self.current_pane(), vertical) else {
             return;
         };
-        let b = self.borders.iter().find(|b| b.id == id).copied().unwrap();
+        let b = self
+            .layout
+            .borders
+            .iter()
+            .find(|b| b.id == id)
+            .copied()
+            .unwrap();
         let pos = (b.pos() as i32 + (dx + dy) * n).max(0) as u16;
-        self.move_border(id, pos);
+        self.layout.move_border(id, pos);
     }
 
     // ----- colour list rows -----------------------------------------------
@@ -1257,9 +1171,9 @@ impl App {
         let rows = self.colour_rows();
         let last = rows.len() as i32 - 1;
         let copying = matches!(self.overlay, Overlay::CopyFrom { .. });
-        if self.palette_menu_focused && !copying {
+        if self.layout.palette_menu_focused && !copying {
             match a {
-                Action::Down | Action::Back => self.palette_menu_focused = false,
+                Action::Down | Action::Back => self.layout.palette_menu_focused = false,
                 Action::Confirm | Action::Right => self.open_overlay(),
                 Action::Up => {
                     self.focus_page_tabs(true);
@@ -1271,12 +1185,12 @@ impl App {
         if !copying {
             match a {
                 Action::Up if self.row_sel == 0 => {
-                    self.palette_menu_focused = true;
+                    self.layout.palette_menu_focused = true;
                     return;
                 }
                 Action::Down
                     if self.row_sel as i32 >= last
-                        && !self.picker_visible
+                        && !self.layout.picker_visible
                         && self.focus_page_tabs(false) =>
                 {
                     return;
@@ -1405,7 +1319,7 @@ impl App {
     /// Does what an action means in the pane with the keyboard.
     pub fn run_action(&mut self, a: Action) {
         use crate::fonts::FontFocus;
-        if self.resize_mode {
+        if self.layout.resize_mode {
             return self.run_resize(a);
         }
         if let Overlay::CopyFrom { target } = self.overlay {
@@ -1414,7 +1328,7 @@ impl App {
         if a == Action::UndoConfig {
             return self.undo_config();
         }
-        if self.page_tabs_focused && self.page_tabs_action(a) {
+        if self.layout.page_tabs_focused && self.page_tabs_action(a) {
             return;
         }
         let fonts = self.side == Side::Fonts;
@@ -1448,33 +1362,35 @@ impl App {
                 self.preview.cycle_focus();
             }
             Action::TogglePicker => {
-                if self.picker_visible {
-                    self.picker_visible = false;
+                if self.layout.picker_visible {
+                    self.layout.picker_visible = false;
                     self.focus = Focus::List;
                 } else {
-                    self.picker_visible = true;
+                    self.layout.picker_visible = true;
                 }
             }
-            Action::ToggleHints => self.hints_visible = !self.hints_visible,
+            Action::ToggleHints => self.layout.hints_visible = !self.layout.hints_visible,
             Action::TogglePreview => match self.page {
                 Page::Main => {
-                    self.main_preview_visible = !self.main_preview_visible;
+                    self.layout.main_preview_visible = !self.layout.main_preview_visible;
                     // a hidden window can't keep the keyboard
-                    if !self.main_preview_visible {
+                    if !self.layout.main_preview_visible {
                         self.preview.focus = None;
                     }
                 }
-                Page::Downloads => self.fonts_preview_visible = !self.fonts_preview_visible,
+                Page::Downloads => {
+                    self.layout.fonts_preview_visible = !self.layout.fonts_preview_visible
+                }
                 Page::Settings => self.info("This page has no preview"),
             },
             Action::ToggleSample => {
                 use crate::fonts::FontFocus;
-                self.sample_visible = !self.sample_visible;
-                if !self.sample_visible && self.fonts.focus == FontFocus::Sample {
+                self.layout.sample_visible = !self.layout.sample_visible;
+                if !self.layout.sample_visible && self.fonts.focus == FontFocus::Sample {
                     self.fonts.focus = FontFocus::Slots;
                 }
             }
-            Action::ResizeMode => self.resize_mode = true,
+            Action::ResizeMode => self.layout.resize_mode = true,
             Action::PaneLeft => self.move_pane(-1, 0),
             Action::PaneRight => self.move_pane(1, 0),
             Action::PaneUp => self.move_pane(0, -1),
@@ -1506,7 +1422,7 @@ impl App {
             Action::FocusNext | Action::FocusPrev if fonts => {
                 let order: Vec<u8> = [1, 2, 3]
                     .into_iter()
-                    .filter(|&p| p != 3 || (self.sample_visible && self.wide))
+                    .filter(|&p| p != 3 || (self.layout.sample_visible && self.layout.wide))
                     .collect();
                 let i = order
                     .iter()
@@ -1560,7 +1476,7 @@ impl App {
             Action::Down
                 if fonts
                     && self.fonts.focus == FontFocus::List
-                    && !(self.sample_visible && self.wide)
+                    && !(self.layout.sample_visible && self.layout.wide)
                     && self.fonts.list_sel + 1 >= self.fonts.rows().len()
                     && self.focus_page_tabs(false) => {}
             _ if fonts => {
@@ -2084,7 +2000,7 @@ impl App {
             }
             MouseEventKind::Down(MouseButton::Left) => {
                 // a click outside a preview window gives the keyboard back
-                self.page_tabs_focused = false;
+                self.layout.page_tabs_focused = false;
                 if !matches!(target, Some((_, T::Preview(_)))) {
                     self.preview.focus = None;
                 }
@@ -2092,14 +2008,15 @@ impl App {
                     self.click(r, t, x, y, false);
                 }
             }
-            MouseEventKind::Drag(MouseButton::Left) if self.dragging.is_some() => {
-                let id = self.dragging.unwrap();
+            MouseEventKind::Drag(MouseButton::Left) if self.layout.dragging.is_some() => {
+                let id = self.layout.dragging.unwrap();
                 let vertical = self
+                    .layout
                     .borders
                     .iter()
                     .find(|b| b.id == id)
                     .is_some_and(|b| b.vertical);
-                self.move_border(id, if vertical { x } else { y });
+                self.layout.move_border(id, if vertical { x } else { y });
             }
             MouseEventKind::Drag(MouseButton::Left) => {
                 // dragging works on the picker's controls only
@@ -2111,7 +2028,7 @@ impl App {
             }
             MouseEventKind::Up(MouseButton::Left) => {
                 self.editor.end_edit_run();
-                self.dragging = None;
+                self.layout.dragging = None;
             }
             _ => {}
         }
@@ -2130,7 +2047,7 @@ impl App {
         };
         match t {
             T::PageTab(p) => self.page = p,
-            T::Border(id) => self.dragging = Some(id),
+            T::Border(id) => self.layout.dragging = Some(id),
             T::PaneTitle(n) => self.focus_pane(n),
             T::PaneBody(3) => self.focus_pane(3),
             T::PaneBody(_) => {}
@@ -2139,7 +2056,7 @@ impl App {
                 self.preview.focus = Some(id);
             }
             T::ColourRow(row) => {
-                self.palette_menu_focused = false;
+                self.layout.palette_menu_focused = false;
                 let copying = matches!(self.overlay, Overlay::CopyFrom { .. });
                 let again =
                     row == self.row_sel && self.focus == Focus::List && self.side == Side::Colours;
@@ -2259,7 +2176,7 @@ impl App {
             T::ThemeName => self.theme_open_overlay(),
             T::PaletteMenu => {
                 self.focus_pane(4);
-                self.palette_menu_focused = true;
+                self.layout.palette_menu_focused = true;
                 self.open_overlay();
             }
             T::DlTab(_) | T::DlRow(_) | T::DlChip(_) | T::DlSearch | T::DlButton(_) => {
@@ -2320,7 +2237,7 @@ impl App {
         let n = FOCUS_ORDER.len() as i32;
         self.focus = FOCUS_ORDER[(i + d).rem_euclid(n) as usize];
         if self.focus != Focus::List {
-            self.picker_visible = true;
+            self.layout.picker_visible = true;
         }
         if self.focus == Focus::Hex {
             self.editor.hex_input = "#".into(); // typing replaces the colour; Esc restores it

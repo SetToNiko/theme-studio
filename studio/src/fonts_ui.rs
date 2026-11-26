@@ -24,7 +24,8 @@ fn block(app: &App, area: Rect, title: Line<'static>, focused: bool) -> Block<'s
 /// clickable and highlighted under the mouse.
 pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rect) {
     // the fonts column has the keyboard (and not a preview window)
-    let active = app.side == Side::Fonts && app.preview.focus.is_none() && !app.page_tabs_focused;
+    let active =
+        app.side == Side::Fonts && app.preview.focus.is_none() && !app.layout.page_tabs_focused;
 
     // titles first (they're clickable too)
     let title1 = Line::from(vec![
@@ -95,7 +96,7 @@ pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rec
             font.size.to_string()
         };
         // wide layouts: the size beside the name; narrow: below it
-        let (first, second) = if app.wide {
+        let (first, second) = if app.layout.wide {
             let room =
                 (inner.width as usize).saturating_sub(3 + name_w + 1 + 2 + size.chars().count());
             (

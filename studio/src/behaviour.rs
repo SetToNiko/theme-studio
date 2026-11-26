@@ -490,7 +490,7 @@ impl App {
                 l.text_weight = cycle(&l.text_weight, &["normal", "bold", "dim"]);
             }
             BhRow::SaveSizes => {
-                self.settings.layout.sizes = self.sizes.clone();
+                self.settings.layout.sizes = self.layout.sizes.clone();
                 self.info("The current pane sizes become the default (when saved)");
             }
             BhRow::ClearPreviews => {
@@ -1093,7 +1093,7 @@ mod tests {
     #[test]
     fn save_sizes_and_reset_sizes_change_the_default_sizes() {
         let mut app = test_app("sizes");
-        app.sizes.fonts_width = 0.31;
+        app.layout.sizes.fonts_width = 0.31;
         run(&mut app, BhRow::SaveSizes, Action::Confirm);
         assert_eq!(
             app.show_draft(|a| a.settings.layout.sizes.fonts_width),
@@ -1110,7 +1110,7 @@ mod tests {
             crate::config::Sizes::default()
         );
         // the running layout keeps its sizes until saved
-        assert_eq!(app.sizes.fonts_width, 0.31);
+        assert_eq!(app.layout.sizes.fonts_width, 0.31);
     }
 
     #[test]

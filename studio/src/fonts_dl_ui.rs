@@ -66,7 +66,7 @@ pub fn draw_downloads(f: &mut Frame, app: &mut App, area: Rect) {
     }
     // wide: the list, then a column of details over the preview; narrow:
     // all three stacked. With the preview hidden, the list and the details.
-    if !app.fonts_preview_visible {
+    if !app.layout.fonts_preview_visible {
         let (list, details) = if body.width >= 100 {
             let [l, r] =
                 Layout::horizontal([Constraint::Min(44), Constraint::Percentage(55)]).areas(body);
@@ -189,7 +189,7 @@ fn draw_tabs(f: &mut Frame, app: &mut App, area: Rect) {
         };
         let mut style = match (
             *tab == app.dl.tab,
-            app.dl.tabs_focused && !app.page_tabs_focused,
+            app.dl.tabs_focused && !app.layout.page_tabs_focused,
         ) {
             (true, true) => Style::new().black().on_yellow().bold(),
             (true, false) => Style::new().reversed().bold(),
@@ -333,7 +333,7 @@ fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {
             Span::styled(format!(" {:<12}", kind), Style::new().dark_gray()),
             status,
         ]);
-        let on = i == sel && !app.dl.tabs_focused && !app.page_tabs_focused;
+        let on = i == sel && !app.dl.tabs_focused && !app.layout.page_tabs_focused;
         let mut style = if on {
             Style::new().reversed()
         } else {

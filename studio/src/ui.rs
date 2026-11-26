@@ -265,7 +265,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     // images still waiting for a size to settle set this again
     app.redraw_at = None;
     // set again if the Palette pane is drawn (the palette list hangs from it)
-    app.palette_pane = None;
+    app.layout.palette_pane = None;
     app.hover_note = None;
     crate::hit::set_looks(app.looks(&app.settings));
     let full = f.area();
@@ -280,10 +280,10 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let arrangement = arrange(
         area,
         app.page,
-        app.picker_visible,
-        app.sample_visible,
-        app.main_preview_visible,
-        &app.sizes,
+        app.layout.picker_visible,
+        app.layout.sample_visible,
+        app.layout.main_preview_visible,
+        &app.layout.sizes,
     );
     if let Arrangement::TooSmall { need_w, need_h } = arrangement {
         return draw_too_small(f, full, need_w, need_h + top as u16);
@@ -307,7 +307,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             draw_status(f, app, status);
         }
         Arrangement::Main(l) => {
-            app.wide = l.wide;
+            app.layout.wide = l.wide;
             crate::fonts_ui::draw_fonts(f, app, l.roles, l.font_list);
             if let Some(s) = l.sample {
                 crate::fonts_ui::draw_sample(f, app, s);
@@ -326,7 +326,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     continue;
                 }
                 let hovered = app.hits.add(b.hit, Target::Border(b.id));
-                if hovered || app.dragging == Some(b.id) {
+                if hovered || app.layout.dragging == Some(b.id) {
                     let buf = f.buffer_mut();
                     for x in b.hit.x..b.hit.x + b.hit.width {
                         for y in b.hit.y..b.hit.y + b.hit.height {
@@ -338,7 +338,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     }
                 }
             }
-            app.borders = l.borders.clone();
+            app.layout.borders = l.borders.clone();
             draw_status(f, app, l.status);
         }
     }
@@ -395,7 +395,7 @@ fn draw_tabs(f: &mut Frame, app: &mut App, area: Rect) -> u16 {
         };
         // with the keyboard on the tabs, the current one is yellow (like a
         // page's own tabs)
-        let mut style = match (app.page == page, app.page_tabs_focused) {
+        let mut style = match (app.page == page, app.layout.page_tabs_focused) {
             (true, true) => Style::new().black().on_yellow().bold(),
             (true, false) => Style::new().reversed().bold(),
             _ => Style::new().dark_gray(),
@@ -529,7 +529,7 @@ fn swatch(c: Rgb, width: usize) -> Span<'static> {
 // ----- key list -----------------------------------------------------------
 
 fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {
-    app.palette_pane = Some(area);
+    app.layout.palette_pane = Some(area);
     // the title names the palette; the dropdown is the pane's first row
     let dot = if app.dirty() {
         Span::styled(" ●", Style::new().yellow())
@@ -547,15 +547,15 @@ fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {
     let focused = app.side == Side::Colours
         && app.focus == Focus::List
         && app.preview.focus.is_none()
-        && !app.page_tabs_focused;
+        && !app.layout.page_tabs_focused;
     let block = focused_block(app, area, title, focused);
     let inner = block.inner(area);
     f.render_widget(block, area);
     let [menu_row, inner] =
         Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(inner);
-    draw_palette_menu(f, app, menu_row, focused && app.palette_menu_focused);
+    draw_palette_menu(f, app, menu_row, focused && app.layout.palette_menu_focused);
     // the colour rows have the cursor unless the dropdown row does
-    let focused = focused && !app.palette_menu_focused;
+    let focused = focused && !app.layout.palette_menu_focused;
 
     let bg0 = app.editor.palette.get("bg0");
     let copy_target = match app.overlay {
@@ -1004,7 +1004,7 @@ fn draw_preview(f: &mut Frame, app: &mut App, area: Rect, stack: bool) {
         &app.name,
         crate::preview::Windows {
             stack,
-            split: app.sizes.preview_split,
+            split: app.layout.sizes.preview_split,
         },
     );
     // nvim and the shell are clickable (a click hands them the keyboard);
@@ -1326,7 +1326,7 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
             .filter(|(c, _)| app.fonts.filters.chip_free(*c))
             .map(|(c, _)| A::Filter(*c))
             .collect();
-        let context: Vec<String> = if app.resize_mode {
+        let context: Vec<String> = if app.layout.resize_mode {
             let k = |a| {
                 app.keymap
                     .key_for(&[Context::Resize], a)
@@ -1341,7 +1341,7 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
                 format!("{} reset", k(A::ResetSizes)),
                 format!("{} done", k(A::Back)),
             ]
-        } else if app.page_tabs_focused {
+        } else if app.layout.page_tabs_focused {
             let back = if app.settings.layout.tabs_on_top() {
                 A::Down
             } else {
@@ -1354,7 +1354,10 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
             .into_iter()
             .flatten()
             .collect()
-        } else if app.page == Page::Main && app.palette_menu_focused && app.side == Side::Colours {
+        } else if app.page == Page::Main
+            && app.layout.palette_menu_focused
+            && app.side == Side::Colours
+        {
             [hint(&[A::Confirm], "palettes"), hint(&[A::Down], "colours")]
                 .into_iter()
                 .flatten()
@@ -1568,7 +1571,7 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
         .flatten()
         .collect();
         // hidden (settings: layout.key-hints, or the toggle): none
-        if !app.hints_visible {
+        if !app.layout.hints_visible {
             return draw_message_only(f, area, message);
         }
         let last = hint(&[A::Help], "keys").unwrap_or_default();
@@ -2058,7 +2061,7 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
         } => {
             // the palette list hangs under the Palette pane's dropdown row; the
             // other lists (and this one on other pages) are centred
-            let hanging = match app.palette_pane {
+            let hanging = match app.layout.palette_pane {
                 Some(p) if app.overlay_for == crate::app::For::Palette => {
                     let w = 70.min(area.width);
                     let h = (entries.len() as u16 + 4)

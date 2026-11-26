@@ -46,7 +46,7 @@ fn draw_setup(f: &mut Frame, app: &mut App, area: Rect) {
     };
     let rows = app.tour_setup_rows();
     let sel = app.tour().sel.min(rows.len().saturating_sub(1));
-    let focused = !app.dl.tabs_focused && !app.page_tabs_focused;
+    let focused = !app.dl.tabs_focused && !app.layout.page_tabs_focused;
     let catalogue = app.dl.catalogue.is_some();
     let counts: Vec<usize> = POOLS.iter().map(|(k, _)| app.tour_pool(k).len()).collect();
     let size = SIZES[app.tour().size];
@@ -275,7 +275,7 @@ fn draw_results(f: &mut Frame, app: &mut App, area: Rect) {
         Layout::vertical([Constraint::Length(16), Constraint::Min(6)]).areas(area)
     };
     let sel = app.tour().sel;
-    let focused = !app.dl.tabs_focused && !app.page_tabs_focused;
+    let focused = !app.dl.tabs_focused && !app.layout.page_tabs_focused;
     let installed: Vec<String> = app
         .fonts
         .installed

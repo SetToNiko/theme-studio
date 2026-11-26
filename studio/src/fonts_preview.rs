@@ -135,7 +135,7 @@ impl App {
     /// Each loop: fetch the highlighted font after a pause, render it, pick
     /// up a finished image. True when something changed.
     pub fn poll_preview(&mut self) -> bool {
-        if self.page != crate::app::Page::Downloads || !self.fonts_preview_visible {
+        if self.page != crate::app::Page::Downloads || !self.layout.fonts_preview_visible {
             return false;
         }
         let Some(e) = self.preview_entry() else {
