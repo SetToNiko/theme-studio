@@ -167,7 +167,7 @@ fn main() -> Result<()> {
         ratatui_image::picker::Picker::from_query_stdio()
             .unwrap_or_else(|_| ratatui_image::picker::Picker::halfblocks()),
     );
-    let result = app.run(&mut terminal);
+    let result = app.run(&mut terminal, ui::draw);
     app::set_pointer("default");
     if enhanced {
         let _ = execute!(stdout(), PopKeyboardEnhancementFlags);

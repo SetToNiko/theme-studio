@@ -16,6 +16,8 @@
 //! - `messages.rs`: status-line message, save box, hover note (its own struct, not an `impl App`)
 //! - `tests.rs`: tests of the above
 //!
+//! The run loop (`App::run`) does not draw by itself: `main.rs` passes in `ui::draw`.
+//!
 //! Other `impl App` blocks live next to the feature they serve, outside this
 //! folder: `settings.rs`, `behaviour.rs`, `draft.rs`, `theme.rs`, `fonts_dl.rs`,
 //! `fonts_preview.rs`, `tour_page.rs`, `prefetch.rs`, `presets.rs`.
@@ -37,6 +39,7 @@ use std::time::{Duration, Instant};
 use anyhow::Result;
 /// The terminal the studio draws on.
 pub type Term = ratatui::Terminal<ratatui::backend::CrosstermBackend<crate::out::Out>>;
+use ratatui::Frame;
 use ratatui::crossterm::event::{self, Event, KeyEventKind};
 use ratatui::layout::Rect;
 
@@ -282,7 +285,12 @@ impl App {
         Ok(app)
     }
 
-    pub fn run(&mut self, terminal: &mut Term) -> Result<()> {
+    pub fn run(
+        &mut self,
+        terminal: &mut Term,
+        // The drawing code is in ui.rs; main.rs passes it in, so app does not depend on ui.
+        draw: fn(&mut Frame, &mut App),
+    ) -> Result<()> {
         let mut redraw = true;
         while !self.quit {
             // nvim in the preview re-reads this whenever it changes
@@ -318,7 +326,7 @@ impl App {
                 redraw = true;
             }
             if self.preview.take_dirty() || redraw {
-                terminal.draw(|f| crate::ui::draw(f, self))?;
+                terminal.draw(|f| draw(f, self))?;
                 self.update_pointer();
                 redraw = false;
             }
