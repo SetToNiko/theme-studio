@@ -211,7 +211,11 @@ fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
         };
         return crate::presets::draw_browse(
             f,
-            (&mut app.hits, &app.presets, &app.keymap),
+            crate::presets::BrowseParts {
+                hits: &mut app.hits,
+                presets: &app.presets,
+                keymap: &app.keymap,
+            },
             &mut app.settings_page,
             diff,
             presets,

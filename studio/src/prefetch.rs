@@ -13,13 +13,13 @@ use std::time::{Duration, Instant};
 use crate::download::{Catalogue, Entry, Msg, Source};
 
 /// How many previews download at once (Nerd Font archives: one).
-pub(crate) const AT_ONCE: usize = 3;
+const AT_ONCE: usize = 3;
 
 /// The status line's progress is redrawn at most this often.
-pub(crate) const PROGRESS_EVERY: Duration = Duration::from_millis(250);
+const PROGRESS_EVERY: Duration = Duration::from_millis(250);
 
 /// The Behaviour tab's "space used" is measured again after this long.
-pub(crate) const SIZE_EVERY: Duration = Duration::from_secs(5);
+const SIZE_EVERY: Duration = Duration::from_secs(5);
 
 /// A Google / Fontsource preview file, about.
 const GOOGLE_FILE: u64 = 100_000;
@@ -32,27 +32,27 @@ pub type Fetch = fn(Entry, Sender<Msg>);
 #[derive(Debug, Default)]
 pub struct Prefetch {
     /// The categories the queue was made for, and ones it's being made for.
-    pub(crate) built_for: Option<Vec<String>>,
-    pub(crate) building: Option<Vec<String>>,
+    built_for: Option<Vec<String>>,
+    building: Option<Vec<String>>,
     /// Still to fetch (taken from the end).
-    pub(crate) queue: Vec<Entry>,
+    queue: Vec<Entry>,
     /// Fetched first, prefetching on or off: a tournament's fonts.
     pub urgent: Vec<Entry>,
     /// Those of them on their way (they don't count in the progress).
-    pub(crate) urgent_in_flight: HashSet<String>,
-    pub(crate) in_flight: HashSet<String>,
+    urgent_in_flight: HashSet<String>,
+    in_flight: HashSet<String>,
     /// Nerd Font archives among them.
     pub(crate) nerd_in_flight: HashSet<String>,
     /// Fonts in the chosen categories, and how many have a preview.
     pub total: usize,
     pub done: usize,
     /// The progress last drawn, and when.
-    pub(crate) drawn: (usize, Option<Instant>),
+    drawn: (usize, Option<Instant>),
     /// The space the previews take, and when it was measured (None while
     /// it's being measured for the first time).
     pub used: Option<u64>,
-    pub(crate) measured: Option<Instant>,
-    pub(crate) measuring: bool,
+    measured: Option<Instant>,
+    measuring: bool,
     /// Tests swap the downloads for a stub.
     pub fetch: Option<Fetch>,
 }
@@ -64,6 +64,98 @@ impl Prefetch {
             || !self.urgent.is_empty()
             || !self.in_flight.is_empty()
             || self.building.is_some()
+    }
+
+    /// Prefetching is off: forgets the queue and the thread making it, so
+    /// nothing new starts (downloads on their way still land). True when
+    /// that made it go from active to idle.
+    pub fn stop_new(&mut self) -> bool {
+        let was = self.active();
+        self.queue.clear();
+        self.built_for = None;
+        self.building = None;
+        was && !self.active()
+    }
+
+    /// The queue was made for exactly these categories.
+    pub fn is_built_for(&self, categories: &[String]) -> bool {
+        self.built_for.as_deref() == Some(categories)
+    }
+
+    /// Notes that a thread starts making the queue for `categories`. False
+    /// when one is already making it (nothing to start).
+    pub fn start_building(&mut self, categories: &[String]) -> bool {
+        if self.building.as_deref() == Some(categories) {
+            return false;
+        }
+        self.building = Some(categories.to_vec());
+        true
+    }
+
+    /// True when the status line's progress should be redrawn now (it
+    /// changed, and the last draw was long enough ago). Notes the draw.
+    pub fn progress_due(&mut self) -> bool {
+        let due = self.drawn.1.is_none_or(|t| t.elapsed() >= PROGRESS_EVERY);
+        if self.drawn.0 != self.done && due {
+            self.drawn = (self.done, Some(Instant::now()));
+            return true;
+        }
+        false
+    }
+
+    /// True when the space used should be measured now: the Behaviour tab is
+    /// `shown`, no measuring runs, and the last one is old enough. Notes that
+    /// a measuring starts.
+    pub fn start_measuring_due(&mut self, shown: bool) -> bool {
+        if !shown || self.measuring || self.measured.is_some_and(|t| t.elapsed() < SIZE_EVERY) {
+            return false;
+        }
+        self.measuring = true;
+        true
+    }
+
+    /// Takes the next font to download from the urgent queue or the prefetch
+    /// queue. None when `AT_ONCE` downloads are on their way, the queue is
+    /// empty, or the next one is a Nerd Font archive and one is already on
+    /// its way (they go one at a time).
+    pub fn take_next(&mut self, urgent: bool) -> Option<Entry> {
+        if self.in_flight.len() >= AT_ONCE {
+            return None;
+        }
+        let q = if urgent {
+            &mut self.urgent
+        } else {
+            &mut self.queue
+        };
+        let nerd = matches!(q.last()?.source, Source::Nerd { .. });
+        if nerd && !self.nerd_in_flight.is_empty() {
+            return None;
+        }
+        q.pop()
+    }
+
+    /// This font is on its way already.
+    pub fn is_in_flight(&self, id: &str) -> bool {
+        self.in_flight.contains(id)
+    }
+
+    /// A taken font was already there: counts as done (unless urgent: those
+    /// don't count in the progress).
+    pub fn mark_already_fetched(&mut self, urgent: bool) {
+        if !urgent {
+            self.done += 1;
+        }
+    }
+
+    /// A taken font's download started.
+    pub fn mark_in_flight(&mut self, e: &Entry, urgent: bool) {
+        if matches!(e.source, Source::Nerd { .. }) {
+            self.nerd_in_flight.insert(e.id.clone());
+        }
+        if urgent {
+            self.urgent_in_flight.insert(e.id.clone());
+        }
+        self.in_flight.insert(e.id.clone());
     }
 
     /// A preview finished; true if it was one of these.

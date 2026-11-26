@@ -42,10 +42,23 @@ impl App {
 
     /// Keys while the preset list is open (inside the draft).
     pub fn run_browse(&mut self, a: Action) {
-        let n = self.presets.len();
         let Some(i) = self.settings_page.browse else {
             return;
         };
+        match a {
+            Action::Confirm | Action::Right => return self.load_highlighted(),
+            Action::SaveNamed | Action::Delete | Action::ResetPreset => self.browse_edit(a, i),
+            _ => self.browse_move(a, i),
+        }
+        if self.settings_page.browse != Some(i) {
+            self.settings_page.browse_scroll = 0;
+        }
+    }
+
+    /// Moving in the preset list (`i` is the highlighted one): cursor,
+    /// scrolling, "show all", closing it.
+    fn browse_move(&mut self, a: Action, i: usize) {
+        let n = self.presets.len();
         let p = &mut self.settings_page;
         match a {
             Action::Up | Action::Left => p.browse = Some(i.saturating_sub(1)),
@@ -58,28 +71,33 @@ impl App {
                 p.browse_all = !p.browse_all;
                 p.browse_scroll = 0;
             }
-            Action::Confirm | Action::Right => return self.load_highlighted(),
             Action::Back => p.browse = None,
+            _ => {}
+        }
+    }
+
+    /// Making, deleting and resetting the highlighted preset `i` (each asks
+    /// for a name or a yes first, or says why it can't).
+    fn browse_edit(&mut self, a: Action, i: usize) {
+        let name = self.presets[i].name.clone();
+        match a {
             Action::SaveNamed => {
-                let name = self.presets[i].name.clone();
                 self.overlay = Overlay::Prompt {
                     title: format!("Name for a new preset made from \"{name}\""),
                     input: String::new(),
                     purpose: Naming::PresetFrom(name),
                 };
             }
-            Action::Delete if is_shipped(&self.presets[i].name) => self
+            Action::Delete if is_shipped(&name) => self
                 .messages
                 .info("Shipped presets can't be deleted (R resets them)"),
             Action::Delete => {
-                let name = self.presets[i].name.clone();
                 self.overlay = Overlay::Ask {
                     question: format!("Delete the preset \"{name}\"? (Save makes it final)"),
                     then: Deferred::DeletePreset(name),
                 };
             }
-            Action::ResetPreset if is_shipped(&self.presets[i].name) => {
-                let name = self.presets[i].name.clone();
+            Action::ResetPreset if is_shipped(&name) => {
                 self.overlay = Overlay::Ask {
                     question: format!("Reset \"{name}\" to the shipped keys?"),
                     then: Deferred::ResetPreset(name),
@@ -89,9 +107,6 @@ impl App {
                 .messages
                 .info("Only shipped presets can be reset; this one is yours"),
             _ => {}
-        }
-        if self.settings_page.browse != Some(i) {
-            self.settings_page.browse_scroll = 0;
         }
     }
 

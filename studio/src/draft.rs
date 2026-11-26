@@ -1,6 +1,9 @@
 //! Unsaved Settings page changes. Keymap and Behaviour edits go to a draft;
 //! nothing is written or takes effect until Save (the preset's Save key, or
 //! the button). Discard drops the draft; quitting with one asks first.
+//!
+//! The test module below also tests the `App` methods of
+//! `app/draft_actions.rs` (it builds an `App`).
 
 use serde_json::{Map, Value};
 
