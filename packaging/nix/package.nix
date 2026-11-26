@@ -19,6 +19,10 @@
   procps,
   jq,
   fontconfig,
+  imagemagick,
+  curl,
+  gnutar,
+  xz,
   ghostty,
   i3,
 }:
@@ -69,6 +73,16 @@ let
     ghostty
     i3
   ];
+  # What the studio itself runs (docs/theme-studio.md, Runtime dependencies):
+  # the basics, plus ImageMagick for the previews, and curl, tar and xz for the
+  # font downloads. xrdb is optional and comes from the system.
+  studioTools = basics ++ [
+    bash
+    imagemagick
+    curl
+    gnutar
+    xz
+  ];
 in
 runCommand "theme-studio-0.1.0"
   {
@@ -91,5 +105,5 @@ runCommand "theme-studio-0.1.0"
 
     makeWrapper ${bin}/bin/theme-studio $out/bin/theme-studio \
       --set-default THEME_STUDIO_SHARE $share/share \
-      --prefix PATH : $out/bin
+      --prefix PATH : $out/bin:${lib.makeBinPath studioTools}
   ''
