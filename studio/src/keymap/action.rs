@@ -1,8 +1,10 @@
 //! Every action a key can run: its identity, its name in keymaps.json, and
 //! its group.
 //!
-//! The labels shown to the user are in `labels.rs`. The default keys are in
-//! `defaults.rs`.
+//! The id, label and group of each action are in the table in `table.rs`.
+//! The default keys are in `defaults.rs`.
+
+use super::table::{ROWS, Row};
 
 /// Everything a key can do. Movement actions mean the obvious thing in each
 /// pane (Right in the colour list starts editing, in the font list it opens
@@ -102,98 +104,19 @@ pub enum Action {
 
 /// Every action, in the order the keymaps file and the Settings page list them.
 pub fn all_actions() -> Vec<Action> {
-    use Action as A;
-    let mut v = vec![
-        A::Quit,
-        A::Help,
-        A::PageMain,
-        A::PageDownloads,
-        A::PageSettings,
-        A::TogglePicker,
-        A::ToggleSample,
-        A::ToggleHints,
-        A::TogglePreview,
-        A::PaneLeft,
-        A::PaneRight,
-        A::PaneUp,
-        A::PaneDown,
-        A::ResizeMode,
-        A::ResetSizes,
-        A::UndoConfig,
-        A::PreviewFetch,
-        A::PreviewText,
-        A::PreviewLang,
-        A::PreviewNext,
-        A::PreviewPrev,
-        A::FillFamily,
-        A::FixRoleFont,
-        A::NextHeading,
-        A::PrevHeading,
-        A::TourNames,
-        A::TourBracket,
-        A::TourUndo,
-        A::OpenPalette,
-        A::OpenFonts,
-        A::NewPalette,
-        A::NewFonts,
-        A::Discard,
-        A::TabNext,
-        A::TabPrev,
-        A::Add,
-        A::Delete,
-        A::Restore,
-        A::SaveNamed,
-        A::ResetPreset,
-        A::ToggleAll,
-        A::EditText,
-        A::PreviewCycle,
-        A::SavePalette,
-        A::SaveFonts,
-        A::ApplyPalette,
-        A::ApplyFonts,
-        A::Save,
-        A::SaveAs,
-        A::Apply,
-        A::Open,
-        A::New,
-        A::Undo,
-        A::Redo,
-    ];
-    v.extend((1..=9).map(A::Panel));
-    v.extend((0..3).map(A::UseFor));
-    v.extend([
-        A::FocusNext,
-        A::FocusPrev,
-        A::Back,
-        A::Confirm,
-        A::Up,
-        A::Down,
-        A::Left,
-        A::Right,
-        A::UpBig,
-        A::DownBig,
-        A::LeftBig,
-        A::RightBig,
-        A::Top,
-        A::Bottom,
-        A::PageUp,
-        A::PageDown,
-        A::Pin,
-        A::CopyHex,
-        A::CopyFrom,
-        A::HexEntry,
-        A::ToggleYazi,
-        A::ToggleRofi,
-        A::ToggleView,
-        A::SizeUp,
-        A::SizeDown,
-        A::PickFont,
-        A::Search,
-    ]);
+    let mut v = Vec::new();
+    for row in ROWS {
+        v.push(row.action);
+        // The actions with data have no row: they follow `Redo`.
+        if row.action == Action::Redo {
+            v.extend((1..=9).map(Action::Panel));
+            v.extend((0..3).map(Action::UseFor));
+        }
+    }
     v.extend(
         crate::fonts::types::CHIPS
             .iter()
-            .map(|(c, _)| A::Filter(*c)),
+            .map(|(c, _)| Action::Filter(*c)),
     );
     v
 }
@@ -211,102 +134,42 @@ const FILTER_IDS: [(char, &str); 8] = [
 ];
 
 impl Action {
+    /// The action's row in the table; `None` for `Panel`, `UseFor` and `Filter`.
+    fn row(self) -> Option<&'static Row> {
+        ROWS.iter().find(|r| r.action == self)
+    }
+
     /// The action's name in keymaps.json.
     pub fn id(self) -> String {
-        use Action as A;
-        let s = match self {
-            A::Quit => "quit",
-            A::Help => "help",
-            A::PageMain => "page-main",
-            A::PageDownloads => "page-downloads",
-            A::PageSettings => "page-settings",
-            A::TogglePicker => "toggle-picker",
-            A::ToggleSample => "toggle-sample",
-            A::ToggleHints => "toggle-hints",
-            A::TogglePreview => "toggle-preview",
-            A::PaneLeft => "pane-left",
-            A::PaneRight => "pane-right",
-            A::PaneUp => "pane-up",
-            A::PaneDown => "pane-down",
-            A::ResizeMode => "resize-mode",
-            A::ResetSizes => "reset-sizes",
-            A::UndoConfig => "undo-config-change",
-            A::PreviewFetch => "preview-fetch",
-            A::PreviewText => "preview-text",
-            A::PreviewLang => "preview-language",
-            A::PreviewNext => "preview-next-page",
-            A::PreviewPrev => "preview-previous-page",
-            A::FillFamily => "fill-roles-from-family",
-            A::FixRoleFont => "fix-role-font",
-            A::NextHeading => "next-heading",
-            A::PrevHeading => "previous-heading",
-            A::TourNames => "tournament-names",
-            A::TourBracket => "tournament-bracket",
-            A::TourUndo => "tournament-undo",
-            A::UseFor(r) => {
-                return format!("use-for-{}", crate::fonts::types::ROLES[r as usize % 3]);
-            }
-            A::OpenPalette => "open-palette",
-            A::OpenFonts => "open-font-preset",
-            A::NewPalette => "new-palette",
-            A::NewFonts => "new-font-preset",
-            A::Discard => "discard-changes",
-            A::TabNext => "tab-next",
-            A::TabPrev => "tab-previous",
-            A::Add => "add",
-            A::Delete => "delete",
-            A::Restore => "restore",
-            A::SaveNamed => "save-named",
-            A::ResetPreset => "reset-preset",
-            A::ToggleAll => "toggle-all",
-            A::EditText => "edit-as-text",
-            A::PreviewCycle => "preview-cycle",
-            A::SavePalette => "save-palette",
-            A::SaveFonts => "save-fonts",
-            A::ApplyPalette => "apply-palette",
-            A::ApplyFonts => "apply-fonts",
-            A::Save => "save",
-            A::SaveAs => "save-as",
-            A::Apply => "apply",
-            A::Open => "open",
-            A::New => "new",
-            A::Undo => "undo",
-            A::Redo => "redo",
-            A::Panel(n) => return format!("panel-{n}"),
-            A::FocusNext => "focus-next",
-            A::FocusPrev => "focus-previous",
-            A::Back => "back",
-            A::Confirm => "confirm",
-            A::Up => "up",
-            A::Down => "down",
-            A::Left => "left",
-            A::Right => "right",
-            A::UpBig => "up-big",
-            A::DownBig => "down-big",
-            A::LeftBig => "left-big",
-            A::RightBig => "right-big",
-            A::Top => "top",
-            A::Bottom => "bottom",
-            A::PageUp => "page-up",
-            A::PageDown => "page-down",
-            A::Pin => "pin",
-            A::CopyHex => "copy-hex",
-            A::CopyFrom => "copy-from",
-            A::HexEntry => "hex-entry",
-            A::ToggleYazi => "toggle-yazi",
-            A::ToggleRofi => "toggle-rofi",
-            A::ToggleView => "toggle-view",
-            A::SizeUp => "size-up",
-            A::SizeDown => "size-down",
-            A::PickFont => "pick-font",
-            A::Search => "search",
-            A::Filter(c) => FILTER_IDS
+        match self {
+            Action::UseFor(r) => format!("use-for-{}", crate::fonts::types::ROLES[r as usize % 3]),
+            Action::Panel(n) => format!("panel-{n}"),
+            Action::Filter(c) => FILTER_IDS
                 .iter()
                 .find(|(k, _)| *k == c)
-                .map(|(_, id)| *id)
-                .unwrap_or("filter"),
-        };
-        s.to_string()
+                .map_or("filter", |(_, id)| *id)
+                .to_string(),
+            _ => self.row().map_or("", |r| r.id).to_string(),
+        }
+    }
+
+    /// Short description, for the help screen, hints and the leader popup.
+    pub fn describe(self) -> String {
+        match self {
+            Action::UseFor(r) => format!(
+                "use the font for {}",
+                crate::fonts::types::ROLE_NAMES[r as usize % 3]
+            ),
+            Action::Panel(n) => format!("panel {n}"),
+            Action::Filter(c) => {
+                let label = crate::fonts::types::CHIPS
+                    .iter()
+                    .find(|(k, _)| *k == c)
+                    .map_or("?", |(_, l)| *l);
+                format!("filter: {label}")
+            }
+            _ => self.row().map_or("", |r| r.label).to_string(),
+        }
     }
 
     /// Looks up a name that an earlier version used.
@@ -329,38 +192,10 @@ impl Action {
 
     /// The group this action belongs to; `run_action` uses it to route the action.
     pub fn group(self) -> ActionGroup {
-        use Action as A;
         match self {
-            A::Quit
-            | A::Help
-            | A::PageMain
-            | A::PageDownloads
-            | A::PageSettings
-            | A::ToggleHints
-            | A::TogglePreview => ActionGroup::Page,
-            A::PreviewCycle
-            | A::TogglePicker
-            | A::ToggleSample
-            | A::ResizeMode
-            | A::PaneLeft
-            | A::PaneRight
-            | A::PaneUp
-            | A::PaneDown
-            | A::Panel(_) => ActionGroup::Window,
-            A::SavePalette
-            | A::SaveFonts
-            | A::ApplyPalette
-            | A::ApplyFonts
-            | A::Save
-            | A::SaveAs
-            | A::Apply
-            | A::Open
-            | A::New
-            | A::OpenPalette
-            | A::OpenFonts
-            | A::NewPalette
-            | A::NewFonts => ActionGroup::Theme,
-            _ => ActionGroup::Column,
+            Action::Panel(_) => ActionGroup::Window,
+            Action::UseFor(_) | Action::Filter(_) => ActionGroup::Column,
+            _ => self.row().map_or(ActionGroup::Column, |r| r.group),
         }
     }
 }
@@ -376,4 +211,43 @@ pub enum ActionGroup {
     Theme,
     /// Everything else: the focused column (fonts or colours), or another page.
     Column,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_action_has_exactly_one_table_row_or_a_data_rule() {
+        for a in all_actions() {
+            let rows = ROWS.iter().filter(|r| r.action == a).count();
+            let has_data = matches!(a, Action::Panel(_) | Action::UseFor(_) | Action::Filter(_));
+            assert_eq!(rows, usize::from(!has_data), "{a:?}");
+        }
+    }
+
+    #[test]
+    fn table_rows_are_listed_and_filled_in() {
+        let all = all_actions();
+        for r in ROWS {
+            assert!(all.contains(&r.action), "{:?} not in all_actions", r.action);
+            assert!(!r.id.is_empty() && !r.label.is_empty(), "{:?}", r.action);
+        }
+    }
+
+    #[test]
+    fn ids_are_unique() {
+        let mut ids: Vec<String> = all_actions().iter().map(|a| a.id()).collect();
+        let n = ids.len();
+        ids.sort();
+        ids.dedup();
+        assert_eq!(ids.len(), n);
+    }
+
+    #[test]
+    fn from_id_inverts_id_for_every_action() {
+        for a in all_actions() {
+            assert_eq!(Action::from_id(&a.id()), Some(a));
+        }
+    }
 }

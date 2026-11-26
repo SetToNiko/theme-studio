@@ -16,7 +16,7 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 pub mod action;
 mod defaults;
 pub mod key;
-mod labels;
+mod table;
 
 use action::{Action, all_actions};
 use key::{Key, display_seq};
