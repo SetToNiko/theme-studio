@@ -68,8 +68,7 @@ static PREVIEW_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::Atom
 
 impl Preview {
     pub fn new(configs: &Path) -> Preview {
-        let base =
-            std::env::var_os("XDG_RUNTIME_DIR").map_or_else(std::env::temp_dir, PathBuf::from);
+        let base = crate::model::paths::runtime_dir();
         remove_stale_drafts(&base);
         let n = PREVIEW_COUNTER.fetch_add(1, Ordering::Relaxed);
         let draft_dir = base.join(format!("theme-studio-{}-{n}", std::process::id()));

@@ -21,11 +21,6 @@ pub const KEEP: usize = 100;
 /// never write to your state folder).
 static DIR: OnceLock<PathBuf> = OnceLock::new();
 
-/// `$XDG_STATE_HOME/theme-studio/history`, or `~/.local/state/…`.
-pub fn default_dir() -> PathBuf {
-    crate::model::paths::history_dir()
-}
-
 pub fn init(dir: PathBuf) {
     let _ = DIR.set(dir);
 }

@@ -141,7 +141,7 @@ impl App {
         App::with_config(
             store,
             start,
-            crate::config::load(&crate::config::dir(), true),
+            crate::config::load(&crate::model::paths::studio_config_dir(), true),
         )
     }
 

@@ -1,10 +1,7 @@
 //! Plain data types and constants of the fonts feature; a leaf, so keymap and the font helpers can use them without a cycle.
 
-/// The three font roles' keys in fonts.json (version 3) and the host
-/// offset files. Defined in `model::theme` (a theme stores one size per role);
-/// re-exported here for the fonts feature.
-
-/// The roles on screen.
+/// The roles on screen. (The roles' keys in fonts.json are
+/// `model::theme::ROLES`: a theme stores one size per role.)
 pub const ROLE_NAMES: [&str; 3] = ["Monospace", "Proportional", "Icons"];
 /// What each role's font has to be (`fits()` below checks it).
 pub const ROLE_NEEDS: [&str; 3] = ["a Nerd Font Mono", "proportional", "a Nerd Font Propo"];
