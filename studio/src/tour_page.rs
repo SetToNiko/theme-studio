@@ -352,7 +352,7 @@ impl App {
             (s.width as u32, s.height as u32)
         });
         let dpi = self.fonts.dpi;
-        let palette = self.palette.clone();
+        let palette = self.editor.palette.clone();
         let bg = palette.get("bg0");
         let t = self.tour();
         if t.panes[i].shows != Some(who) {

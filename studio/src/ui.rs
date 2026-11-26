@@ -557,7 +557,7 @@ fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {
     // the colour rows have the cursor unless the dropdown row does
     let focused = focused && !app.palette_menu_focused;
 
-    let bg0 = app.palette.get("bg0");
+    let bg0 = app.editor.palette.get("bg0");
     let copy_target = match app.overlay {
         Overlay::CopyFrom { target } => Some(target),
         _ => None,
@@ -566,12 +566,12 @@ fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {
     // the selected colour's relatives by derivation (pinned keys are set by
     // hand, so they're left out) get the derived-colour highlight
     let selected = app.keys[app.sel];
-    let related: Vec<&str> = if app.palette.is_pinned(selected) {
+    let related: Vec<&str> = if app.editor.palette.is_pinned(selected) {
         Vec::new()
     } else {
         palette::related(selected)
             .into_iter()
-            .filter(|k| palette::is_base(k) || !app.palette.is_pinned(k))
+            .filter(|k| palette::is_base(k) || !app.editor.palette.is_pinned(k))
             .collect()
     };
     let lines: Vec<Line> = rows
@@ -601,8 +601,8 @@ fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {
                 }
                 ColourRow::Key(i) => {
                     let key = app.keys[i];
-                    let c = app.palette.get(key);
-                    let pinned = app.palette.is_pinned(key);
+                    let c = app.editor.palette.get(key);
+                    let pinned = app.editor.palette.is_pinned(key);
                     // the colour the picker shows, when the cursor is elsewhere
                     let name_style = if cursor {
                         cursor_style
@@ -710,7 +710,7 @@ fn draw_palette_menu(f: &mut Frame, app: &mut App, area: Rect, cursor: bool) {
     for k in [
         "bg0", "fg0", "red", "orange", "yellow", "green", "aqua", "blue", "purple",
     ] {
-        spans.push(swatch(app.palette.get(k), 2));
+        spans.push(swatch(app.editor.palette.get(k), 2));
     }
     f.render_widget(Paragraph::new(Line::from(spans)), area);
 }
@@ -727,7 +727,7 @@ fn draw_picker(f: &mut Frame, app: &mut App, area: Rect) {
     let key = app.key();
     let state = if palette::is_base(key) {
         Span::styled(" base ", Style::new().dark_gray())
-    } else if app.palette.is_pinned(key) {
+    } else if app.editor.palette.is_pinned(key) {
         Span::styled("  pinned (p to follow again) ", Style::new().yellow())
     } else {
         Span::styled(
@@ -764,8 +764,8 @@ fn draw_picker(f: &mut Frame, app: &mut App, area: Rect) {
         width: 2,
         height: rows,
     };
-    let (h, s, v) = app.hsv;
-    let current = app.palette.get(key);
+    let (h, s, v) = app.editor.hsv;
+    let current = app.editor.palette.get(key);
     // clickable parts (registered before drawing, so hover can be shown)
     let track_w = inner.width.saturating_sub(10);
     let track = |row: u16| Rect {
@@ -850,7 +850,7 @@ fn draw_picker(f: &mut Frame, app: &mut App, area: Rect) {
     }
 
     // H, S, L sliders, each showing what moving it would give
-    let (sl_s, sl_l) = app.hsl();
+    let (sl_s, sl_l) = app.editor.hsl(key);
     let sliders: [(Focus, &str, f64, String); 3] = [
         (
             Focus::SliderH,
@@ -918,11 +918,11 @@ fn draw_picker(f: &mut Frame, app: &mut App, area: Rect) {
         Style::new()
     };
     let hex_text = if editing {
-        format!("{:<7}▏", app.hex_input)
+        format!("{:<7}▏", app.editor.hex_input)
     } else {
         format!("{:<8}", current.hex())
     };
-    let old = app.saved.get(key);
+    let old = app.editor.saved.get(key);
     let line = Line::from(vec![
         Span::styled(" hex ", {
             let s = if editing {
@@ -999,7 +999,7 @@ fn draw_preview(f: &mut Frame, app: &mut App, area: Rect, stack: bool) {
     app.preview.draw_desktop(
         f,
         inner,
-        &app.palette,
+        &app.editor.palette,
         app.terminal.as_ref(),
         &app.name,
         crate::preview::Windows {
@@ -1034,7 +1034,7 @@ fn draw_preview(f: &mut Frame, app: &mut App, area: Rect, stack: bool) {
 
 /// Every key as a swatch, plus static samples (V switches to this view).
 fn draw_swatches(f: &mut Frame, app: &App, area: Rect) {
-    let p = &app.palette;
+    let p = &app.editor.palette;
     let block = Block::bordered()
         .title(" Preview ")
         .border_style(Style::new().dark_gray());

@@ -378,7 +378,7 @@ pub fn draw_sample(f: &mut Frame, app: &mut App, area: Rect) {
     app.hits.add(inner, Target::PaneBody(3));
     f.render_widget(b, area);
     f.render_widget(
-        Block::new().style(Style::new().bg(app.palette.get("bg0").color())),
+        Block::new().style(Style::new().bg(app.editor.palette.get("bg0").color())),
         inner,
     );
     let inner = Rect {

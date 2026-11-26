@@ -382,8 +382,7 @@ impl App {
         match file {
             "palettes.json" if !self.dirty() => {
                 if let Ok(p) = self.store.load(&self.name) {
-                    self.saved = p.clone();
-                    self.palette = p;
+                    self.editor.load(p);
                 }
             }
             "fonts.json" if !self.fonts.dirty() => {

@@ -77,19 +77,23 @@ fn render(app: &mut App, w: u16, h: u16) -> String {
 fn picker_edits_follow_through_derived_keys_and_undo() {
     let mut app = test_app(temp_store("edit"), Start::Named("One".into()));
     assert_eq!(app.key(), "bg0");
-    let grey_before = app.palette.get("grey1");
+    let grey_before = app.editor.palette.get("grey1");
     // bg0: into the square, raise value a lot
     press(&mut app, "\nKKK");
-    let bg = app.palette.get("bg0");
+    let bg = app.editor.palette.get("bg0");
     assert_ne!(bg, Palette::blank().get("bg0"));
-    assert_ne!(app.palette.get("grey1"), grey_before, "grey1 follows bg0");
+    assert_ne!(
+        app.editor.palette.get("grey1"),
+        grey_before,
+        "grey1 follows bg0"
+    );
     assert!(app.dirty());
     // one undo step for the whole run of picker moves
     press(&mut app, "u");
-    assert_eq!(app.palette, Palette::blank());
+    assert_eq!(app.editor.palette, Palette::blank());
     press(&mut app, "\x18"); // not a binding: ignored
     app.on_key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL));
-    assert_eq!(app.palette.get("bg0"), bg);
+    assert_eq!(app.editor.palette.get("bg0"), bg);
 }
 
 #[test]
@@ -99,17 +103,17 @@ fn pinning_hex_entry_paste_and_copy_from() {
     let i = app.keys.iter().position(|k| *k == "grey1").unwrap();
     app.select(i);
     press(&mut app, "#123456\n");
-    assert_eq!(app.palette.get("grey1"), Rgb(0x12, 0x34, 0x56));
-    assert!(app.palette.is_pinned("grey1"));
+    assert_eq!(app.editor.palette.get("grey1"), Rgb(0x12, 0x34, 0x56));
+    assert!(app.editor.palette.is_pinned("grey1"));
     // a pinned key ignores base changes; p lets it follow again
     app.select(0);
     app.on_paste("#000000");
-    assert_eq!(app.palette.get("bg0"), Rgb(0, 0, 0));
-    assert_eq!(app.palette.get("grey1"), Rgb(0x12, 0x34, 0x56));
+    assert_eq!(app.editor.palette.get("bg0"), Rgb(0, 0, 0));
+    assert_eq!(app.editor.palette.get("grey1"), Rgb(0x12, 0x34, 0x56));
     app.select(i);
     press(&mut app, "p");
-    assert!(!app.palette.is_pinned("grey1"));
-    assert_ne!(app.palette.get("grey1"), Rgb(0x12, 0x34, 0x56));
+    assert!(!app.editor.palette.is_pinned("grey1"));
+    assert_ne!(app.editor.palette.get("grey1"), Rgb(0x12, 0x34, 0x56));
     // copy red into grey1: c, move to red, Enter
     press(&mut app, "c");
     let red = app.keys.iter().position(|k| *k == "red").unwrap();
@@ -118,7 +122,10 @@ fn pinning_hex_entry_paste_and_copy_from() {
     }
     press(&mut app, "\n");
     assert_eq!(app.key(), "grey1");
-    assert_eq!(app.palette.get("grey1"), app.palette.get("red"));
+    assert_eq!(
+        app.editor.palette.get("grey1"),
+        app.editor.palette.get("red")
+    );
 }
 
 #[test]
@@ -159,7 +166,7 @@ fn themes_save_open_and_fork() {
     // <leader>op swaps another palette into the theme: unsaved
     press(&mut app, " opTwo\n");
     assert_eq!(app.name, "Two");
-    assert_eq!(app.palette.get("red"), Rgb(200, 0, 0));
+    assert_eq!(app.editor.palette.get("red"), Rgb(200, 0, 0));
     assert!(app.theme_dirty() && !app.dirty());
     assert!(render(&mut app, 160, 45).contains("Theme: Work ●"));
     // an edited palette asks before another is opened
@@ -297,7 +304,7 @@ fn number_keys_jump_between_panels() {
     assert_eq!(app.current_pane(), 2);
     // digits still type into the hex box
     press(&mut app, " 4#123456\n");
-    assert_eq!(app.palette.get("bg0"), Rgb(0x12, 0x34, 0x56));
+    assert_eq!(app.editor.palette.get("bg0"), Rgb(0x12, 0x34, 0x56));
     // titles carry the numbers
     press(&mut app, " 5");
     let screen = render(&mut app, 200, 50);
@@ -481,17 +488,17 @@ fn leader_sequences_popup_help_and_hints() {
 #[test]
 fn esc_discards_picker_changes_enter_keeps_them() {
     let mut app = test_app(temp_store("discard"), Start::Named("One".into()));
-    let before = app.palette.clone();
+    let before = app.editor.palette.clone();
     // edit bg0 in the square, then Esc: everything as it was, nothing to undo
     press(&mut app, "\nKK");
-    assert_ne!(app.palette, before);
+    assert_ne!(app.editor.palette, before);
     assert_ne!(
-        app.palette.get("grey1"),
+        app.editor.palette.get("grey1"),
         before.get("grey1"),
         "derived keys followed"
     );
     press(&mut app, "\x1b");
-    assert_eq!(app.palette, before);
+    assert_eq!(app.editor.palette, before);
     assert!(!app.dirty() && !app.picker_visible);
     assert!(
         app.message
@@ -499,27 +506,30 @@ fn esc_discards_picker_changes_enter_keeps_them() {
             .is_some_and(|(m, _)| m.contains("Discarded"))
     );
     press(&mut app, "u");
-    assert_eq!(app.palette, before, "the discarded steps aren't undoable");
+    assert_eq!(
+        app.editor.palette, before,
+        "the discarded steps aren't undoable"
+    );
     // the same edit, then Enter: kept (and undoable)
     press(&mut app, "\nKK\n");
-    assert_ne!(app.palette, before);
+    assert_ne!(app.editor.palette, before);
     assert!(app.dirty() && app.focus == Focus::List);
-    let kept = app.palette.clone();
+    let kept = app.editor.palette.clone();
     // the hex box: Esc discards whatever the session changed
     press(&mut app, "\nJ#abcdef");
     press(&mut app, "\x1b");
-    assert_eq!(app.palette, kept);
+    assert_eq!(app.editor.palette, kept);
     // only Enter keeps: every other way out of the picker discards
     for leave in [" 4", " 1", " cp"] {
         press(&mut app, "\nJ");
-        assert_ne!(app.palette, kept);
+        assert_ne!(app.editor.palette, kept);
         press(&mut app, leave);
-        assert_eq!(app.palette, kept, "left with {leave:?}");
+        assert_eq!(app.editor.palette, kept, "left with {leave:?}");
         press(&mut app, " 4");
     }
     // the hex box: Tab past the last control (back to the list) discards too
     press(&mut app, "\n#abcdef\t");
-    assert_eq!(app.palette, kept);
+    assert_eq!(app.editor.palette, kept);
 }
 
 #[test]
@@ -614,7 +624,7 @@ fn hover_highlights_and_clicks_through_the_click_map() {
     click_on(&mut app, T::ColourRow(1));
     assert!(app.picker_visible && app.focus == Focus::Square);
     draw(&mut app);
-    let before = app.palette.get("bg0");
+    let before = app.editor.palette.get("bg0");
     let sq = app.hits.rect_of(T::Square).unwrap();
     mouse(
         &mut app,
@@ -628,7 +638,7 @@ fn hover_highlights_and_clicks_through_the_click_map() {
         sq.x + sq.width - 2,
         sq.y,
     );
-    assert_ne!(app.palette.get("bg0"), before);
+    assert_ne!(app.editor.palette.get("bg0"), before);
     press(&mut app, "\n"); // keep it
     draw(&mut app);
     // a pane title focuses the pane
@@ -1028,8 +1038,8 @@ fn settings_history_tab_previews_restores_and_names_versions() {
     let dir = store.dir.clone();
     crate::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
-    let before = app.palette.get("red");
-    app.palette.set("red", Rgb(1, 2, 3));
+    let before = app.editor.palette.get("red");
+    app.editor.palette.set("red", Rgb(1, 2, 3));
     app.save(false);
     app.page = Page::Settings;
     render(&mut app, 160, 45);
@@ -1068,7 +1078,7 @@ fn settings_history_tab_previews_restores_and_names_versions() {
     assert!(matches!(app.overlay, Overlay::Ask { .. }));
     render(&mut app, 160, 45);
     click_on(&mut app, crate::hit::Target::ConfirmChoice('y'));
-    assert_eq!(app.palette.get("red"), before);
+    assert_eq!(app.editor.palette.get("red"), before);
     assert!(!app.dirty());
     assert_eq!(
         Store::at(dir.clone()).load("One").unwrap().get("red"),
@@ -1077,7 +1087,7 @@ fn settings_history_tab_previews_restores_and_names_versions() {
     assert_eq!(app.versions().len(), 2);
     // <leader>u undoes the restore
     press(&mut app, " u");
-    assert_eq!(app.palette.get("red"), Rgb(1, 2, 3));
+    assert_eq!(app.editor.palette.get("red"), Rgb(1, 2, 3));
     // n names the current file; named versions come first, d deletes them
     press(&mut app, "nmy reds\n");
     let versions = app.versions();
@@ -1107,7 +1117,7 @@ fn settings_history_tab_previews_restores_and_names_versions() {
 fn ctrl_c_quits_unless_the_keymap_uses_it() {
     let ctrl_c = KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL);
     let mut app = test_app(temp_store("ctrl-c"), Start::Named("One".into()));
-    app.palette.set("red", Rgb(1, 2, 3));
+    app.editor.palette.set("red", Rgb(1, 2, 3));
     app.on_key(ctrl_c);
     assert!(
         matches!(app.overlay, Overlay::Confirm(Pending::Quit)),
@@ -1294,7 +1304,7 @@ fn selecting_a_colour_lights_up_its_derivation_relatives() {
     assert!(lit(&mut app, "bg0") && lit(&mut app, "red"));
     assert!(!lit(&mut app, "green"));
     // pinned (setting a derived key by hand pins it): nothing lights up
-    app.palette.set("bg_visual_red", Rgb(9, 9, 9));
+    app.editor.palette.set("bg_visual_red", Rgb(9, 9, 9));
     assert!(!lit(&mut app, "red"));
     std::fs::remove_dir_all(app.store.dir.clone()).unwrap();
 }
@@ -1346,16 +1356,20 @@ fn editing_a_base_colour_moves_its_unpinned_derived_colours_live() {
     let i = app.keys.iter().position(|k| *k == "red").unwrap();
     app.select_key(i);
     app.open_picker();
-    let before = app.palette.get("bg_visual_red");
-    app.palette.set("bg_diff_red", Rgb(1, 1, 1)); // pinned now
+    let before = app.editor.palette.get("bg_visual_red");
+    app.editor.palette.set("bg_diff_red", Rgb(1, 1, 1)); // pinned now
     press(&mut app, "lll"); // in the picker, before Enter
-    assert!(app.edit_session.is_some(), "not kept yet");
+    assert!(app.editor.in_edit_session(), "not kept yet");
     assert_ne!(
-        app.palette.get("bg_visual_red"),
+        app.editor.palette.get("bg_visual_red"),
         before,
         "derived follows live"
     );
-    assert_eq!(app.palette.get("bg_diff_red"), Rgb(1, 1, 1), "pinned stays");
+    assert_eq!(
+        app.editor.palette.get("bg_diff_red"),
+        Rgb(1, 1, 1),
+        "pinned stays"
+    );
     std::fs::remove_dir_all(app.store.dir.clone()).unwrap();
 }
 
@@ -2000,7 +2014,7 @@ fn palette_list_hangs_from_its_row_and_previews() {
     let store = temp_store("palette-menu");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
-    let one_red = app.palette.get("red");
+    let one_red = app.editor.palette.get("red");
     let down = |app: &mut App| app.on_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
     // the title names it; the dropdown is the pane's first row
     let s = render(&mut app, 160, 45);
@@ -2013,33 +2027,33 @@ fn palette_list_hangs_from_its_row_and_previews() {
     assert_eq!(app.hits.rect_of(T::OverlayRow(0)).unwrap().y, pane.y + 5);
     // moving shows the highlighted palette; it isn't an unsaved edit
     down(&mut app);
-    assert_eq!(app.palette.get("red"), Rgb(200, 0, 0));
+    assert_eq!(app.editor.palette.get("red"), Rgb(200, 0, 0));
     assert_eq!(app.name, "One");
     assert!(!app.dirty());
     assert!(render(&mut app, 160, 45).contains("Palette: One "));
     // Esc puts it back
     press(&mut app, "\x1b");
     assert!(matches!(app.overlay, Overlay::None));
-    assert_eq!(app.palette.get("red"), one_red);
+    assert_eq!(app.editor.palette.get("red"), one_red);
     assert!(app.open_original.is_none());
     // <leader>op opens the same list; Enter keeps the highlighted one
     press(&mut app, " op");
     down(&mut app);
     press(&mut app, "\n");
     assert_eq!(app.name, "Two");
-    assert_eq!(app.palette.get("red"), Rgb(200, 0, 0));
+    assert_eq!(app.editor.palette.get("red"), Rgb(200, 0, 0));
     assert!(!app.dirty());
     // with unsaved edits, choosing still asks first (about the real palette)
     press(&mut app, "#111111\n");
     assert!(app.dirty());
-    let edited = app.palette.clone();
+    let edited = app.editor.palette.clone();
     press(&mut app, " op");
     app.on_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE));
-    assert_ne!(app.palette, edited);
+    assert_ne!(app.editor.palette, edited);
     assert!(app.dirty());
     press(&mut app, "\n");
     assert!(matches!(app.overlay, Overlay::Confirm(Pending::Open(_))));
-    assert_eq!(app.palette, edited);
+    assert_eq!(app.editor.palette, edited);
     std::fs::remove_dir_all(dir).unwrap();
 }
 

@@ -241,8 +241,7 @@ impl App {
             Ok(p) => {
                 self.name = t.palette.clone();
                 self.is_new = false;
-                self.saved = p.clone();
-                self.palette = p;
+                self.editor.load(p);
                 self.reset_history();
             }
             Err(e) => self.error(format!("Palette \"{}\": {e:#}", t.palette)),
@@ -399,7 +398,7 @@ impl App {
             return self.error(format!("Applying the palette: {e:#}"));
         }
         self.active = Some(t.palette.clone());
-        self.system_palette = Some(self.palette.clone());
+        self.system_palette = Some(self.editor.palette.clone());
         let _ = ThemeStore::set_active(&self.theme);
         self.notify_saved(format!("Saved and applied \"{}\"", self.theme));
     }

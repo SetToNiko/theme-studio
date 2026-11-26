@@ -1,5 +1,7 @@
 //! Editor state and input handling.
 
+mod palette_editor;
+
 use std::io::Write;
 use std::time::{Duration, Instant};
 
@@ -12,13 +14,14 @@ use ratatui::crossterm::event::{
 };
 use ratatui::layout::Rect;
 
-use crate::color::{self, Rgb};
+use crate::color::Rgb;
 use crate::fonts::FontsTab;
 use crate::keymap::{Action, Context, Key, Keymap, Lookup};
 use crate::palette::{self, GROUPS, Palette};
 use crate::preview::{Mode as PreviewMode, PaneId, Preview};
 use crate::store::{Store, TerminalMap};
 use crate::theme::ThemeStore;
+use palette_editor::PaletteEditor;
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
 
@@ -151,22 +154,13 @@ pub struct App {
     pub name: String,
     /// Not in palettes.json yet.
     pub is_new: bool,
-    pub palette: Palette,
-    /// The palette as last loaded or saved, for "unsaved" and the old swatch.
-    pub saved: Palette,
-    undo: Vec<Palette>,
-    redo: Vec<Palette>,
-    /// Key being edited by consecutive picker changes (one undo step for all).
-    last_edit: Option<&'static str>,
+    /// The palette being edited: colours, undo history, picker numbers.
+    pub editor: PaletteEditor,
     /// Keys in display order (GROUPS flattened).
     pub keys: Vec<&'static str>,
     pub sel: usize,
     pub list_scroll: usize,
     pub focus: Focus,
-    /// Picker state: hue (degrees), saturation and value (0..1). Kept as
-    /// floats so the hue survives greys and small steps don't get rounded away.
-    pub hsv: (f64, f64, f64),
-    pub hex_input: String,
     pub active: Option<String>,
     /// The active system palette (hover colours are its keys).
     pub system_palette: Option<Palette>,
@@ -194,9 +188,6 @@ pub struct App {
     pub preview: Preview,
     pub side: Side,
     pub page: Page,
-    /// The palette (and undo depth) before the picker's first change, for
-    /// Esc to put back. Dropped once the keyboard is back in the list.
-    edit_session: Option<(Palette, usize)>,
     /// Three columns (false: the preview is a row underneath; no font sample).
     pub wide: bool,
     /// The colour picker (pane 5) is on screen.
@@ -332,7 +323,6 @@ impl App {
             palette_menu_focused: false,
             page_tabs_focused: false,
             row_sel: 0,
-            edit_session: None,
             wide: true,
             expanded_groups: GROUPS
                 .iter()
@@ -376,11 +366,7 @@ impl App {
             store,
             name,
             is_new,
-            saved: palette.clone(),
-            palette,
-            undo: Vec::new(),
-            redo: Vec::new(),
-            last_edit: None,
+            editor: PaletteEditor::new(palette),
             keys: GROUPS
                 .iter()
                 .flat_map(|(_, ks)| ks.iter().copied())
@@ -388,8 +374,6 @@ impl App {
             sel: 0,
             list_scroll: 0,
             focus: Focus::List,
-            hsv: (0.0, 0.0, 0.0),
-            hex_input: String::new(),
             active,
             system_palette,
             terminal,
@@ -442,7 +426,7 @@ impl App {
         let mut redraw = true;
         while !self.quit {
             // nvim in the preview re-reads this whenever it changes
-            self.preview.sync_draft(&self.palette);
+            self.preview.sync_draft(&self.editor.palette);
             if self.page == Page::Main && self.sample_visible {
                 self.update_sample();
             }
@@ -512,7 +496,8 @@ impl App {
     /// Unsaved palette edits (not counting a palette previewed from the
     /// palette list).
     pub fn dirty(&self) -> bool {
-        self.is_new || self.open_original.as_ref().unwrap_or(&self.palette) != &self.saved
+        self.is_new
+            || self.open_original.as_ref().unwrap_or(&self.editor.palette) != &self.editor.saved
     }
 
     /// Asks for a new font sample when the fonts or colours changed, and
@@ -520,11 +505,11 @@ impl App {
     fn update_sample(&mut self) {
         let fonts = self.fonts.shown_fonts();
         let sizes = [0, 1, 2].map(|r| self.fonts.effective_size(r, fonts[r].size));
-        let markup = crate::fonts::sample_markup(&fonts, sizes, &self.palette, &self.name);
+        let markup = crate::fonts::sample_markup(&fonts, sizes, &self.editor.palette, &self.name);
         let dpi = self.fonts.dpi;
         self.fonts
             .sample
-            .request(markup, self.palette.get("bg0"), dpi);
+            .request(markup, self.editor.palette.get("bg0"), dpi);
         match self.fonts.sample.take() {
             Some(Ok(img)) => {
                 self.sample_image = self.picker.as_ref().map(|p| p.new_resize_protocol(img));
@@ -629,17 +614,14 @@ impl App {
 
     /// Points the picker at the selected key's colour.
     fn load_picker(&mut self) {
-        let c = self.palette.get(self.key());
-        let (h, s, v) = color::rgb_to_hsv(c);
-        self.hsv = (h.unwrap_or(self.hsv.0), s, v);
-        self.hex_input = c.hex();
+        self.editor.load_picker(self.key());
     }
 
     /// Selects a colour without touching the list cursor.
     fn select_key(&mut self, i: usize) {
         if i < self.keys.len() && i != self.sel {
             self.sel = i;
-            self.last_edit = None;
+            self.editor.end_edit_run();
             self.load_picker();
         }
     }
@@ -654,62 +636,29 @@ impl App {
         }
     }
 
-    fn push_undo(&mut self) {
-        self.undo.push(self.palette.clone());
-        if self.undo.len() > 500 {
-            self.undo.remove(0);
-        }
-        self.redo.clear();
-    }
-
     /// Sets the selected key from the picker. Consecutive changes to one key
     /// are a single undo step.
     fn edit(&mut self, c: Rgb) {
-        let key = self.key();
-        if self.palette.get(key) == c {
-            return;
-        }
-        // the first change while in the picker: remember the palette, so
-        // Esc can put it back
-        if self.edit_session.is_none() && self.focus != Focus::List {
-            self.edit_session = Some((self.palette.clone(), self.undo.len()));
-        }
-        if self.last_edit != Some(key) {
-            self.push_undo();
-            self.last_edit = Some(key);
-        }
-        self.palette.set(key, c);
-        self.hex_input = c.hex();
+        let in_picker = self.focus != Focus::List;
+        self.editor.edit(self.key(), c, in_picker);
     }
 
     /// Sets `key` to `c` as its own undo step (paste, copy from another key).
     fn set_key(&mut self, key: &'static str, c: Rgb) {
-        self.push_undo();
-        self.last_edit = None;
-        self.palette.set(key, c);
+        self.editor.set_key(key, c);
         if key == self.key() {
             self.load_picker();
         }
     }
 
     fn set_hsv(&mut self, h: f64, s: f64, v: f64) {
-        self.hsv = (h.clamp(0.0, 360.0), s.clamp(0.0, 1.0), v.clamp(0.0, 1.0));
-        let (h, s, v) = self.hsv;
-        self.edit(color::hsv_to_rgb(h, s, v));
-    }
-
-    /// Current saturation and lightness (HSL) of the selected colour.
-    pub fn hsl(&self) -> (f64, f64) {
-        let (_, s, l) = color::rgb_to_hsl(self.palette.get(self.key()));
-        (s, l)
+        let in_picker = self.focus != Focus::List;
+        self.editor.set_hsv(self.key(), h, s, v, in_picker);
     }
 
     fn set_hsl(&mut self, s: f64, l: f64) {
-        let c = color::hsl_to_rgb(self.hsv.0, s.clamp(0.0, 1.0), l.clamp(0.0, 1.0));
-        let (_, sv, v) = color::rgb_to_hsv(c);
-        self.hsv.1 = sv;
-        self.hsv.2 = v;
-        self.edit(c);
+        let in_picker = self.focus != Focus::List;
+        self.editor.set_hsl(self.key(), s, l, in_picker);
     }
 
     fn toggle_pin(&mut self) {
@@ -718,38 +667,19 @@ impl App {
             self.info(format!("{key} is a base colour; it's always set by hand"));
             return;
         }
-        self.push_undo();
-        self.last_edit = None;
-        if self.palette.is_pinned(key) {
-            self.palette.unpin(key);
-            self.info(format!("{key} follows {} again", palette::sources(key)));
-        } else {
-            let c = self.palette.get(key);
-            self.palette.set(key, c);
-            self.info(format!("{key} pinned"));
-        }
-        self.load_picker();
+        let message = self.editor.toggle_pin(key, palette::sources(key));
+        self.info(message);
     }
 
     fn undo(&mut self) {
-        match self.undo.pop() {
-            Some(p) => {
-                self.redo.push(std::mem::replace(&mut self.palette, p));
-                self.last_edit = None;
-                self.load_picker();
-            }
-            None => self.info("Nothing to undo"),
+        if !self.editor.undo(self.key()) {
+            self.info("Nothing to undo");
         }
     }
 
     fn redo(&mut self) {
-        match self.redo.pop() {
-            Some(p) => {
-                self.undo.push(std::mem::replace(&mut self.palette, p));
-                self.last_edit = None;
-                self.load_picker();
-            }
-            None => self.info("Nothing to redo"),
+        if !self.editor.redo(self.key()) {
+            self.info("Nothing to redo");
         }
     }
 
@@ -778,11 +708,11 @@ impl App {
     }
 
     pub(crate) fn save_as(&mut self, name: &str, then_apply: bool) {
-        match self.store.save(name, &self.palette) {
+        match self.store.save(name, &self.editor.palette) {
             Ok(()) => {
                 self.name = name.to_string();
                 self.is_new = false;
-                self.saved = self.palette.clone();
+                self.editor.mark_saved();
                 if then_apply {
                     self.apply_saved();
                 } else {
@@ -807,7 +737,7 @@ impl App {
         match self.store.apply(&name) {
             Ok(()) => {
                 self.active = Some(name.clone());
-                self.system_palette = Some(self.palette.clone());
+                self.system_palette = Some(self.editor.palette.clone());
                 self.notify_saved(format!("Saved and applied \"{name}\""));
             }
             Err(e) => self.error(format!("Apply failed: {e:#}")),
@@ -819,8 +749,7 @@ impl App {
             Ok(p) => {
                 self.name = name.to_string();
                 self.is_new = false;
-                self.saved = p.clone();
-                self.palette = p;
+                self.editor.load(p);
                 self.reset_history();
                 self.info(format!("Opened \"{name}\""));
             }
@@ -831,16 +760,13 @@ impl App {
     fn new_palette(&mut self) {
         self.name = "untitled".to_string();
         self.is_new = true;
-        self.palette = Palette::blank();
-        self.saved = self.palette.clone();
+        self.editor.start_blank();
         self.reset_history();
         self.info("New palette: edit the 8 base colours first, the rest follow");
     }
 
     pub(crate) fn reset_history(&mut self) {
-        self.undo.clear();
-        self.redo.clear();
-        self.last_edit = None;
+        self.editor.clear_history();
         self.sel = 0;
         self.list_scroll = 0;
         self.focus = Focus::List;
@@ -936,7 +862,7 @@ impl App {
                     .values()
                     .map(|v| v.as_object().and_then(|o| Palette::from_json(o).ok()))
                     .collect();
-                self.open_original = Some(self.palette.clone());
+                self.open_original = Some(self.editor.palette.clone());
                 self.overlay = Overlay::Open {
                     filter: String::new(),
                     sel,
@@ -963,7 +889,7 @@ impl App {
                 let shown = open_matches(entries, filter)
                     .get(*sel)
                     .and_then(|&i| self.open_palettes.get(i).cloned().flatten());
-                self.palette = shown.unwrap_or_else(|| original.clone());
+                self.editor.palette = shown.unwrap_or_else(|| original.clone());
             }
             _ => self.end_palette_preview(),
         }
@@ -972,7 +898,7 @@ impl App {
     /// Back to the palette from before the palette list opened.
     fn end_palette_preview(&mut self) {
         if let Some(p) = self.open_original.take() {
-            self.palette = p;
+            self.editor.palette = p;
         }
         self.open_palettes.clear();
     }
@@ -1139,18 +1065,9 @@ impl App {
     /// picker hides again
     /// unless Settings says it stays open.
     fn leave_picker(&mut self, discard: bool) {
-        if discard
-            && let Some((before, undo_len)) = self.edit_session.take()
-            && before != self.palette
-        {
-            self.palette = before;
-            self.undo.truncate(undo_len);
-            self.redo.clear();
-            self.last_edit = None;
-            self.load_picker();
+        if self.editor.end_session(self.key(), discard) {
             self.info(format!("Discarded the change to {}", self.key()));
         }
-        self.edit_session = None;
         self.focus = Focus::List;
         if self.settings.colours.picker_hides_on_esc() {
             self.picker_visible = false;
@@ -1416,7 +1333,7 @@ impl App {
     fn end_session_outside_picker(&mut self) {
         let left =
             self.focus == Focus::List || self.side != Side::Colours || self.preview.focus.is_some();
-        if left && self.edit_session.is_some() {
+        if left && self.editor.in_edit_session() {
             self.leave_picker(true);
         }
     }
@@ -1691,7 +1608,7 @@ impl App {
             Action::Redo => self.redo(),
             Action::Pin => self.toggle_pin(),
             Action::CopyHex => {
-                let hex = self.palette.get(self.key()).hex();
+                let hex = self.editor.palette.get(self.key()).hex();
                 self.copy(&hex);
             }
             Action::CopyFrom => {
@@ -1700,7 +1617,7 @@ impl App {
             }
             Action::HexEntry => {
                 self.focus = Focus::Hex;
-                self.hex_input = "#".into();
+                self.editor.hex_input = "#".into();
             }
             Action::FocusNext => self.cycle_focus(1),
             Action::FocusPrev => self.cycle_focus(-1),
@@ -1744,20 +1661,20 @@ impl App {
         match self.focus {
             Focus::Square => {
                 let step = if big { 0.1 } else { 0.02 };
-                let (h, s, v) = self.hsv;
+                let (h, s, v) = self.editor.hsv;
                 self.set_hsv(h, s + dx as f64 * step, v - dy as f64 * step);
             }
             Focus::Hue => {
                 let step = if big { 15.0 } else { 2.0 };
-                let (h, s, v) = self.hsv;
+                let (h, s, v) = self.editor.hsv;
                 self.set_hsv(h + (dy + dx) as f64 * step, s, v);
             }
             Focus::SliderH | Focus::SliderS | Focus::SliderL if dx != 0 => {
                 let n = dx as f64 * if big { 10.0 } else { 1.0 };
-                let (s, l) = self.hsl();
+                let (s, l) = self.editor.hsl(self.key());
                 match self.focus {
                     Focus::SliderH => {
-                        let (h, s, v) = self.hsv;
+                        let (h, s, v) = self.editor.hsv;
                         self.set_hsv(h + n, s, v);
                     }
                     Focus::SliderS => self.set_hsl(s + n / 100.0, l),
@@ -1779,7 +1696,7 @@ impl App {
             // a colour row: copy it; a group row: open or close it
             Action::Confirm | Action::Right if on_key => {
                 let from = self.key();
-                let c = self.palette.get(from);
+                let c = self.editor.palette.get(from);
                 self.overlay = Overlay::None;
                 let to = self.keys.iter().position(|k| *k == target).unwrap_or(0);
                 self.select(to);
@@ -1811,14 +1728,17 @@ impl App {
 
     fn on_hex_key(&mut self, k: KeyEvent) {
         match k.code {
-            KeyCode::Enter => match Rgb::parse(&self.hex_input) {
+            KeyCode::Enter => match Rgb::parse(&self.editor.hex_input) {
                 Some(c) => {
-                    self.last_edit = None;
+                    self.editor.end_edit_run();
                     self.edit(c);
                     self.load_picker();
                     self.leave_picker(false);
                 }
-                None => self.error(format!("Not a colour: {} (use #rrggbb)", self.hex_input)),
+                None => self.error(format!(
+                    "Not a colour: {} (use #rrggbb)",
+                    self.editor.hex_input
+                )),
             },
             KeyCode::Esc => {
                 self.load_picker();
@@ -1827,17 +1747,17 @@ impl App {
             KeyCode::Tab => self.cycle_focus(1),
             KeyCode::BackTab => self.cycle_focus(-1),
             KeyCode::Backspace => {
-                self.hex_input.pop();
+                self.editor.hex_input.pop();
             }
             KeyCode::Char(c) if c.is_ascii_hexdigit() || c == '#' => {
                 if c == '#' {
-                    self.hex_input.clear();
+                    self.editor.hex_input.clear();
                 }
-                if self.hex_input.len() < 7 {
-                    if self.hex_input.is_empty() && c != '#' {
-                        self.hex_input.push('#');
+                if self.editor.hex_input.len() < 7 {
+                    if self.editor.hex_input.is_empty() && c != '#' {
+                        self.editor.hex_input.push('#');
                     }
-                    self.hex_input.push(c.to_ascii_lowercase());
+                    self.editor.hex_input.push(c.to_ascii_lowercase());
                 }
             }
             _ => {}
@@ -2190,7 +2110,7 @@ impl App {
                 }
             }
             MouseEventKind::Up(MouseButton::Left) => {
-                self.last_edit = None;
+                self.editor.end_edit_run();
                 self.dragging = None;
             }
             _ => {}
@@ -2244,18 +2164,18 @@ impl App {
                 self.focus = Focus::Square;
                 let s = frac(x, r.x, r.width);
                 let v = 1.0 - frac(y, r.y, r.height.max(2));
-                self.set_hsv(self.hsv.0, s, v);
+                self.set_hsv(self.editor.hsv.0, s, v);
             }
             T::Hue => {
                 self.side = Side::Colours;
                 self.focus = Focus::Hue;
-                let (_, s, v) = self.hsv;
+                let (_, s, v) = self.editor.hsv;
                 self.set_hsv(frac(y, r.y, r.height.max(2)) * 360.0, s, v);
             }
             T::SliderH => {
                 self.side = Side::Colours;
                 self.focus = Focus::SliderH;
-                let (_, s, v) = self.hsv;
+                let (_, s, v) = self.editor.hsv;
                 self.set_hsv(frac(x, r.x, r.width) * 360.0, s, v);
             }
             T::SliderS | T::SliderL => {
@@ -2265,7 +2185,7 @@ impl App {
                 } else {
                     Focus::SliderL
                 };
-                let (s, l) = self.hsl();
+                let (s, l) = self.editor.hsl(self.key());
                 let u = frac(x, r.x, r.width);
                 if t == T::SliderS {
                     self.set_hsl(u, l)
@@ -2276,7 +2196,7 @@ impl App {
             T::Hex if !drag => {
                 self.side = Side::Colours;
                 self.focus = Focus::Hex;
-                self.hex_input = "#".into();
+                self.editor.hex_input = "#".into();
             }
             T::Hex => {}
             T::FontRole(i) => {
@@ -2403,7 +2323,7 @@ impl App {
             self.picker_visible = true;
         }
         if self.focus == Focus::Hex {
-            self.hex_input = "#".into(); // typing replaces the colour; Esc restores it
+            self.editor.hex_input = "#".into(); // typing replaces the colour; Esc restores it
         }
     }
 }

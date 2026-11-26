@@ -195,7 +195,7 @@ impl App {
             (s.width as u32, s.height as u32)
         });
         let dpi = self.fonts.dpi;
-        let palette = self.palette.clone();
+        let palette = self.editor.palette.clone();
         let bg = palette.get("bg0");
         let pv = self.pv();
         let kind = pv.kind_for(e);
