@@ -18,7 +18,7 @@ use ratatui::layout::Rect;
 use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
 use crate::app::{App, PreviewMode};
 use crate::hit::Target as T;
-use crate::keymap::Action;
+use crate::keymap::action::Action;
 
 /// Where `v` lies between `start` and the end of a control that is `len` cells long (0.0 to 1.0).
 fn frac(v: u16, start: u16, len: u16) -> f64 {

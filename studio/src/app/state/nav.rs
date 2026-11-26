@@ -8,7 +8,9 @@ use std::path::PathBuf;
 use ratatui::layout::Rect;
 
 use crate::color::Rgb;
-use crate::keymap::{Action, Context, Key};
+use crate::keymap::Context;
+use crate::keymap::action::Action;
+use crate::keymap::key::Key;
 
 /// Which control the keyboard drives.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

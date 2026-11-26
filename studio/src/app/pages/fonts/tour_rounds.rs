@@ -8,7 +8,7 @@
 
 use crate::app::App;
 use crate::download;
-use crate::keymap::Action;
+use crate::keymap::action::Action;
 use crate::samples::{self, Kind};
 use crate::tour_page::Stage;
 use crate::tournament::{self, Tournament};

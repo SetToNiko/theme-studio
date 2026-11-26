@@ -13,7 +13,7 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use crate::app::App;
 use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
 use crate::color::Rgb;
-use crate::keymap::Action;
+use crate::keymap::action::Action;
 use crate::palette::GROUPS;
 
 /// The order of Tab and Shift+Tab through the picker controls.

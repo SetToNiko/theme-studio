@@ -3,7 +3,9 @@
 use super::state::nav::{ColourRow, Pending};
 use super::*;
 
-use crate::keymap::{Action, Context};
+use crate::keymap::action::Action;
+
+use crate::keymap::Context;
 use crate::preview::PaneId;
 use crate::store::to_jq_string;
 use ratatui::Terminal;

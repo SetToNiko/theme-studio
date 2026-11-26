@@ -14,7 +14,8 @@ use crate::app::{App, open_matches};
 use crate::color::{self, Rgb};
 use crate::config::settings::Sizes;
 use crate::hit::{Border, BorderId, Target, hover};
-use crate::keymap::{Action, Context};
+use crate::keymap::Context;
+use crate::keymap::action::Action;
 use crate::palette::{self, GROUPS, TEXT_KEYS};
 use crate::preview::Mode as PreviewMode;
 use crate::widgets::panel_number;
@@ -1700,7 +1701,7 @@ fn draw_pending(f: &mut Frame, app: &App, area: Rect) {
     }
     let ctx = app.contexts();
     let next = app.keymap.continuations(&ctx, &app.pending_keys);
-    let typed = crate::keymap::display_seq(&app.pending_keys, app.keymap.leader);
+    let typed = crate::keymap::key::display_seq(&app.pending_keys, app.keymap.leader);
     let mut lines: Vec<Line> = next
         .iter()
         .map(|(k, what)| {
@@ -1749,7 +1750,7 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
                 // one row per action, all its keys together
                 let mut rows: Vec<(Action, Vec<String>)> = Vec::new();
                 for b in app.keymap.bindings.iter().filter(|b| b.context == ctx) {
-                    let k = crate::keymap::display_seq(&b.keys, app.keymap.leader);
+                    let k = crate::keymap::key::display_seq(&b.keys, app.keymap.leader);
                     match rows.iter_mut().find(|(a, _)| *a == b.action) {
                         Some((_, keys)) => keys.push(k),
                         None => rows.push((b.action, vec![k])),
@@ -1784,7 +1785,7 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
             lines.push(Line::styled(
                 format!(
                     " Leader: {}   Text fields take keys as typing.   ←/→ more columns; any other key closes.",
-                    crate::keymap::display_seq(&[app.keymap.leader], crate::keymap::Key::new(ratatui::crossterm::event::KeyCode::Null, ratatui::crossterm::event::KeyModifiers::NONE))
+                    crate::keymap::key::display_seq(&[app.keymap.leader], crate::keymap::key::Key::new(ratatui::crossterm::event::KeyCode::Null, ratatui::crossterm::event::KeyModifiers::NONE))
                 ),
                 Style::new().dark_gray(),
             ));
@@ -1913,7 +1914,7 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
             popup(f, centered(area, 50, 5), "Save as", lines);
         }
         Overlay::Capture { what, keys } => {
-            let typed = crate::keymap::display_seq(keys, app.keymap.leader);
+            let typed = crate::keymap::key::display_seq(keys, app.keymap.leader);
             let lines = match what {
                 crate::app::state::nav::Capture::Leader => vec![
                     Line::raw(" Press the new leader key."),

@@ -80,7 +80,7 @@ pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rec
         .keymap
         .key_for(
             &[crate::keymap::Context::FontRoles],
-            crate::keymap::Action::FixRoleFont,
+            crate::keymap::action::Action::FixRoleFont,
         )
         .map(|k| crate::ui::friendly(&k));
     // the names are as wide as the longest

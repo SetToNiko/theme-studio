@@ -11,7 +11,8 @@ use crate::app::App;
 use crate::app::state::nav::{BhRow, LookId};
 use crate::color::Rgb;
 use crate::hit::{Target, hover, hover_line, hover_row};
-use crate::keymap::{Keymap, display_seq};
+use crate::keymap::Keymap;
+use crate::keymap::key::display_seq;
 use crate::settings::{DiffLine, FILES, HistFocus, KmRow, TABS, Tab};
 
 /// Keeps `sel` on screen in a list `height` rows tall.
@@ -784,7 +785,8 @@ pub fn draw_save_buttons(f: &mut Frame, app: &mut App, area: Rect, changes: usiz
     if changes == 0 || area.height < 2 {
         return;
     }
-    use crate::keymap::{Action, Context};
+    use crate::keymap::Context;
+    use crate::keymap::action::Action;
     let key = |a: Action| {
         app.keymap
             .key_for(&[Context::Settings, Context::Global], a)

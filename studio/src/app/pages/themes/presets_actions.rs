@@ -8,7 +8,8 @@
 
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Naming, Overlay};
-use crate::keymap::{Action, Keymap};
+use crate::keymap::Keymap;
+use crate::keymap::action::Action;
 use crate::presets::is_shipped;
 
 impl App {

@@ -16,7 +16,9 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::app::state::nav::{ColourRow, Focus, For, Overlay, Page, Pending, Side};
 use crate::app::{App, PreviewMode};
-use crate::keymap::{Action, Context, Key, Lookup};
+use crate::keymap::action::{Action, ActionGroup};
+use crate::keymap::key::Key;
+use crate::keymap::{Context, Lookup};
 
 impl App {
     pub(in crate::app) fn on_key(&mut self, k: KeyEvent) {
@@ -124,38 +126,18 @@ impl App {
         if self.layout.page_tabs_focused && self.page_tabs_action(a) {
             return;
         }
-        match a {
+        match a.group() {
             // quit, help, page switch, hints and preview toggles: on every page
-            _ if is_page_action(a) => self.run_view_action(a),
+            ActionGroup::Page => self.run_view_action(a),
             // the other pages take every other action themselves
             _ if self.page == Page::Settings => self.run_settings(a),
             _ if self.page == Page::Downloads => self.run_downloads(a),
             _ if self.page != Page::Main => {}
             // from here on: the Main page
-            Action::PreviewCycle
-            | Action::TogglePicker
-            | Action::ToggleSample
-            | Action::ResizeMode
-            | Action::PaneLeft
-            | Action::PaneRight
-            | Action::PaneUp
-            | Action::PaneDown
-            | Action::Panel(_) => self.run_view_action(a),
-            Action::SavePalette
-            | Action::SaveFonts
-            | Action::ApplyPalette
-            | Action::ApplyFonts
-            | Action::Save
-            | Action::SaveAs
-            | Action::Apply
-            | Action::Open
-            | Action::New
-            | Action::OpenPalette
-            | Action::OpenFonts
-            | Action::NewPalette
-            | Action::NewFonts => self.run_theme_action(a),
-            _ if self.side == Side::Fonts => self.run_fonts(a),
-            _ => self.run_colours(a),
+            ActionGroup::Window => self.run_view_action(a),
+            ActionGroup::Theme => self.run_theme_action(a),
+            ActionGroup::Column if self.side == Side::Fonts => self.run_fonts(a),
+            ActionGroup::Column => self.run_colours(a),
         }
     }
 
@@ -473,23 +455,6 @@ impl App {
             self.fonts_save_as(&name, true);
         }
     }
-}
-
-/// Says if an action works on every page: quit, help, page switch, and the
-/// hints and preview toggles.
-///
-/// `run_action` and `page_tabs_action` both use it, so the list is in one place.
-pub(in crate::app) fn is_page_action(a: Action) -> bool {
-    matches!(
-        a,
-        Action::Quit
-            | Action::Help
-            | Action::PageMain
-            | Action::PageDownloads
-            | Action::PageSettings
-            | Action::ToggleHints
-            | Action::TogglePreview
-    )
 }
 
 /// Turns a move action of the picker into a step `(dx, dy, big)`: the

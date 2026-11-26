@@ -11,7 +11,9 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
 
 use crate::hit::{HitMap, Target, hover_line};
-use crate::keymap::{Action, Context, Keymap, all_actions, display_seq};
+use crate::keymap::action::{Action, all_actions};
+use crate::keymap::key::display_seq;
+use crate::keymap::{Context, Keymap};
 use crate::settings::SettingsPage;
 
 /// A line of the difference between two keymaps.
@@ -42,7 +44,7 @@ fn keys_text(km: &Keymap, ctx: Context, a: Action) -> String {
 /// `then` against `now`: the actions whose keys differ, by context (or every
 /// action, with `all`).
 pub fn keymap_diff(now: &Keymap, then: &Keymap, all: bool) -> Vec<KmDiff> {
-    let none = crate::keymap::Key::new(
+    let none = crate::keymap::key::Key::new(
         ratatui::crossterm::event::KeyCode::Null,
         ratatui::crossterm::event::KeyModifiers::NONE,
     );

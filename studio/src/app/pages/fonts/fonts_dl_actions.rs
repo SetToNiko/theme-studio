@@ -16,7 +16,7 @@ use crate::app::App;
 use crate::app::state::nav::{Deferred, Overlay, Page};
 use crate::download::{self, Catalogue, Entry, Msg, Source};
 use crate::fonts_dl::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb, norm};
-use crate::keymap::Action;
+use crate::keymap::action::Action;
 
 impl App {
     /// fonts-installed.json (a setting; default next to settings.json).

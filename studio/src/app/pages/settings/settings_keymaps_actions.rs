@@ -7,7 +7,9 @@
 
 use crate::app::App;
 use crate::app::state::nav::{Capture, Deferred, Naming, Overlay};
-use crate::keymap::{Action, Context, Key, Keymap, all_actions, display_seq};
+use crate::keymap::action::{Action, all_actions};
+use crate::keymap::key::{Key, display_seq};
+use crate::keymap::{Context, Keymap};
 use crate::settings::{KmRow, move_over};
 
 impl App {

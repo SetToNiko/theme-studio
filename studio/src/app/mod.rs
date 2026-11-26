@@ -32,7 +32,8 @@ use ratatui::layout::Rect;
 
 use crate::color::Rgb;
 use crate::fonts::FontsTab;
-use crate::keymap::{Key, Keymap};
+use crate::keymap::Keymap;
+use crate::keymap::key::Key;
 use crate::palette::{self, GROUPS, Palette};
 use crate::preview::{Mode as PreviewMode, Preview};
 use crate::store::{Store, TerminalMap};

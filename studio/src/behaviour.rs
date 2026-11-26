@@ -135,7 +135,8 @@ mod tests {
     use crate::config::settings::{LookSettings, Settings};
     use crate::hit::Underline;
     use crate::keymap::Keymap;
-    use crate::keymap::{Action, Key, display_seq};
+    use crate::keymap::action::Action;
+    use crate::keymap::key::{Key, display_seq};
     use crate::palette::Palette;
     use crate::store::{Store, data_file, to_jq_string};
     use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
