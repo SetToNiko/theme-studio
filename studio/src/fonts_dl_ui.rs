@@ -10,7 +10,7 @@ use serde_json::Value;
 
 use crate::app::App;
 use crate::download::Source;
-use crate::fonts_dl::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb};
+use crate::fonts::download_page::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb};
 use crate::hit::{Target, hover, hover_line, hover_row};
 
 fn status_span(s: &DlStatus) -> Span<'static> {
@@ -112,7 +112,7 @@ fn draw_preview(f: &mut Frame, app: &mut App, area: Rect) {
         let label = KINDS
             .iter()
             .find(|(x, _)| *x == k)
-            .map_or("README", |(_, l)| crate::fonts_preview::kind_label(l));
+            .map_or("README", |(_, l)| crate::fonts::preview_page::kind_label(l));
         let mut menus = vec![(0u8, format!("{label} ▾"))];
         if k == Kind::Code {
             menus.push((1, format!("{} ▾", LANGS[pv.lang].0)));

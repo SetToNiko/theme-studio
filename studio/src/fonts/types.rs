@@ -6,7 +6,7 @@ pub const ROLES: [&str; 3] = ["monospace", "proportional", "icons"];
 
 /// The roles on screen.
 pub const ROLE_NAMES: [&str; 3] = ["Monospace", "Proportional", "Icons"];
-/// What each role's font has to be (fonts_pick.rs checks it).
+/// What each role's font has to be (fits() below checks it).
 pub const ROLE_NEEDS: [&str; 3] = ["a Nerd Font Mono", "proportional", "a Nerd Font Propo"];
 
 /// An installed font family, as fontconfig reports it.
@@ -21,6 +21,30 @@ pub struct Installed {
     pub bitmap: bool,
     /// Made for other scripts or symbols (CJK, emoji, math, Unifont), by name.
     pub special: bool,
+}
+
+/// Which kind of font a family is, by its name and flags: `nf-mono`, `nf-propo`, `nf`, `mono` or `propo`.
+fn kind(f: &Installed) -> &'static str {
+    if f.family.ends_with("Nerd Font Mono") {
+        "nf-mono"
+    } else if f.family.ends_with("Nerd Font Propo") {
+        "nf-propo"
+    } else if f.nerd {
+        "nf"
+    } else if f.mono {
+        "mono"
+    } else {
+        "propo"
+    }
+}
+
+/// Whether a font meets a role's requirement.
+pub fn fits(role: usize, f: &Installed) -> bool {
+    match role {
+        0 => kind(f) == "nf-mono",
+        1 => !f.mono,
+        _ => kind(f) == "nf-propo",
+    }
 }
 
 /// Chip key and label, in display order.
@@ -71,4 +95,34 @@ pub enum FontFocus {
     Sample,
     /// typing into the list's search box
     Search,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn font(family: &str, mono: bool, nerd: bool) -> Installed {
+        Installed {
+            family: family.into(),
+            mono,
+            nerd,
+            bitmap: false,
+            special: false,
+        }
+    }
+
+    #[test]
+    fn kinds() {
+        assert_eq!(
+            kind(&font("JetBrainsMono Nerd Font Mono", true, true)),
+            "nf-mono"
+        );
+        assert_eq!(
+            kind(&font("JetBrainsMono Nerd Font Propo", false, true)),
+            "nf-propo"
+        );
+        assert_eq!(kind(&font("JetBrainsMono Nerd Font", true, true)), "nf");
+        assert_eq!(kind(&font("JetBrains Mono", true, false)), "mono");
+        assert_eq!(kind(&font("Inter", false, false)), "propo");
+    }
 }

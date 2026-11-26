@@ -91,7 +91,7 @@ impl ThemeStore {
     /// version 4 has them), else the defaults. Run before fonts.json's
     /// migration drops them from the presets. The version it now has, if it
     /// did.
-    pub fn migrate(&self, fonts: &crate::fonts::FontStore) -> Result<Option<u64>> {
+    pub fn migrate(&self, fonts: &crate::fonts::presets::FontStore) -> Result<Option<u64>> {
         let Ok(text) = std::fs::read_to_string(self.path()) else {
             return Ok(None);
         };
@@ -106,7 +106,7 @@ impl ThemeStore {
                     fonts
                         .load(&t.fonts)
                         .map(|p| p.sizes())
-                        .unwrap_or(crate::fonts::DEFAULT_SIZES),
+                        .unwrap_or(crate::fonts::presets::DEFAULT_SIZES),
                 );
             }
             m.insert(n, t.to_json());
@@ -214,7 +214,7 @@ mod tests {
         )
         .unwrap();
         let themes = ThemeStore { dir: d.clone() };
-        let fonts = crate::fonts::FontStore {
+        let fonts = crate::fonts::presets::FontStore {
             dir: d.clone(),
             share: d.clone(),
         };
@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(themes.get("A").unwrap().sizes, Some([13, 10, 9]));
         assert_eq!(
             themes.get("B").unwrap().sizes,
-            Some(crate::fonts::DEFAULT_SIZES),
+            Some(crate::fonts::presets::DEFAULT_SIZES),
             "a missing preset: the defaults"
         );
         let f: Value =

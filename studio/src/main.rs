@@ -11,12 +11,8 @@ mod docs;
 mod download;
 mod draft;
 mod encoding;
-mod font_tree;
 mod fonts;
-mod fonts_dl;
 mod fonts_dl_ui;
-mod fonts_pick;
-mod fonts_preview;
 mod fonts_ui;
 mod history;
 mod hit;
@@ -93,7 +89,7 @@ fn main() -> Result<()> {
             let loaded = config::load(&dir, true);
             // palettes.json / fonts.json to their current file formats too
             let store = Store::locate();
-            let fonts = fonts::FontStore {
+            let fonts = fonts::presets::FontStore {
                 dir: store.dir.clone(),
                 share: store.share.clone(),
             };

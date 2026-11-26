@@ -13,7 +13,7 @@ use ratatui_image::protocol::StatefulProtocol;
 
 use crate::color::Rgb;
 use crate::download::{Entry, Source};
-use crate::fonts::SampleRenderer;
+use crate::fonts::render::SampleRenderer;
 use crate::samples::{self, KINDS, Kind, LANGS};
 
 /// How long the highlight rests on a font before its preview is fetched.

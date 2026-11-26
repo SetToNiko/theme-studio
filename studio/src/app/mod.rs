@@ -94,7 +94,7 @@ pub struct App {
     pub presets: Vec<Keymap>,
     pub settings: crate::config::settings::Settings,
     /// The Download fonts page.
-    pub dl: crate::fonts_dl::DlPage,
+    pub dl: crate::fonts::download_page::DlPage,
     /// The Fonts page's Tournament tab (made on first use).
     pub tour_page: Option<crate::tour_page::TourPage>,
     /// The Settings page's tabs and selections.
@@ -360,7 +360,8 @@ impl App {
     fn update_sample(&mut self) {
         let fonts = self.fonts.shown_fonts();
         let sizes = [0, 1, 2].map(|r| self.fonts.effective_size(r, fonts[r].size));
-        let markup = crate::fonts::sample_markup(&fonts, sizes, &self.editor.palette, &self.name);
+        let markup =
+            crate::fonts::render::sample_markup(&fonts, sizes, &self.editor.palette, &self.name);
         let dpi = self.fonts.dpi;
         self.fonts
             .sample

@@ -1368,7 +1368,7 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
         } else if app.page == Page::Downloads && app.dl.searching {
             vec!["type to search".into(), "Enter/Esc done".into()]
         } else if app.page == Page::Downloads
-            && app.dl.tab == crate::fonts_dl::DlTab::Tournament
+            && app.dl.tab == crate::fonts::download_page::DlTab::Tournament
             && !app.dl.tabs_focused
         {
             use crate::tour_page::Stage;
@@ -1416,7 +1416,7 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
             .into_iter()
             .flatten()
             .collect();
-            if app.dl.tab == crate::fonts_dl::DlTab::Google {
+            if app.dl.tab == crate::fonts::download_page::DlTab::Google {
                 v.extend(hint(&[A::Left, A::Right], "category"));
             }
             v.extend(hint(&[A::TabPrev, A::TabNext], "tabs"));
@@ -2030,7 +2030,7 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
         }
         Overlay::Menu { menu, sel, at } => {
             // hangs under the title text that opened it
-            let items = crate::fonts_preview::menu_items(*menu);
+            let items = crate::fonts::preview_page::menu_items(*menu);
             let w = (items.iter().map(|s| s.chars().count()).max().unwrap_or(4) as u16 + 4)
                 .min(area.width);
             let h = (items.len() as u16 + 2).min(area.bottom().saturating_sub(at.y + 1));

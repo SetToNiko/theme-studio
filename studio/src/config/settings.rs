@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::fonts::{Filters, NerdKind, Spacing};
+use crate::fonts::filters::{Filters, NerdKind, Spacing};
 
 /// How the font list starts.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -98,7 +98,7 @@ pub struct FontSettings {
     /// settings.json; "~/" works).
     pub installed_list: String,
     // (the per-role filters, mono-filter / ui-filter / bar-filter, went: each
-    // role now has a fixed requirement, fonts_pick.rs)
+    // role now has a fixed requirement, fonts/pick.rs)
 }
 
 impl Default for FontSettings {

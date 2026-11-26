@@ -257,7 +257,7 @@ impl App {
 
     fn theme_apply_saved(&mut self) {
         let t = self.theme_now();
-        let sizes = t.sizes.unwrap_or(crate::fonts::DEFAULT_SIZES);
+        let sizes = t.sizes.unwrap_or(crate::fonts::presets::DEFAULT_SIZES);
         if let Err(e) = self.fonts.store.apply_quietly(&t.fonts, sizes) {
             return self.messages.error(format!("Applying the fonts: {e:#}"));
         }
