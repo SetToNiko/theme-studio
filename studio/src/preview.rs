@@ -698,7 +698,7 @@ impl Preview {
     }
 
     /// A rofi window with a neutral list of entries, drawn with this palette's rofi roles.
-    // Long function: one linear drawing sequence (window, swatches, row, lines) that shares the role colours.
+    // Long function (reason verified, phase 1): one linear drawing sequence (window, swatches, row, lines) that shares the role colours.
     fn draw_rofi(&self, f: &mut Frame, area: Rect, p: &Palette, name: &str) {
         let role = |r: &str| self.roles.get(p, &format!("rofi.{r}"), 0);
         let w = 54.min(area.width);

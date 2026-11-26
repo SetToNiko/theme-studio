@@ -145,7 +145,8 @@ Completes: the removals of GOAL.md. Criterion 3 for the scripts (the system path
 - [x] P1.2 Config and state folders through paths.rs | Files: `paths.rs`, `config.rs`, `history.rs`, `fonts.rs` | Target: rule 1 | Check: tests
 - [x] P1.3 Script folders in paths.sh: `colors_dir`, `fonts_dir`, `cache_dir` | Files: `scripts/lib/paths.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: goal 3 | Check: golden tests
 - [x] P1.4 Sample text: replace the old dotfiles path in the Go sample with `$XDG_CONFIG_HOME/theme-studio/themes.json` | Files: `studio/src/samples/code/go.go` | Target: success criteria | Check: grep = 0, tests
-Completes: criterion 3
+- [ ] P1.5 Download folders through paths.rs: move the `xdg()` helper of download.rs and its 3 folders (installed fonts, cache, preview cache) into paths.rs, behavior unchanged | Files: `studio/src/paths.rs`, `studio/src/download.rs` | Target: goal 3, rule 1 | Check: tests, no XDG or HOME path built outside paths.rs
+Completes: criterion 3 for the Rust code. For the scripts, the per-app paths (GTK settings.ini, fontconfig conf.d, Ghostty themes) become entries of the integrations list in Phase 2, which completes criterion 3 there.
 
 ### Phase 2: App integrations as data
 - [ ] P2.1 Runner and list format: `integrations.json` with i3, colors.sh, and rofi theme outputs. theme-switch uses the runner | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `scripts/theme-switch.sh`, `share/integrations/i3-colors.jq`, `share/integrations/rofi-colors.jq` | Target: goal 2, T2 | Check: golden tests unchanged
@@ -229,6 +230,8 @@ Completes: criterion 6
 | Goal | Theme Studio configures colours and themes for the system and the programs it is set up to configure: remove the wallpaper hook, the login screen (font-switch part, NixOS module), and the rofi picker menus | ACCEPT: new Phase R (R.1 to R.6), P1.3 without the login-screen paths, P2.5 removed | The user changed the goal on 2026-11-26. Removals first make Phases 1 and 2 smaller. |
 | Goal | Wording: "colours and themes for the system, and the programs that it is set up to configure" (was "only fonts and colour palettes"). The three removals stay. | ACCEPT: no step changes | The user corrected the wording on 2026-11-26. The login screen goes because users of a future release can use different login tools. |
 | R | Review: the preview still draws the removed rofi theme picker (delete message, Alt+BackSpace hint) | ACCEPT: new step R.7 | The user chose a neutral rofi menu on 2026-11-26. rofi stays a themed app. |
+| 1 | Move the xdg() helper of download.rs and its 3 folders into paths.rs | ACCEPT: new step P1.5 | Criterion 3 for the Rust code. Small, no behavior change. |
+| 1 | Rename one of the two fonts_dir functions | DONE in the review (download::installed_fonts_dir) | Audience test: same name, different meaning. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
@@ -238,7 +241,7 @@ Completes: criterion 6
 | Phase 0 safety net | done |
 | Phase R steps | done |
 | Phase R review | done |
-| Phase 1 steps | done |
+| Phase 1 steps | open |
 | Phase 1 review | open |
 | Phase 2 steps | open |
 | Phase 2 review | open |
