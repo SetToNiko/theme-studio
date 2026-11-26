@@ -18,8 +18,10 @@ use crate::keymap::Context;
 use crate::keymap::action::Action;
 use crate::palette::{self, GROUPS, TEXT_KEYS};
 use crate::preview::Mode as PreviewMode;
+mod pages;
 pub mod pane_chrome;
 pub mod widgets;
+use pages::{draw_body_page, draw_main_page, draw_too_small};
 use pane_chrome::{pane_border, pane_title};
 use widgets::{friendly, panel_number};
 
@@ -300,51 +302,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     match arrangement {
         Arrangement::TooSmall { .. } => {}
         Arrangement::Page { body, status } => {
-            if app.page == Page::Downloads {
-                crate::fonts_dl_ui::draw_downloads(f, app, body);
-            } else if app.page == Page::Settings {
-                // as edited; Save / Discard drawn with what's live
-                let changes = app.draft_changes();
-                app.show_draft(|app| crate::settings_ui::draw_settings(f, app, body));
-                crate::settings_ui::draw_save_buttons(f, app, body, changes);
-            } else {
-                draw_page(f, app, body);
-            }
+            draw_body_page(f, app, body);
             draw_status(f, app, status);
         }
         Arrangement::Main(l) => {
-            app.layout.wide = l.wide;
-            crate::fonts_ui::draw_fonts(f, app, l.roles, l.font_list);
-            if let Some(s) = l.sample {
-                crate::fonts_ui::draw_sample(f, app, s);
-            }
-            draw_list(f, app, l.colour_list);
-            if let Some(p) = l.picker {
-                draw_picker(f, app, p);
-            }
-            // hidden: nothing drawn, and nvim and the shell keep their size
-            if !l.preview.is_empty() {
-                draw_preview(f, app, l.preview, l.wide);
-            }
-            // draggable borders: highlighted under the mouse and while dragged
-            for b in &l.borders {
-                if app.preview.mode == PreviewMode::Swatches && b.id == BorderId::PreviewSplit {
-                    continue;
-                }
-                let hovered = app.hits.add(b.hit, Target::Border(b.id));
-                if hovered || app.layout.dragging == Some(b.id) {
-                    let buf = f.buffer_mut();
-                    for x in b.hit.x..b.hit.x + b.hit.width {
-                        for y in b.hit.y..b.hit.y + b.hit.height {
-                            if let Some(c) = buf.cell_mut((x, y)) {
-                                c.set_fg(Color::Yellow)
-                                    .set_style(Style::new().add_modifier(Modifier::BOLD));
-                            }
-                        }
-                    }
-                }
-            }
-            app.layout.borders = l.borders.clone();
+            draw_main_page(f, app, &l);
             draw_status(f, app, l.status);
         }
     }
@@ -436,57 +398,6 @@ fn draw_tabs(f: &mut Frame, app: &mut App, area: Rect) -> u16 {
         x += w;
     }
     x - area.x
-}
-
-/// The Download fonts page (filled in by phase 6).
-fn draw_page(f: &mut Frame, app: &App, area: Rect) {
-    let (title, text) = match app.page {
-        Page::Downloads => (
-            " Download fonts ",
-            vec![
-                "Searching and installing fonts from Google Fonts and Nerd Fonts comes here (plan phase 6).".to_string(),
-            ],
-        ),
-        _ => (" Settings ", Vec::new()),
-    };
-    let lines: Vec<Line> = text
-        .into_iter()
-        .map(|t| Line::raw(format!(" {t}")))
-        .collect();
-    let block = Block::bordered()
-        .title(title)
-        .border_style(Style::new().yellow());
-    f.render_widget(Paragraph::new(lines).block(block), area);
-}
-/// btop-style: the current size (red where it falls short) and what's needed.
-fn draw_too_small(f: &mut Frame, area: Rect, need_w: u16, need_h: u16) {
-    let ok = |have: u16, need: u16| {
-        if have >= need {
-            Style::new().green()
-        } else {
-            Style::new().red().bold()
-        }
-    };
-    let lines = vec![
-        Line::styled("Window too small", Style::new().bold()),
-        Line::from(vec![
-            "Width = ".into(),
-            Span::styled(area.width.to_string(), ok(area.width, need_w)),
-            "  Height = ".into(),
-            Span::styled(area.height.to_string(), ok(area.height, need_h)),
-        ]),
-        Line::raw(""),
-        Line::styled("Needed:", Style::new().bold()),
-        Line::raw(format!("Width = {need_w}  Height = {need_h}")),
-    ];
-    let h = (lines.len() as u16).min(area.height);
-    let r = Rect {
-        x: area.x,
-        y: area.y + (area.height - h) / 2,
-        width: area.width,
-        height: h,
-    };
-    f.render_widget(Paragraph::new(lines).centered(), r);
 }
 
 fn focused_block(app: &App, area: Rect, title: Line<'static>, focused: bool) -> Block<'static> {
