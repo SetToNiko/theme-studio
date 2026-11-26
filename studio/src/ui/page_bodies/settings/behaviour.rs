@@ -7,23 +7,50 @@ use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
-use super::{follow, row_rect, selected_style};
+use super::super::rows::{RowLook, draw_selectable_row, follow, row_rect};
 use crate::app::App;
-use crate::app::state::hit::{Looks, Target, hover_line, hover_row};
+use crate::app::state::hit::{Looks, Target};
 use crate::app::state::nav::{BhRow, LookId};
 
 /// The Behaviour tab's value column (the longest value fits).
 const VALUE_W: usize = 20;
 
-// Long function: scroll set-up, the row loop with its hover and cursor handling, and the note line run in one top-to-bottom pass over shared state.
+/// Moves the cursor off a blank line or a sample, then returns the selected
+/// row and the scroll offset that keeps it on screen in a list `list_h` rows tall.
+fn behaviour_scroll(app: &mut App, rows: &[BhRow], list_h: usize) -> (usize, usize) {
+    // the cursor never rests on a blank line or a sample
+    if !rows[app.settings_page.bh_sel.min(rows.len() - 1)].selectable() {
+        app.settings_page.bh_sel = crate::settings_page::behaviour::selectable_ends(rows).0;
+    }
+    let sel = app.settings_page.bh_sel.min(rows.len() - 1);
+    let mut scroll = app.settings_page.bh_scroll;
+    follow(&mut scroll, sel, list_h);
+    // show a group's title when its first row is at the top
+    if scroll > 0
+        && matches!(rows.get(scroll - 1), Some(BhRow::Header(_)))
+        && sel < scroll + list_h - 1
+    {
+        scroll -= 1;
+    }
+    app.settings_page.bh_scroll = scroll;
+    (sel, scroll)
+}
+
+/// The hint line below the list.
+fn draw_behaviour_note(f: &mut Frame, note: Rect) {
+    f.render_widget(
+        Paragraph::new(Line::styled(
+            " ←/→ or Enter changes a value; click a selected row to change it.",
+            Style::new().dark_gray(),
+        )),
+        note,
+    );
+}
+
+/// Draws the Behaviour tab: the scrolling list of settings and a note below it.
 pub(super) fn draw_behaviour(f: &mut Frame, app: &mut App, area: Rect) {
     let rows =
         crate::settings_page::behaviour::visible_behaviour_rows(&app.settings_page.bh_closed);
-    // the cursor never rests on a blank line or a sample
-    if !rows[app.settings_page.bh_sel.min(rows.len() - 1)].selectable() {
-        app.settings_page.bh_sel = crate::settings_page::behaviour::selectable_ends(&rows).0;
-    }
-    let sel = app.settings_page.bh_sel.min(rows.len() - 1);
     // the list scrolls; a note stays below it
     let [list, _, note] = Layout::vertical([
         Constraint::Min(3),
@@ -31,16 +58,7 @@ pub(super) fn draw_behaviour(f: &mut Frame, app: &mut App, area: Rect) {
         Constraint::Length(1),
     ])
     .areas(area);
-    let mut scroll = app.settings_page.bh_scroll;
-    follow(&mut scroll, sel, list.height as usize);
-    // show a group's title when its first row is at the top
-    if scroll > 0
-        && matches!(rows.get(scroll - 1), Some(BhRow::Header(_)))
-        && sel < scroll + list.height as usize - 1
-    {
-        scroll -= 1;
-    }
-    app.settings_page.bh_scroll = scroll;
+    let (sel, scroll) = behaviour_scroll(app, &rows, list.height as usize);
     // the looks as edited (this is drawn with the draft in place)
     let looks = app.looks(&app.settings);
     let focused = !app.settings_page.tabs_focused && !app.layout.page_tabs_focused;
@@ -50,34 +68,17 @@ pub(super) fn draw_behaviour(f: &mut Frame, app: &mut App, area: Rect) {
         .skip(scroll)
         .take(list.height as usize)
     {
-        let r = row_rect(list, i - scroll);
-        let line = behaviour_row_line(app, row, &looks);
-        let on = i == sel;
-        let mut style = selected_style(on, focused);
-        let mut line = line;
-        if row.selectable() && app.hits.add(r, Target::SettingsRow(i)) && !on {
-            // only the name is underlined
-            style = hover_row(style);
-            line = hover_line(line, usize::from(matches!(row, BhRow::Header(_))));
-        }
-        // the cursor covers the text, not padding or swatches
-        let (line, style) = if on {
-            (
-                crate::app::state::hit::cursor_line(line, style),
-                Style::new(),
-            )
-        } else {
-            (line, style)
+        let look = RowLook {
+            selected: i == sel,
+            focused,
+            target: row.selectable().then_some(Target::SettingsRow(i)),
+            underline_skip: usize::from(matches!(row, BhRow::Header(_))),
+            hover_when_selected: false,
         };
-        f.render_widget(Paragraph::new(line).style(style), r);
+        let line = behaviour_row_line(app, row, &looks);
+        draw_selectable_row(f, app, row_rect(list, i - scroll), line, look);
     }
-    f.render_widget(
-        Paragraph::new(Line::styled(
-            " ←/→ or Enter changes a value; click a selected row to change it.",
-            Style::new().dark_gray(),
-        )),
-        note,
-    );
+    draw_behaviour_note(f, note);
 }
 
 /// The sample line of the derived colours: four key names, two of them lit.

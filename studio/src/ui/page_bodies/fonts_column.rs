@@ -11,9 +11,11 @@ use ratatui::widgets::{Block, Paragraph};
 use ratatui_image::{Resize, StatefulImage};
 
 use super::fonts_roles::draw_roles;
+use super::rows::follow;
 use crate::app::App;
 use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::Side;
+use crate::fonts::FontsTab;
 use crate::fonts::types::{CHIPS, FontFocus, ROLE_NAMES, ROLE_NEEDS, Row};
 use crate::ui::pane_chrome::pane_title;
 use crate::ui::truncate;
@@ -26,17 +28,9 @@ pub(super) fn block(app: &App, area: Rect, title: Line<'static>, focused: bool) 
         .border_style(crate::ui::pane_chrome::pane_border(app, area, focused))
 }
 
-/// ¹ the font roles and ² the installed fonts (the fonts column; the sample
-/// is drawn by `draw_sample`). Roles, the search line, chips and rows are
-/// clickable and highlighted under the mouse.
-// Long function: the order of the drawing calls is the order on screen, and the two titles must be registered as click areas before the boxes that they belong to are drawn.
-pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rect) {
-    // the fonts column has the keyboard (and not a preview window)
-    let active =
-        app.side == Side::Fonts && app.preview.focus.is_none() && !app.layout.page_tabs_focused;
-
-    // titles first (they're clickable too)
-    let roles_title = Line::from(vec![
+/// The title of the roles box: the number, "Fonts", and a dot when the preset has unsaved changes.
+fn roles_title_line(app: &App) -> Line<'static> {
+    Line::from(vec![
         panel_number(1),
         // the preset's name is part of the theme now (in the tab row)
         "Fonts".into(),
@@ -46,9 +40,12 @@ pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rec
             "".into()
         },
         " ".into(),
-    ]);
-    let roles_title = pane_title(app, slots_area, roles_title, 1);
-    let list_title = Line::from(vec![
+    ])
+}
+
+/// The title of the installed-fonts box: which role it is picking for, or showing for.
+fn list_title_line(app: &App) -> Line<'static> {
+    Line::from(vec![
         panel_number(2),
         "Installed fonts".into(),
         // picking for a role: which (only fonts that fit it are listed)
@@ -62,8 +59,20 @@ pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rec
                 Style::new().dark_gray(),
             ),
         },
-    ]);
-    let list_title = pane_title(app, list_area, list_title, 2);
+    ])
+}
+
+/// ¹ the font roles and ² the installed fonts (the fonts column; the sample
+/// is drawn by `draw_sample`). Roles, the search line, chips and rows are
+/// clickable and highlighted under the mouse.
+pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rect) {
+    // the fonts column has the keyboard (and not a preview window)
+    let active =
+        app.side == Side::Fonts && app.preview.focus.is_none() && !app.layout.page_tabs_focused;
+
+    // titles first (they're clickable too)
+    let roles_title = pane_title(app, slots_area, roles_title_line(app), 1);
+    let list_title = pane_title(app, list_area, list_title_line(app), 2);
 
     // ¹ roles: three lines each
     draw_roles(
@@ -78,12 +87,9 @@ pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rec
     draw_installed(f, app, list_area, list_title, browsing);
 }
 
-/// The search line: " / search   N fonts"; clickable.
-// Long function: the count, the text and the click area of the search line come from the same row list.
-fn search_line(app: &mut App, inner: Rect, rows: &[Row]) -> Line<'static> {
-    let t = &app.fonts;
-    let fonts_shown: usize = rows
-        .iter()
+/// How many fonts the top level of `rows` holds (groups count their members).
+fn fonts_shown(rows: &[Row]) -> usize {
+    rows.iter()
         .map(|row| match row {
             Row::Group {
                 depth: 0, count, ..
@@ -91,20 +97,28 @@ fn search_line(app: &mut App, inner: Rect, rows: &[Row]) -> Line<'static> {
             Row::Font { depth: 0, .. } => 1,
             _ => 0,
         })
-        .sum();
-    let searching = t.focus == FontFocus::Search;
-    let mut style = if searching {
-        Style::new().yellow()
-    } else {
-        Style::new().dark_gray()
-    };
-    let text = if searching {
+        .sum()
+}
+
+/// The search text: the typed text with a cursor while typing, or a hint.
+fn search_text(t: &FontsTab) -> String {
+    if t.focus == FontFocus::Search {
         format!("{}▏", t.search)
     } else if t.search.is_empty() {
         "search".to_string()
     } else {
         t.search.clone()
+    }
+}
+
+/// The search line: " / search   N fonts"; clickable.
+fn search_line(app: &mut App, inner: Rect, rows: &[Row]) -> Line<'static> {
+    let mut style = if app.fonts.focus == FontFocus::Search {
+        Style::new().yellow()
+    } else {
+        Style::new().dark_gray()
     };
+    let text = search_text(&app.fonts);
     if app
         .hits
         .add(Rect { height: 1, ..inner }, Target::FontSearch)
@@ -114,7 +128,10 @@ fn search_line(app: &mut App, inner: Rect, rows: &[Row]) -> Line<'static> {
     Line::from(vec![
         Span::styled(" / ", style),
         Span::styled(text, style),
-        Span::styled(format!("   {fonts_shown} fonts"), Style::new().dark_gray()),
+        Span::styled(
+            format!("   {} fonts", fonts_shown(rows)),
+            Style::new().dark_gray(),
+        ),
     ])
 }
 
@@ -304,11 +321,7 @@ fn draw_installed(f: &mut Frame, app: &mut App, area: Rect, title: Line<'static>
     let current = app.fonts.preset.fonts[app.fonts.slot].family.to_lowercase();
     // keep the selection visible
     let mut scroll = app.fonts.list_scroll;
-    if sel < scroll {
-        scroll = sel;
-    } else if height > 0 && sel >= scroll + height {
-        scroll = sel + 1 - height;
-    }
+    follow(&mut scroll, sel, height);
     for (index, row) in rows.iter().enumerate().skip(scroll).take(height) {
         let line = font_row_line(app, row, browsing && index == sel, &current);
         let row_area = Rect {

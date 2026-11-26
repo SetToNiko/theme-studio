@@ -10,5 +10,6 @@ pub mod fonts_download;
 mod fonts_download_details;
 mod fonts_download_preview;
 mod fonts_roles;
+mod rows;
 pub mod settings;
 pub mod tournament_tab;

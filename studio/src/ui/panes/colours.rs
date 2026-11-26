@@ -124,9 +124,39 @@ fn group_line(
     }
 }
 
+/// The style of a key name: reversed under the cursor, underlined when selected.
+fn name_style(cursor: bool, is_selected: bool) -> Style {
+    if cursor {
+        Style::new().add_modifier(Modifier::REVERSED)
+    } else if is_selected {
+        Style::new().bold().underlined()
+    } else {
+        Style::new()
+    }
+}
+
+/// The marker before a key: an arrow for the copy target, a pin for a pinned key.
+fn row_marker(copy_target: Option<&str>, key: &str, pinned: bool) -> Span<'static> {
+    if copy_target == Some(key) {
+        Span::styled("→", Style::new().yellow())
+    } else if pinned {
+        Span::styled("", Style::new().yellow())
+    } else {
+        " ".into()
+    }
+}
+
+/// The derivation source of a key ("⟵ bg0"), or nothing for a base or pinned key.
+fn derivation_text(key: &str, pinned: bool) -> String {
+    if palette::is_base(key) || pinned {
+        String::new()
+    } else {
+        format!("⟵ {}", palette::sources(key))
+    }
+}
+
 /// A key row: marker, name, swatch, hex, derivation source and (for text
 /// keys) the contrast against the background.
-// Long function: one row builds eight columns (marker, name, swatch, hex, source, contrast) in order; splitting would only pass the same spans around.
 fn key_line(
     app: &App,
     i: usize,
@@ -137,35 +167,18 @@ fn key_line(
     let key = app.keys[i];
     let c = app.editor.palette.get(key);
     let pinned = app.editor.palette.is_pinned(key);
-    // the colour the picker shows, when the cursor is elsewhere
-    let name_style = if cursor {
-        Style::new().add_modifier(Modifier::REVERSED)
-    } else if i == app.sel {
-        Style::new().bold().underlined()
-    } else {
-        Style::new()
-    };
-    let marker = if copy_target == Some(key) {
-        Span::styled("→", Style::new().yellow())
-    } else if pinned {
-        Span::styled("", Style::new().yellow())
-    } else {
-        " ".into()
-    };
+    let name_look = name_style(cursor, i == app.sel);
+    let marker = row_marker(copy_target, key, pinned);
     let mut spans = vec!["  ".into(), marker, " ".into()];
     // the cursor on the name, not the padding before the swatch
     spans.extend(crate::app::state::hit::cursor_spans(
         format!("{key:<16}"),
         Style::new(),
-        name_style,
+        name_look,
     ));
     spans.push(swatch(c, 4));
     spans.push(Span::raw(format!(" {} ", c.hex())));
-    let info = if palette::is_base(key) || pinned {
-        String::new()
-    } else {
-        format!("⟵ {}", palette::sources(key))
-    };
+    let info = derivation_text(key, pinned);
     spans.push(Span::styled(
         format!("{info:<11}"),
         Style::new().dark_gray(),

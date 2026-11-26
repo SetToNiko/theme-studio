@@ -10,7 +10,7 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 use crate::app::App;
 use crate::app::state::hit::{Target, cursor_line, hover_line};
 use crate::fonts::tournament_page::{POOLS, SIZES, SetupRow, Stage};
-use crate::model::tournament::Tournament;
+use crate::model::tournament::{Status, Tournament};
 use crate::ui::widgets::to_u8;
 
 pub fn draw_tournament(f: &mut Frame, app: &mut App, area: Rect) {
@@ -192,15 +192,9 @@ fn draw_fetching(f: &mut Frame, app: &mut App, area: Rect) {
     f.render_widget(Paragraph::new(lines), area);
 }
 
-// Long function: head line, two pane rectangles (side by side or stacked) and the two pane titles are derived from the same pairing.
-fn draw_match(f: &mut Frame, app: &mut App, area: Rect) {
-    let Some(t) = app.tour().t.clone() else {
-        return;
-    };
-    let status = t.status();
-    let names = app.tour().names;
-    let [head, panes] = Layout::vertical([Constraint::Length(2), Constraint::Min(4)]).areas(area);
-    let head_line = Line::from(vec![
+/// The head line of a match: the title and the round, match and fonts-left counts.
+fn match_head_line(t: &Tournament, status: &Status) -> Line<'static> {
+    Line::from(vec![
         Span::styled(format!(" {}", t.title), Style::new().bold()),
         Span::styled(
             format!(
@@ -209,8 +203,32 @@ fn draw_match(f: &mut Frame, app: &mut App, area: Rect) {
             ),
             Style::new().dark_gray(),
         ),
-    ]);
-    f.render_widget(Paragraph::new(head_line), head);
+    ])
+}
+
+/// The title of a match pane: the font's name (when the names are shown) or
+/// "A" / "B", with an arrow that points to the side.
+fn side_title(t: &Tournament, side: usize, names: bool, pairing: Option<(usize, usize)>) -> String {
+    let who = pairing.map(|(left, right)| if side == 0 { left } else { right });
+    let label = match (names, who) {
+        (true, Some(entrant)) => t.entrants[entrant].name.clone(),
+        _ => if side == 0 { "A" } else { "B" }.to_string(),
+    };
+    if side == 0 {
+        format!(" ← {label} ")
+    } else {
+        format!(" {label} → ")
+    }
+}
+
+/// Draws a match: the head line and the two panes (side by side or stacked).
+fn draw_match(f: &mut Frame, app: &mut App, area: Rect) {
+    let Some(t) = app.tour().t.clone() else {
+        return;
+    };
+    let names = app.tour().names;
+    let [head, panes] = Layout::vertical([Constraint::Length(2), Constraint::Min(4)]).areas(area);
+    f.render_widget(Paragraph::new(match_head_line(&t, &t.status())), head);
     let [first, second] = if panes.width >= 100 {
         Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)]).areas(panes)
     } else {
@@ -218,17 +236,7 @@ fn draw_match(f: &mut Frame, app: &mut App, area: Rect) {
     };
     let pair = t.pairing();
     for (side, rect) in [first, second].into_iter().enumerate() {
-        let who = pair.map(|(left, right)| if side == 0 { left } else { right });
-        let label = match (names, who) {
-            (true, Some(entrant)) => t.entrants[entrant].name.clone(),
-            _ => if side == 0 { "A" } else { "B" }.to_string(),
-        };
-        let title = if side == 0 {
-            format!(" ← {label} ")
-        } else {
-            format!(" {label} → ")
-        };
-        draw_pane(f, app, rect, side, title, true);
+        draw_pane(f, app, rect, side, side_title(&t, side, names, pair), true);
     }
 }
 
