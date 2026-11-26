@@ -164,7 +164,7 @@ impl App {
                     Kind::Prose
                 }
             }
-            Action::PreviewLang => t.lang = (t.lang + 1) % samples::LANGS.len(),
+            Action::PreviewLang => t.lang = (t.lang + 1) % samples::langs::LANGS.len(),
             Action::SizeUp => t.pt = (t.pt + 1).min(48),
             Action::SizeDown => t.pt = t.pt.saturating_sub(1).max(6),
             Action::Back => {
@@ -209,7 +209,7 @@ impl App {
                     Kind::Prose
                 }
             }
-            Action::PreviewLang => t.lang = (t.lang + 1) % samples::LANGS.len(),
+            Action::PreviewLang => t.lang = (t.lang + 1) % samples::langs::LANGS.len(),
             Action::SizeUp => t.pt = (t.pt + 1).min(48),
             Action::SizeDown => t.pt = t.pt.saturating_sub(1).max(6),
             Action::Back => {

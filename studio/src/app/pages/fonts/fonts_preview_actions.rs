@@ -11,7 +11,8 @@ use crate::app::state::nav::{Overlay, Page};
 use crate::fonts::download_page::{DlRow, DlTab, mb};
 use crate::fonts::preview_page::FontPreview;
 use crate::keymap::action::Action;
-use crate::model::samples::{self, KINDS, Kind, LANGS};
+use crate::model::samples::langs::LANGS;
+use crate::model::samples::{self, KINDS, Kind};
 use crate::system::download::{self, Entry, Source};
 
 impl App {

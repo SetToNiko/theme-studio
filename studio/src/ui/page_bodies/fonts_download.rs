@@ -100,7 +100,8 @@ pub fn draw_downloads(f: &mut Frame, app: &mut App, area: Rect) {
 
 /// The highlighted font drawn with a sample text (fonts/preview_page.rs).
 fn draw_preview(f: &mut Frame, app: &mut App, area: Rect) {
-    use crate::model::samples::{KINDS, Kind, LANGS};
+    use crate::model::samples::langs::LANGS;
+    use crate::model::samples::{KINDS, Kind};
     let selected = app.preview_entry();
     // " Preview  Code ▾  Rust ▾  12pt ": the kind and the language are
     // dropdowns
