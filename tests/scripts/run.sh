@@ -67,6 +67,7 @@ make_stubs_dir() {
   bash_path=$(command -v bash)
   local name
   for name in pkill i3-msg pywalfox; do
+    # shellcheck disable=SC2016 # "$CALLS_LOG" and "$*" must stay literal: they expand when the stub runs, not here.
     printf '#!%s\necho "%s $*" >> "$CALLS_LOG"\n' "$bash_path" "$name" > "$work/stubs/$name"
   done
   # fc-list: every font is installed (-q succeeds). For a spacing question, a
@@ -158,6 +159,7 @@ setup_theme_switch_ghostty_no_theme() {
 # beside it: $CASE_DIR/share/ghostty/themes.
 make_ghostty_stub() {
   mkdir -p "$CASE_DIR/bin"
+  # shellcheck disable=SC2016 # "$CALLS_LOG" and "$*" must stay literal: they expand when the stub runs, not here.
   printf '#!%s\necho "ghostty $*" >> "$CALLS_LOG"\n' "$(command -v bash)" > "$CASE_DIR/bin/ghostty"
   chmod +x "$CASE_DIR/bin/ghostty"
 }
