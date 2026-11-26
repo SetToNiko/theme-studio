@@ -27,7 +27,7 @@ pub struct Theme {
 impl Theme {
     fn from_json(t: &Value) -> Option<Theme> {
         let sizes = t.get("sizes").and_then(|s| {
-            let get = |r: usize| s.get(ROLES[r])?.as_u64().map(|n| n as u32);
+            let get = |r: usize| u32::try_from(s.get(ROLES[r])?.as_u64()?).ok();
             Some([get(0)?, get(1)?, get(2)?])
         });
         Some(Theme {
@@ -105,8 +105,7 @@ impl ThemeStore {
                 t.sizes = Some(
                     fonts
                         .load(&t.fonts)
-                        .map(|p| p.sizes())
-                        .unwrap_or(crate::fonts::presets::DEFAULT_SIZES),
+                        .map_or(crate::fonts::presets::DEFAULT_SIZES, |p| p.sizes()),
                 );
             }
             m.insert(n, t.to_json());
@@ -198,6 +197,7 @@ mod tests {
         std::fs::remove_dir_all(d).unwrap();
     }
 
+    // Long function: one scenario; it writes two files and then checks both outcomes of the same migration.
     #[test]
     fn version_1_themes_take_their_presets_sizes_once() {
         let d = std::env::temp_dir().join(format!("theme-studio-themes-v2-{}", std::process::id()));

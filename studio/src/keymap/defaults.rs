@@ -7,6 +7,27 @@ use super::action::Action;
 use super::key::Key;
 use super::{Binding, Context, Keymap};
 
+/// The movement actions: the ones that `moves_without_letters` rebinds.
+const MOVES: [Action; 12] = [
+    Action::Up,
+    Action::Down,
+    Action::Left,
+    Action::Right,
+    Action::Top,
+    Action::Bottom,
+    Action::UpBig,
+    Action::DownBig,
+    Action::LeftBig,
+    Action::RightBig,
+    Action::PageUp,
+    Action::PageDown,
+];
+
+/// Whether a key sequence is one plain letter or symbol, with no modifier.
+fn is_plain_letter(keys: &[Key]) -> bool {
+    keys.len() == 1 && matches!(keys[0].code, KeyCode::Char(_)) && keys[0].mods.is_empty()
+}
+
 impl Keymap {
     /// The presets that ship with the studio.
     pub fn builtin() -> Vec<Keymap> {
@@ -39,32 +60,14 @@ impl Keymap {
     /// Movement without letters (h/j/k/l, g/G, H/J/K/L): arrows and the
     /// like stay, and every context that moves gets the keys in `add`.
     fn moves_without_letters(mut self, add: &[(Action, &[&str])]) -> Keymap {
-        use Action as A;
-        const MOVES: [Action; 12] = [
-            A::Up,
-            A::Down,
-            A::Left,
-            A::Right,
-            A::Top,
-            A::Bottom,
-            A::UpBig,
-            A::DownBig,
-            A::LeftBig,
-            A::RightBig,
-            A::PageUp,
-            A::PageDown,
-        ];
         let moving: Vec<(Context, Action)> = self
             .bindings
             .iter()
             .filter(|b| MOVES.contains(&b.action))
             .map(|b| (b.context, b.action))
             .collect();
-        let letter = |k: &[Key]| {
-            k.len() == 1 && matches!(k[0].code, KeyCode::Char(_)) && k[0].mods.is_empty()
-        };
         self.bindings
-            .retain(|b| !(MOVES.contains(&b.action) && letter(&b.keys)));
+            .retain(|b| !(MOVES.contains(&b.action) && is_plain_letter(&b.keys)));
         for (ctx, action) in moving {
             for (a, seqs) in add.iter().filter(|(a, _)| *a == action) {
                 for s in *seqs {
@@ -106,6 +109,7 @@ impl Keymap {
 
     /// Emacs: C-n / C-p / C-f / C-b to move, C-x prefixes for files, C-g to
     /// back out, C-/ to undo; the leader is C-c.
+    // Long function: one table, one row per Emacs key, then the table of movement keys.
     pub fn emacs() -> Keymap {
         use Action as A;
         use Context as C;
@@ -147,7 +151,7 @@ impl Keymap {
         ])
     }
 
-    /// Arrows and the Ctrl keys VS Code and JetBrains share.
+    /// Arrows and the Ctrl keys `VS Code` and `JetBrains` share.
     fn arrows(km: Keymap) -> Keymap {
         use Action as A;
         km.moves_without_letters(&[
@@ -194,7 +198,7 @@ impl Keymap {
         Keymap::arrows(Keymap::derived("VS Code", "<C-k>", &rows))
     }
 
-    /// JetBrains: Ctrl+S, Ctrl+E (recent files) to open, Ctrl+Z /
+    /// `JetBrains`: Ctrl+S, Ctrl+E (recent files) to open, Ctrl+Z /
     /// Ctrl+Shift+Z, Shift+F10 (run) to apply, arrows to move. Its
     /// Alt+number tool windows would clash with i3, so panes stay on
     /// Space 1…7.
@@ -223,9 +227,15 @@ impl Keymap {
 
     /// The shipped Vim preset: the studio's original keys, plus leader
     /// sequences for saving and applying either side.
+    // Long function: one table, one row per default key of the Vim preset.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one table, one row per default key of the Vim preset; splitting it would only scatter the rows"
+    )]
     pub fn vim() -> Keymap {
         use Action as A;
         use Context as C;
+        const CHIP_KEYS: [&str; 8] = ["m", "p", "n", "M", "P", "x", "b", "c"];
         let mut rows: Vec<(Context, Action, &[&str])> = vec![
             (C::Global, A::Quit, &["q"]),
             (C::Global, A::Help, &["?"]),
@@ -379,7 +389,6 @@ impl Keymap {
             (C::Downloads, A::UseFor(1), &["2"]),
             (C::Downloads, A::UseFor(2), &["3"]),
         ];
-        const CHIP_KEYS: [&str; 8] = ["m", "p", "n", "M", "P", "x", "b", "c"];
         for (i, (c, _)) in crate::fonts::types::CHIPS.iter().enumerate() {
             rows.push((
                 C::FontList,

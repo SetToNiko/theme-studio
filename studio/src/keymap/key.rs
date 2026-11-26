@@ -29,7 +29,7 @@ impl Key {
                 if mods.contains(KeyModifiers::SHIFT) {
                     code = KeyCode::Char(c.to_ascii_uppercase());
                 }
-                mods.remove(KeyModifiers::SHIFT)
+                mods.remove(KeyModifiers::SHIFT);
             }
             KeyCode::BackTab => mods.remove(KeyModifiers::SHIFT),
             _ => {}

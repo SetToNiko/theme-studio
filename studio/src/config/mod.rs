@@ -65,9 +65,19 @@ pub const KEYMAPS_VERSION: u64 = 3;
 /// your own changes are left alone.
 fn migrate(mut v: Value) -> Value {
     let version = v.get("version").and_then(Value::as_u64).unwrap_or(1);
-    if version < 2
-        && let Some(presets) = v.get_mut("presets").and_then(Value::as_object_mut)
-    {
+    if version < 2 {
+        move_panes_to_leader(&mut v);
+    }
+    if version < 3 {
+        rename_use_for_actions(&mut v);
+    }
+    v
+}
+
+/// Version 1 to 2: a pane binding that is still the plain digit moves to
+/// `<leader>` plus the digit.
+fn move_panes_to_leader(v: &mut Value) {
+    if let Some(presets) = v.get_mut("presets").and_then(Value::as_object_mut) {
         for preset in presets.values_mut() {
             let Some(global) = preset
                 .pointer_mut("/bindings/global")
@@ -83,9 +93,12 @@ fn migrate(mut v: Value) -> Value {
             }
         }
     }
-    if version < 3
-        && let Some(presets) = v.get_mut("presets").and_then(Value::as_object_mut)
-    {
+}
+
+/// Version 2 to 3: the `use-for-<role>` actions are named after the font
+/// roles now.
+fn rename_use_for_actions(v: &mut Value) {
+    if let Some(presets) = v.get_mut("presets").and_then(Value::as_object_mut) {
         for preset in presets.values_mut() {
             let Some(contexts) = preset.get_mut("bindings").and_then(Value::as_object_mut) else {
                 continue;
@@ -109,13 +122,45 @@ fn migrate(mut v: Value) -> Value {
             }
         }
     }
-    v
 }
 
 /// Reads keymaps.json: every preset (shipped ones topped up with actions the
 /// file doesn't mention), and the active one.
 fn load_keymaps(v: &Value, warnings: &mut Vec<String>) -> (Keymap, Vec<Keymap>, Value) {
     let v = &migrate(v.clone());
+    let presets = read_presets(v, warnings);
+    let active_name = v
+        .get("active")
+        .and_then(Value::as_str)
+        .unwrap_or("Vim")
+        .to_string();
+    let active = if let Some(p) = presets.iter().find(|p| p.name == active_name) {
+        p.clone()
+    } else {
+        warnings.push(format!(
+            "keymaps.json: no preset \"{active_name}\"; using Vim"
+        ));
+        presets
+            .iter()
+            .find(|p| p.name == "Vim")
+            .cloned()
+            .unwrap_or_else(Keymap::vim)
+    };
+    // what the file should contain now (adds anything missing)
+    let mut out = Map::new();
+    out.insert("version".into(), Value::from(KEYMAPS_VERSION));
+    out.insert("active".into(), Value::String(active.name.clone()));
+    let mut obj = Map::new();
+    for p in &presets {
+        obj.insert(p.name.clone(), p.to_json());
+    }
+    out.insert("presets".into(), Value::Object(obj));
+    (active, presets, Value::Object(out))
+}
+
+/// The presets of a keymaps.json: those in the file (topped up with missing
+/// actions) and then the shipped ones that the file lacks.
+fn read_presets(v: &Value, warnings: &mut Vec<String>) -> Vec<Keymap> {
     let builtin = Keymap::builtin();
     let mut presets: Vec<Keymap> = Vec::new();
     if let Some(obj) = v.get("presets").and_then(Value::as_object) {
@@ -132,34 +177,7 @@ fn load_keymaps(v: &Value, warnings: &mut Vec<String>) -> (Keymap, Vec<Keymap>, 
             presets.push(b);
         }
     }
-    let active_name = v
-        .get("active")
-        .and_then(Value::as_str)
-        .unwrap_or("Vim")
-        .to_string();
-    let active = match presets.iter().find(|p| p.name == active_name) {
-        Some(p) => p.clone(),
-        None => {
-            warnings.push(format!(
-                "keymaps.json: no preset \"{active_name}\"; using Vim"
-            ));
-            presets
-                .iter()
-                .find(|p| p.name == "Vim")
-                .cloned()
-                .unwrap_or_else(Keymap::vim)
-        }
-    };
-    // what the file should contain now (adds anything missing)
-    let mut out = Map::new();
-    out.insert("version".into(), Value::from(KEYMAPS_VERSION));
-    out.insert("active".into(), Value::String(active.name.clone()));
-    let mut obj = Map::new();
-    for p in &presets {
-        obj.insert(p.name.clone(), p.to_json());
-    }
-    out.insert("presets".into(), Value::Object(obj));
-    (active, presets, Value::Object(out))
+    presets
 }
 
 /// Writes settings.json.
@@ -174,13 +192,33 @@ pub fn load(dir: &Path, write: bool) -> Loaded {
     let keymaps_path = dir.join("keymaps.json");
     let settings_path = dir.join("settings.json");
 
-    let (keymap, presets) = match read_json(&keymaps_path) {
+    let (keymap, presets) = load_keymaps_file(&keymaps_path, write, &mut warnings);
+
+    let settings = load_settings(&settings_path, write, &mut warnings);
+
+    Loaded {
+        dir: dir.to_path_buf(),
+        keymap,
+        presets,
+        settings,
+        warnings,
+    }
+}
+
+/// Reads keymaps.json (the built-in presets when it is broken) and, when
+/// `write` is set, creates or tops up the file.
+fn load_keymaps_file(
+    keymaps_path: &Path,
+    write: bool,
+    warnings: &mut Vec<String>,
+) -> (Keymap, Vec<Keymap>) {
+    match read_json(keymaps_path) {
         Ok(found) => {
             let v = found.clone().unwrap_or_else(default_keymaps);
-            let (active, presets, full) = load_keymaps(&v, &mut warnings);
+            let (active, presets, full) = load_keymaps(&v, warnings);
             if write
                 && found.as_ref() != Some(&full)
-                && let Err(e) = write_json(&keymaps_path, &full)
+                && let Err(e) = write_json(keymaps_path, &full)
             {
                 warnings.push(format!("{e:#}"));
             }
@@ -190,21 +228,31 @@ pub fn load(dir: &Path, write: bool) -> Loaded {
             warnings.push(format!("{e:#} (using the built-in Vim keys)"));
             (Keymap::vim(), Keymap::builtin())
         }
-    };
+    }
+}
 
-    let settings = match read_json(&settings_path) {
+/// Settings from the content of settings.json (`None`: no file). Broken
+/// content gives a warning and the defaults.
+fn parse_settings(found: Option<&Value>, warnings: &mut Vec<String>) -> Settings {
+    match found.cloned().map(serde_json::from_value::<Settings>) {
+        Some(Ok(mut s)) => {
+            s.normalise();
+            s
+        }
+        Some(Err(e)) => {
+            warnings.push(format!("settings.json: {e} (using defaults)"));
+            Settings::default()
+        }
+        None => Settings::default(),
+    }
+}
+
+/// Reads settings.json (the defaults when it is missing or broken) and, when
+/// `write` is set, creates or tops up the file.
+fn load_settings(settings_path: &Path, write: bool, warnings: &mut Vec<String>) -> Settings {
+    match read_json(settings_path) {
         Ok(found) => {
-            let s: Settings = match found.clone().map(serde_json::from_value::<Settings>) {
-                Some(Ok(mut s)) => {
-                    s.normalise();
-                    s
-                }
-                Some(Err(e)) => {
-                    warnings.push(format!("settings.json: {e} (using defaults)"));
-                    Settings::default()
-                }
-                None => Settings::default(),
-            };
+            let s = parse_settings(found.as_ref(), warnings);
             let full = serde_json::to_value(&s).expect("settings serialise");
             // only top up a file that parsed (or create a missing one)
             let parsed = found
@@ -213,7 +261,7 @@ pub fn load(dir: &Path, write: bool) -> Loaded {
             if write
                 && parsed
                 && found.as_ref() != Some(&full)
-                && let Err(e) = write_json(&settings_path, &full)
+                && let Err(e) = write_json(settings_path, &full)
             {
                 warnings.push(format!("{e:#}"));
             }
@@ -223,14 +271,6 @@ pub fn load(dir: &Path, write: bool) -> Loaded {
             warnings.push(format!("{e:#} (using defaults)"));
             Settings::default()
         }
-    };
-
-    Loaded {
-        dir: dir.to_path_buf(),
-        keymap,
-        presets,
-        settings,
-        warnings,
     }
 }
 
@@ -279,6 +319,7 @@ mod tests {
         std::fs::remove_dir_all(d).unwrap();
     }
 
+    // Long function: one scenario; the file content and the load result are checked together.
     #[test]
     fn edits_are_kept_and_missing_actions_filled_in() {
         let d = temp("edit");
@@ -391,6 +432,7 @@ mod tests {
 mod migrate_tests {
     use super::*;
 
+    // Long function: one scenario; one old file shows which bindings move and which stay.
     #[test]
     fn version_1_panes_move_to_the_leader_but_edits_stay() {
         let old = serde_json::json!({"active": "Vim", "presets": {"Vim": {"leader": "<Space>", "bindings": {"global": {

@@ -116,8 +116,7 @@ pub fn preview_cache_dir() -> PathBuf {
 /// differs: it ignores values that are not absolute.
 pub fn timing_log_dir() -> PathBuf {
     std::env::var_os("XDG_STATE_HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| home().join(".local/state"))
+        .map_or_else(|| home().join(".local/state"), PathBuf::from)
         .join("theme-studio")
 }
 
@@ -178,8 +177,7 @@ pub fn demo_dir() -> PathBuf {
     share
         .ancestors()
         .find(|d| d.join(".git").exists())
-        .map(Path::to_path_buf)
-        .unwrap_or_else(home)
+        .map_or_else(home, Path::to_path_buf)
 }
 
 /// The studio's guide (the README tab): `docs/` beside the share folder,
@@ -194,9 +192,9 @@ fn on_path(name: &str) -> bool {
         std::env::split_paths(&path).any(|d| {
             let p = d.join(name);
             p.is_file()
-                && std::fs::metadata(&p)
-                    .map(|m| std::os::unix::fs::PermissionsExt::mode(&m.permissions()) & 0o111 != 0)
-                    .unwrap_or(false)
+                && std::fs::metadata(&p).is_ok_and(|m| {
+                    std::os::unix::fs::PermissionsExt::mode(&m.permissions()) & 0o111 != 0
+                })
         })
     })
 }
@@ -301,7 +299,7 @@ mod tests {
         std::fs::remove_dir_all(d).unwrap();
     }
 
-    /// Without $THEME_STUDIO_SHARE (as in tests), a build in the checkout
+    /// Without `$THEME_STUDIO_SHARE` (as in tests), a build in the checkout
     /// finds the project's share/, its guide and its scripts.
     #[test]
     fn a_checkout_build_finds_the_projects_files() {

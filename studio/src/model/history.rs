@@ -86,8 +86,7 @@ pub struct History {
 fn now_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0)
+        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
 }
 
 /// Returns the current local time as `YYYY-MM-DD HH:MM:SS`.
@@ -128,7 +127,7 @@ impl History {
         self.dir.join(file.trim_end_matches(".json"))
     }
 
-    fn write(&self, path: &Path, s: &Snapshot) -> Result<()> {
+    fn write(path: &Path, s: &Snapshot) -> Result<()> {
         bump();
         std::fs::create_dir_all(path.parent().unwrap())?;
         let text = serde_json::to_string_pretty(s)?;
@@ -148,7 +147,7 @@ impl History {
             summary: summarize(before, after),
             content: before.clone(),
         };
-        self.write(&self.folder(file).join(format!("{}.json", stamp())), &s)?;
+        Self::write(&self.folder(file).join(format!("{}.json", stamp())), &s)?;
         self.prune(file);
         Ok(())
     }
@@ -163,7 +162,7 @@ impl History {
             content: content.clone(),
         };
         let path = self.folder(file).join(format!("named-{}.json", stamp()));
-        self.write(&path, &s)?;
+        Self::write(&path, &s)?;
         Ok(path)
     }
 
@@ -188,7 +187,7 @@ impl History {
             std::cmp::Reverse((
                 s.name.is_some(),
                 s.time,
-                p.file_name().map(|n| n.to_owned()),
+                p.file_name().map(std::borrow::ToOwned::to_owned),
             ))
         });
         out
@@ -208,6 +207,10 @@ impl History {
             .collect()
     }
 
+    #[expect(
+        clippy::unused_self,
+        reason = "a public method like `record`/`list_info`, so callers use the one History handle"
+    )]
     pub fn delete(&self, path: &Path) -> Result<()> {
         bump();
         std::fs::remove_file(path).with_context(|| format!("removing {}", path.display()))
@@ -291,36 +294,7 @@ pub fn summarize(before: &Value, after: &Value) -> String {
     }
     let mut changes = Vec::new();
     diff(before, after, &mut Vec::new(), &mut changes);
-    // path parts that are just containers
-    const NOISE: [&str; 3] = ["palettes", "presets", "bindings"];
-    let mut groups: Vec<(String, Vec<String>)> = Vec::new();
-    let mut add = |group: String, item: String| match groups.iter_mut().find(|(g, _)| *g == group) {
-        Some((_, items)) => {
-            if !items.contains(&item) {
-                items.push(item)
-            }
-        }
-        None => groups.push((group, if item.is_empty() { vec![] } else { vec![item] })),
-    };
-    for c in &changes {
-        let (path, what) = match c {
-            Change::Changed(p) => (p, ""),
-            Change::Added(p) => (p, "added "),
-            Change::Removed(p) => (p, "removed "),
-        };
-        let parts: Vec<&String> = path
-            .iter()
-            .filter(|p| !NOISE.contains(&p.as_str()))
-            .collect();
-        match parts.as_slice() {
-            [] => add("everything".into(), String::new()),
-            [one] => add(format!("{what}{one}"), String::new()),
-            [first, rest @ ..] => {
-                let leaf = rest.last().map(|s| s.as_str()).unwrap_or("");
-                add(first.to_string(), format!("{what}{leaf}"))
-            }
-        }
-    }
+    let groups = group_changes(&changes);
     let mut text = groups
         .iter()
         .map(|(g, items)| {
@@ -340,6 +314,45 @@ pub fn summarize(before: &Value, after: &Value) -> String {
     } else {
         text
     }
+}
+
+/// Adds `item` to the group `group` (creating it); an empty item adds only the group.
+fn add_to_group(groups: &mut Vec<(String, Vec<String>)>, group: String, item: String) {
+    match groups.iter_mut().find(|(g, _)| *g == group) {
+        Some((_, items)) => {
+            if !items.contains(&item) {
+                items.push(item);
+            }
+        }
+        None => groups.push((group, if item.is_empty() { vec![] } else { vec![item] })),
+    }
+}
+
+/// Groups changes by their first path part, each group with its leaf names.
+fn group_changes(changes: &[Change]) -> Vec<(String, Vec<String>)> {
+    // path parts that are just containers
+    const NOISE: [&str; 3] = ["palettes", "presets", "bindings"];
+    let mut groups: Vec<(String, Vec<String>)> = Vec::new();
+    for c in changes {
+        let (path, what) = match c {
+            Change::Changed(p) => (p, ""),
+            Change::Added(p) => (p, "added "),
+            Change::Removed(p) => (p, "removed "),
+        };
+        let parts: Vec<&String> = path
+            .iter()
+            .filter(|p| !NOISE.contains(&p.as_str()))
+            .collect();
+        match parts.as_slice() {
+            [] => add_to_group(&mut groups, "everything".into(), String::new()),
+            [one] => add_to_group(&mut groups, format!("{what}{one}"), String::new()),
+            [first, rest @ ..] => {
+                let leaf = rest.last().map_or("", |s| s.as_str());
+                add_to_group(&mut groups, (*first).clone(), format!("{what}{leaf}"));
+            }
+        }
+    }
+    groups
 }
 
 #[cfg(test)]
@@ -388,6 +401,7 @@ mod tests {
         assert_eq!(summarize(&json!({"x": 1}), &json!({"x": 1})), "no change");
     }
 
+    // Long function: one scenario; each step depends on the files the step before it left on disk.
     #[test]
     fn records_lists_prunes_and_keeps_named() {
         let d = temp("prune");
@@ -421,7 +435,7 @@ mod tests {
         );
         h.delete(&list[0].0).unwrap();
         assert_eq!(h.list("palettes.json").len(), KEEP);
-        assert!(h.list("fonts.json").is_empty());
+        assert_eq!(h.list("fonts.json").len(), 0);
         std::fs::remove_dir_all(d).unwrap();
     }
 }

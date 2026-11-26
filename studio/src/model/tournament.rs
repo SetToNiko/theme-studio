@@ -70,9 +70,8 @@ impl Rng {
     pub fn new() -> Rng {
         let t = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos() as u64)
-            .unwrap_or(1);
-        Rng::seeded(t ^ (std::process::id() as u64) << 32)
+            .map_or(1, |d| u64::try_from(d.as_nanos()).unwrap_or(1));
+        Rng::seeded(t ^ u64::from(std::process::id()) << 32)
     }
 
     pub fn seeded(seed: u64) -> Rng {
@@ -89,6 +88,10 @@ impl Rng {
     }
 
     /// 0..n
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the remainder is smaller than `n`, so it fits in a usize"
+    )]
     pub fn below(&mut self, n: usize) -> usize {
         (self.next() % n.max(1) as u64) as usize
     }
@@ -229,9 +232,21 @@ impl Tournament {
         self.extra = losers;
     }
 
+    /// The fonts still in round `r`, when the current match is `m`: every
+    /// font of the round, minus one loser for each match before `m`.
+    fn fonts_left(&self, r: usize, m: usize) -> usize {
+        let round = &self.rounds[r];
+        let fonts: usize = round.iter().map(|x| 1 + usize::from(x.b.is_some())).sum();
+        let lost = round[..m.min(round.len())]
+            .iter()
+            .filter(|x| x.loser().is_some())
+            .count();
+        fonts - lost
+    }
+
     pub fn status(&self) -> Status {
         let n = self.entrants.len();
-        let rounds = (usize::BITS - n.saturating_sub(1).leading_zeros()) as usize;
+        let rounds = n.saturating_sub(1).bit_width() as usize;
         let (r, m) = self
             .current()
             .unwrap_or((self.rounds.len().saturating_sub(1), 0));
@@ -245,14 +260,7 @@ impl Tournament {
             .iter()
             .position(|&i| i == m)
             .map_or(real.len(), |p| p + 1);
-        let left = self.rounds[r]
-            .iter()
-            .map(|x| 1 + x.b.is_some() as usize)
-            .sum::<usize>()
-            - self.rounds[r][..m.min(self.rounds[r].len())]
-                .iter()
-                .filter(|x| x.loser().is_some())
-                .count();
+        let left = self.fonts_left(r, m);
         Status {
             round: r + 1,
             rounds: rounds.max(1),
@@ -373,7 +381,7 @@ mod tests {
         assert_eq!(top[1].0, "2nd");
         // every font placed at most once
         let mut seen: Vec<usize> = top.iter().flat_map(|(_, v)| v.clone()).collect();
-        seen.sort();
+        seen.sort_unstable();
         seen.dedup();
         assert_eq!(seen.len(), top.iter().map(|(_, v)| v.len()).sum::<usize>());
     }
