@@ -66,7 +66,7 @@ Theme Studio has a 25k-line Rust TUI (35 modules in one flat folder) and 4 bash 
 | `share/` | Data for scripts and studio | terminal-colors.json, palette-derive.jq, integrations.json, integrations/ (generators) | none |
 | `packaging/nix/` | Nix package and modules | package, home-manager module, NixOS module, fonts | none |
 
-Cycles: app ↔ {behaviour, draft, fonts_dl, fonts_preview, hit, prefetch, presets, settings, theme, tour_page, ui, …}; ui ↔ settings_ui, fonts_ui; fonts ↔ keymap, fonts_pick, font_tree; fonts_dl ↔ fonts_preview; paths ↔ store (tests only).
+Cycles: app â {behaviour, draft, fonts_dl, fonts_preview, hit, prefetch, presets, settings, theme, tour_page, ui, â¦}; ui â settings_ui, fonts_ui; fonts â keymap, fonts_pick, font_tree; fonts_dl â fonts_preview; paths â store (tests only).
 Key numbers: 35 Rust modules in 1 folder, 6 scripts, about 25k Rust lines, 12 files over 500 production lines, largest `app.rs` (2,448 production lines), 2 cycle groups with 21 of 35 modules (`scripts/dev/module-cycles.py`), line coverage 82.72%, duplicate rate 1.13%.
 
 ## 3. Target architecture
@@ -75,7 +75,7 @@ Key numbers: 35 Rust modules in 1 folder, 6 scripts, about 25k Rust lines, 12 fi
 - `scripts/lib/integrations.sh`: the runner. It writes the outputs and runs the reloads one time. It is the only location that runs reload commands.
 - `scripts/lib/paths.sh` and `studio/src/paths.rs`: each user and system path, with one `home()`. The login-screen paths can be changed with environment variables.
 - `studio/src/app/`: App divided by concern: `palette_editor`, `layout`, `messages`, `overlay`, `mouse`, `actions`, `nav` (Page, Overlay, For, Side).
-- `studio/src/core/`, `system/`, `ui/`: folders by layer, 10 modules or fewer each. Direction: ui → app → core and system. No cycles.
+- `studio/src/core/`, `system/`, `ui/`: folders by layer, 10 modules or fewer each. Direction: ui â app â core and system. No cycles.
 
 Advanced techniques that the refactor adds:
 - Module re-exports (`pub use`) | `main.rs` during the folder moves | keep `crate::x` paths valid, so one move changes 5 files or fewer. A comment explains each re-export.
@@ -86,7 +86,7 @@ Advanced techniques that the refactor adds:
 |---|---|---|---|---|
 | 1 | `scripts/theme-switch.sh`, `font-switch.sh` | App integrations hard-coded, outputs and reloads mixed with picker logic | T2, T6, goal 1-2 | H |
 | 2 | `studio/src/app.rs` | God object: 60 public fields, 6 concerns, 2,448 production lines | T1 (SRP), T4, limits | H |
-| 3 | most modules ↔ `app.rs` | Dependency cycles, mostly for nav enums and one helper | T5 | H |
+| 3 | most modules â `app.rs` | Dependency cycles, mostly for nav enums and one helper | T5 | H |
 | 4 | `store.rs`, `fonts.rs`, `theme.rs`, `download.rs`, `paths.rs` | `home()` defined 5 times, user paths outside paths.rs | T2 (single source), rule 1 | M |
 | 5 | `download.rs:544` (the `font-switch.sh:102-103` paths go with R.2) | Hard-coded system paths | goal 3, rule 1 | M |
 | 6 | `ui.rs`, `keymap.rs`, `fonts.rs`, `settings.rs`, `config.rs` | Over 500 production lines (2,154, 1,370, 1,288, 1,071, 611) | limits | M |
@@ -114,7 +114,7 @@ Advanced techniques that the refactor adds:
 ## 5. Test coverage
 - Rust: 169 tests in 27 modules (165 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
 - No tests: `fonts_dl`, `fonts_dl_ui`, `fonts_preview`, `fonts_ui`, `settings_ui`, `tour_page`, `tour_ui`, `main`.
-- Scripts: no tests → golden-file tests in Phase 0.
+- Scripts: no tests â golden-file tests in Phase 0.
 - Scripts: golden-file tests in `tests/scripts/run.sh` (P0.6 to P0.8). Not covered: the rofi picker.
 - Nix sandbox: data tests use `studio/tests/fixtures/data` (P0.5). Sandbox skips: 13 before, 10 after. The remaining skips need jq, ImageMagick, fontconfig, a pty, or the checkout (docs, share).
 - Before Phase 5 changes a module without tests, the revise action adds a safety-net step for it.
@@ -164,36 +164,42 @@ Completes: criteria 1, 2, project rule 2
 
 ### Phase 3: Divide App by concern
 - [x] P3.1 Safety net: characterization tests for behaviour and draft | Files: `behaviour.rs`, `draft.rs` | Target: correctness | Check: tests pass on unchanged code
-- [x] P3.2 App folder: `app.rs` → `app/mod.rs`, tests → `app/tests.rs` | Files: `app/mod.rs`, `app/tests.rs` | Target: T4 | Check: tests
+- [x] P3.2 App folder: `app.rs` â `app/mod.rs`, tests â `app/tests.rs` | Files: `app/mod.rs`, `app/tests.rs` | Target: T4 | Check: tests
 - [x] P3.3 PaletteEditor: palette, saved, undo, redo, HSV, hex, edit session, and their methods | Files: `app/mod.rs`, `app/palette_editor.rs`, `app/tests.rs`, `ui.rs`, `fonts_ui.rs`, `theme.rs`, `settings.rs`, `tour_page.rs`, `fonts_preview.rs` | Target: T1, T4 | Check: tests
 - [x] P3.4 Layout: sizes, borders, dragging, resize, visibility flags, pane columns | Files: `app/mod.rs`, `app/layout.rs`, `app/tests.rs`, `behaviour.rs`, `draft.rs`, `ui.rs`, `fonts_ui.rs`, `fonts_dl_ui.rs`, `fonts_preview.rs`, `settings_ui.rs`, `tour_ui.rs` | Target: T1 | Check: tests
 - [x] P3.5 Messages: message, notice, hover note, timing | Files: `app/mod.rs`, `app/messages.rs`, `app/tests.rs`, `ui.rs`, `fonts_ui.rs`, `behaviour.rs`, `draft.rs`, `fonts_dl.rs`, `fonts_preview.rs`, `presets.rs`, `settings.rs`, `theme.rs`, `tour_page.rs` | Target: T1 | Check: tests
 - [x] P3.6 Overlay keys: `on_overlay_key` and overlay state | Files: `app/mod.rs`, `app/overlay.rs` | Target: T1, limits | Check: tests
 - [x] P3.7 Mouse: `handle_mouse`, `click`, `on_mouse` | Files: `app/mod.rs`, `app/mouse.rs`, `app/tests.rs` | Target: T1, limits | Check: tests
 - [x] P3.8 Key dispatch: `handle_key`, `run_action`, `on_key` | Files: `app/mod.rs`, `app/actions.rs`, `app/tests.rs` | Target: T1, limits | Check: tests, `app/mod.rs` under 500 production lines
+- [ ] P3.9 Saving and opening: save, save_as, apply, open, guard, run_pending, save_before, the palette preview sync → `app/persist.rs` (second impl block). The fonts save helpers (fonts_save, fonts_save_as, fonts_open_overlay, fonts_apply) go to fonts.rs if they belong to FontsTab | Files: `app/mod.rs`, `app/persist.rs` (+ fonts.rs if needed) | Target: T1, limits | Check: tests, behavior unchanged
+- [ ] P3.10 Pane focus: focus_pane, move_pane, current_pane, picker enter/leave → `app/focus.rs`. run_resize to layout.rs if it needs only Layout | Files: `app/mod.rs`, `app/focus.rs`, `app/layout.rs` | Target: T1, limits | Check: tests
+- [ ] P3.11 Colour rows and text input: colour_rows, group_of, move_row, sync_row, set_group_open, list_action, on_hex_key, on_paste, cycle_focus → `app/colours.rs` | Files: `app/mod.rs`, `app/colours.rs` | Target: T1, limits | Check: tests
+- [ ] P3.12 Nav enums: Page, Overlay, For, Side, Focus, Pending, ColourRow → `app/nav.rs` (replaces P4.1). Other modules import them from `app::nav` | Files: `app/mod.rs`, `app/nav.rs` (+ access-path edits) | Target: T5 | Check: tests, `app/mod.rs` under 500 production lines, fewer cycles
+Inherited long functions in app/mod.rs (with_config, run, focus_pane, list_action, run_resize, on_hex_key) get their reason comments, or are divided, in the step that moves them.
 Completes: none (prepares criterion 5)
 
 ### Phase 4: Dependency direction
-- [ ] P4.1 Nav enums into `app/nav.rs`: Page, Overlay, For, Side, Pending, Focus | Files: `app/mod.rs`, `app/nav.rs`, `hit.rs`, `prefetch.rs`, `presets.rs` | Target: T5 | Check: tests, fewer cycles
+- [x] P4.1 (replaced by P3.12, Phase 3 revision) Nav enums into `app/nav.rs`: Page, Overlay, For, Side, Pending, Focus | Files: `app/mod.rs`, `app/nav.rs`, `hit.rs`, `prefetch.rs`, `presets.rs` | Target: T5 | Check: tests, fewer cycles
 - [ ] P4.2 `base64` out of app into `encoding.rs` | Files: `app/mod.rs`, `encoding.rs`, `download.rs`, `main.rs` | Target: T5 | Check: download no longer imports app
 - [ ] P4.3 Theme data separate from theme actions: `theme.rs` keeps data, `app/theme_actions.rs` gets the App methods | Files: `theme.rs`, `app/theme_actions.rs`, `app/mod.rs` | Target: T1, T5 | Check: theme no longer imports app
 - [ ] P4.4 Cycle check: cargo-modules acyclic check in the flake checks, with the current cycle count as a ratchet | Files: `flake.nix`, `scripts/dev/lint-counts.sh`, `docs/refactor/lint-baseline.txt` | Target: T5 | Check: `nix flake check`
 Completes: none (cycle count decreases, measured)
 
 ### Phase 5: Large files and folders
-- [ ] P5.1 ui.rs: page drawing into `ui/pages.rs` | Files: `ui.rs` → `ui/mod.rs`, `ui/pages.rs` | Target: limits | Check: tests
+- [ ] P5.1 ui.rs: page drawing into `ui/pages.rs` | Files: `ui.rs` â `ui/mod.rs`, `ui/pages.rs` | Target: limits | Check: tests
 - [ ] P5.2 ui: pane drawing into `ui/panes.rs` | Files: `ui/mod.rs`, `ui/panes.rs` | Target: limits | Check: tests
 - [ ] P5.3 ui: overlay drawing into `ui/overlays.rs` | Files: `ui/mod.rs`, `ui/overlays.rs` | Target: limits | Check: tests
-- [ ] P5.4 keymap: default bindings as data, separate from keymap logic | Files: `keymap.rs` → `keymap/mod.rs`, `keymap/defaults.rs` | Target: T2, limits | Check: tests
-- [ ] P5.5 fonts: rendering jobs into `fonts/render.rs`, installed fonts into `fonts/installed.rs` | Files: `fonts.rs` → `fonts/mod.rs`, `fonts/render.rs`, `fonts/installed.rs` | Target: T1, limits | Check: tests
-- [ ] P5.6 settings: tabs into separate files | Files: `settings.rs` → `settings/mod.rs`, `settings/keymaps.rs`, `settings/history.rs` | Target: limits | Check: tests
-- [ ] P5.7 config: sizes and defaults separate from load and save | Files: `config.rs` → `config/mod.rs`, `config/sizes.rs` | Target: limits | Check: tests
+- [ ] P5.4 keymap: default bindings as data, separate from keymap logic. Also `Action::group()` (Window, Theme, Fonts or Colours), so run_action reads the group from data (Phase 3 review, note 2) | Files: `keymap.rs` â `keymap/mod.rs`, `keymap/defaults.rs` | Target: T2, limits | Check: tests
+- [ ] P5.5 fonts: rendering jobs into `fonts/render.rs`, installed fonts into `fonts/installed.rs` | Files: `fonts.rs` â `fonts/mod.rs`, `fonts/render.rs`, `fonts/installed.rs` | Target: T1, limits | Check: tests
+- [ ] P5.6 settings: tabs into separate files | Files: `settings.rs` â `settings/mod.rs`, `settings/keymaps.rs`, `settings/history.rs` | Target: limits | Check: tests
+- [ ] P5.7 config: sizes and defaults separate from load and save | Files: `config.rs` â `config/mod.rs`, `config/sizes.rs` | Target: limits | Check: tests
 - [ ] P5.8 `core/` folder: color, palette, theme, store, history, paths, settle (re-exports in main.rs) | Files: `main.rs`, `core/mod.rs`, moved files | Target: T5 | Check: tests
 - [ ] P5.9 `system/` folder: desktop, download, prefetch, samples, encoding | Files: `main.rs`, `system/mod.rs`, moved files | Target: T5 | Check: tests
 - [ ] P5.10 `ui/` folder complete: fonts_ui, fonts_dl_ui, settings_ui, tour_ui, preview, hit, docs | Files: `main.rs`, `ui/mod.rs`, moved files | Target: T5 | Check: tests, each folder 10 modules or fewer
 Completes: criterion 5 (with the docs action)
 
 ### Phase 6: Lint and errors to zero
+Also: `palette_menu_focused` and `page_tabs_focused` may become one `enum TopFocus { None, PaletteMenu, PageTabs }` (check first that both are never true at once; Phase 3 review, note 3).
 - [ ] P6.1 Clippy pedantic to zero in core | Files: core modules (5 or fewer per step, more steps if necessary) | Target: goal 7 | Check: count decreases
 - [ ] P6.2 Clippy pedantic to zero in system | Files: system modules | Target: goal 7 | Check: count decreases
 - [ ] P6.3 Clippy pedantic to zero in app | Files: app modules | Target: goal 7 | Check: count decreases
@@ -244,6 +250,9 @@ Completes: criterion 6
 | 1 | Move the xdg() helper of download.rs and its 3 folders into paths.rs | ACCEPT: new step P1.5 | Criterion 3 for the Rust code. Small, no behavior change. |
 | 1 | Rename one of the two fonts_dir functions | DONE in the review (download::installed_fonts_dir) | Audience test: same name, different meaning. |
 | 2 | One place for the share folder and the state folders, also for the hooks (share_dir, gtk_settings_file, ghostty_themes_dir) | DONE in the review | Criterion 3 for the scripts. Small. |
+| 3 | Divide the rest of app/mod.rs (1,294 lines) by concern | ACCEPT: P3.9 to P3.12; P4.1 replaced by P3.12 | Reviewer: right division for a junior developer; the nav enums step is required to reach 500 lines. |
+| 3 | Action::group() in keymap.rs | DEFER to P5.4 | The flat match fixes the audience problem now; keymap.rs changes in P5.4 anyway. |
+| 3 | TopFocus enum for the two top-row focus flags | DEFER to Phase 6 | Small; check first that both are never true. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
@@ -257,8 +266,8 @@ Completes: criterion 6
 | Phase 1 review | done |
 | Phase 2 steps | done |
 | Phase 2 review | done |
-| Phase 3 steps | done |
-| Phase 3 review | open |
+| Phase 3 steps | open |
+| Phase 3 review | done |
 | Phase 4 steps | open |
 | Phase 4 review | open |
 | Phase 5 steps | open |
