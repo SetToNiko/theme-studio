@@ -2,9 +2,9 @@
 # Switch colour scheme.
 # Usage: theme-switch.sh <palette name>
 here=$(dirname "$(readlink -f "$0")")
-. "$here/lib/paths.sh" # data_file, share_file
+. "$here/lib/paths.sh" # data_file, share_file, colors_dir, cache_dir
 palettes="${PALETTES:-$(data_file palettes.json)}"
-out="$HOME/.config/colors"
+out=$(colors_dir)
 # shellcheck disable=SC1091 # the other lib files are not followed either
 . "$here/lib/data.sh" # json_data (either file layout)
 
@@ -53,9 +53,10 @@ fi
   echo '}'; } > "$out/rofi.rasi"
 
 # Firefox (Pywalfox): the mapping is share/pywalfox-colors.jq
-mkdir -p "$HOME/.cache/wal"
+cache=$(cache_dir)
+mkdir -p "$cache"
 jq --arg n "$name" -f "$(share_file pywalfox-colors.jq)" \
-  "$data" > "$HOME/.cache/wal/colors.json"
+  "$data" > "$cache/colors.json"
 
 if [ -z "$NO_RESTART" ]; then
   pkill -USR2 -f '^ghostty( |$)'   # Ghostty reloads its config on SIGUSR2

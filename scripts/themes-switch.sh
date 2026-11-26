@@ -4,9 +4,9 @@
 # palette's switch then reloads Ghostty and restarts i3 once for both.
 # Usage: themes-switch.sh <theme name>
 here=$(dirname "$(readlink -f "$0")")
-. "$here/lib/paths.sh" # data_file, share_file
+. "$here/lib/paths.sh" # data_file, share_file, colors_dir
 themes="${THEMES:-$(data_file themes.json)}"
-out="$HOME/.config/colors"
+out=$(colors_dir)
 # shellcheck disable=SC1091 # the other lib files are not followed either
 . "$here/lib/data.sh" # json_data (either file layout)
 

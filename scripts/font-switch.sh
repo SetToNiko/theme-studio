@@ -16,9 +16,9 @@
 # proportional offset).
 # Usage: font-switch.sh <font preset name>
 here=$(dirname "$(readlink -f "$0")")
-. "$here/lib/paths.sh" # data_file, share_file
+. "$here/lib/paths.sh" # data_file, share_file, colors_dir, fonts_dir, host_fonts_file
 fonts="${FONTS:-$(data_file fonts.json)}"
-out="$HOME/.config/fonts"
+out=$(fonts_dir)
 # shellcheck disable=SC1091 # the other lib files are not followed either
 . "$here/lib/data.sh" # json_data (either file layout)
 
@@ -38,14 +38,14 @@ if [ -n "$FONT_SIZES" ]; then
   sizes=$(jq -n -c --arg a "$s_mono" --arg b "$s_ui" --arg c "$s_bar" \
     '{monospace: ($a | tonumber), proportional: ($b | tonumber), icons: ($c | tonumber)}') || sizes=null
 else
-  theme=$(cat "$HOME/.config/colors/theme" 2>/dev/null)
+  theme=$(cat "$(colors_dir)/theme" 2>/dev/null)
   themes=$(data_file themes.json)
   if [ -n "$theme" ] && [ -f "$themes" ]; then
     sizes=$(json_data "$themes" | jq -c --arg t "$theme" '.[$t].sizes // null') || sizes=null
   fi
 fi
 
-offsets=$(cat "$HOME/.config/host/fonts.json" 2>/dev/null) || offsets='{}'
+offsets=$(cat "$(host_fonts_file)" 2>/dev/null) || offsets='{}'
 { read -r mono; read -r mono_size; read -r ui; read -r ui_size; read -r bar; read -r bar_size; } < <(
   jq -r --arg n "$name" --argjson off "$offsets" --argjson sizes "${sizes:-null}" '
     def role($new; $old): .[$new] // .[$old];
