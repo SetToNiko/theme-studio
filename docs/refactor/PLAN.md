@@ -296,6 +296,7 @@ Completes: criterion 6
 | 9 | Phase 5 review: about 80 functions over 30 lines without a reason; stale paths in current plan text | ACCEPT: new step P6.7 (long functions, one step per folder); section 3 and Phase 6 updated to the new folders | No bugs found by the 3 reviewers. |
 | 10 | Notes N1-N5 (Phase 5 review) | USER: N1 deferred to the terminal-independence refactor; N2 accepted with chrono (P5.15); N3, N4, N5 accepted (P5.16-P5.18) | Decided by the user in the revise action. |
 | 11 | Phase 6 start: P6.7 (long functions) and P6.1-P6.4 (clippy) change the same files | ACCEPT: one step per folder group does both, in parallel (wave 1); errors and the gate in wave 2; TopFocus into P6.3 | Same goal; no two parallel steps own one file. |
+| 12 | Phase 6 and 7 reviews | ACCEPT: fixes applied in 4 parallel worktrees; finding 28 fixed (help text); finding 27: USER chose to fix the Nix wrapper PATH; USER chose to mark all reviewer-confirmed long-function reasons as verified (phase 6) | The `(reason verified, phase N)` marker is the project convention, not noise. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
@@ -315,9 +316,9 @@ Completes: criterion 6
 | Phase 4 review | done |
 | Phase 5 steps | done |
 | Phase 5 review | done (3 reviewers in parallel; no bugs; fixes applied; notes N1-N5 pending) |
-| Phase 6 steps | open |
-| Phase 6 review | open |
-| Phase 7 steps | open |
-| Phase 7 review | open |
+| Phase 6 steps | done |
+| Phase 6 review | done (3 reviewers; no refactor bugs; finding 28 fixed; long-function reasons verified in one pass) |
+| Phase 7 steps | done (P7.1 and P7.2 ran next to Phase 6 wave 1: no shared files) |
+| Phase 7 review | done (no bugs; install.sh checks and tests added; finding 27 fixed by the user's choice) |
 | Documentation | open |
 | Final review | open |
