@@ -282,6 +282,11 @@ Wave 1 (parallel): F1, F2, F3, F4, F7. Wave 2: F8. Wave 3 (parallel): F5, F6.
 
 ## 8. Outcome
 <!-- The final action completes this section. -->
+**What changed.** `app.rs` (4,948 lines) and 34 other flat modules became 114 production files in 9 folders by layer and feature (model/, system/, app/, ui/, and fonts/, keymap/, config/, settings_page/, preview_term/); 0 dependency cycles (was 22 of 35 modules). App integrations are data: one list (`share/integrations.json`) and one runner, so a new program is one entry plus one generator. Phase R removed the wallpaper hook, the login screen and the rofi pickers (see Handover). Theme Studio installs without Nix (`install.sh`), and the Nix package brings the studio's programs. clippy pedantic 490 -> 0, shellcheck 14 -> 0, tests 115 -> 191 plus 22 golden cases and an install test; coverage 82.72% -> 82.75%. `nix flake check` gates warnings, rustdoc, cycles, file size (500 lines), `# Errors` sections, the golden tests and the install. Bugs fixed: the help text (28), a lost draft on a failed save (24), the reload exit code (23).
+
+**Deferred.** Note N1 (the Preview type in two folders) and the Ghostty-specific places: the terminal-independence refactor (section 7). Findings 18-20 and 26 (XDG differences, the cursor on Gap rows), finding 25. Duplicate code 1.13% -> 1.24% (many small, similar draw helpers). docs/plan.md and docs/migration.md describe the old setup: archive them or update them. The manual desktop checklist (GOAL.md, Verification item 6) after the last phase: the user runs it.
+
+**Next steps.** 1. Run the manual checklist on the real desktop, then merge `refactor/maintainability`. 2. Terminal independence (with N1). 3. Preview per app (the next feature). 4. Multi-distro and security work before a public release.
 
 ## 9. Architecture notes (pending)
 <!-- The review action adds notes here. The revise action processes them. -->
@@ -332,4 +337,4 @@ Wave 1 (parallel): F1, F2, F3, F4, F7. Wave 2: F8. Wave 3 (parallel): F5, F6.
 | Phase 7 steps | done (P7.1 and P7.2 ran next to Phase 6 wave 1: no shared files) |
 | Phase 7 review | done (no bugs; install.sh checks and tests added; finding 27 fixed by the user's choice) |
 | Documentation | done (ARCHITECTURE.md new; README Development section; doc comments checked) |
-| Final review | open |
+| Final review | done (final reviewer; Phase F: 8 fixes chosen by the user; BEFORE_AFTER.md) |
