@@ -36,7 +36,7 @@ pub(super) fn downloads_hints(app: &App) -> Vec<String> {
 }
 
 /// The tournament rows: one list per stage, or the bracket view.
-// Long function: one match over the 4 tournament stages plus the bracket view.
+// Long function: a pure data table: one key-hint list per tournament stage, plus the bracket view.
 pub(super) fn tournament_rows(app: &App) -> Rows<'static> {
     use crate::fonts::tournament_page::Stage;
     let stage = app.tour_page.as_ref().map_or(Stage::Setup, |t| t.stage);
@@ -96,7 +96,7 @@ pub(super) fn settings_hints(app: &App) -> Vec<String> {
 }
 
 /// The settings rows for the current tab.
-// Long function: one match over the 5 settings tabs, each arm a row table.
+// Long function: a pure data table: one key-hint list per settings tab (the Keymaps tab has two).
 pub(super) fn settings_rows(app: &App) -> Rows<'static> {
     use crate::settings_page::Tab;
     match app.settings_page.tab {
@@ -136,7 +136,6 @@ pub(super) fn settings_rows(app: &App) -> Rows<'static> {
 }
 
 /// Hints for the fonts column, by the focused control.
-// Long function: builds the chip list, then one match over 3 font focus states.
 pub(super) fn fonts_hints(app: &App) -> Vec<String> {
     // picking for a role: only the chips that aren't locked
     let chips: Vec<Action> = CHIPS
@@ -149,18 +148,7 @@ pub(super) fn fonts_hints(app: &App) -> Vec<String> {
             (&[A::ToggleSample], "hide sample"),
             (&[A::FocusNext], "next pane"),
         ],
-        FontFocus::Slots => {
-            let mut v: Rows = vec![
-                (&[A::Down, A::Up], "role"),
-                (&[A::Left, A::Right], "size"),
-                (&[A::PickFont], "pick font"),
-            ];
-            // the role's font doesn't fit it
-            if app.fonts.misfit(app.fonts.slot) {
-                v.push((&[A::FixRoleFont], "fitting face"));
-            }
-            v
-        }
+        FontFocus::Slots => slots_rows(app),
         _ => vec![
             (&[A::Down, A::Up], "browse"),
             (&[A::Right, A::Left], "open/close"),
@@ -172,6 +160,20 @@ pub(super) fn fonts_hints(app: &App) -> Vec<String> {
         ],
     };
     row_hints(app, rows)
+}
+
+/// The hints for the role slots: the fitting-face hint shows only when the role's font does not fit.
+fn slots_rows(app: &App) -> Rows<'static> {
+    let mut v: Rows = vec![
+        (&[A::Down, A::Up], "role"),
+        (&[A::Left, A::Right], "size"),
+        (&[A::PickFont], "pick font"),
+    ];
+    // the role's font doesn't fit it
+    if app.fonts.misfit(app.fonts.slot) {
+        v.push((&[A::FixRoleFont], "fitting face"));
+    }
+    v
 }
 
 /// Hints for the colour column, by the focused control.

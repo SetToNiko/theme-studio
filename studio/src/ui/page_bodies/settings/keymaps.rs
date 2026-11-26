@@ -10,7 +10,9 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 use super::{follow, row_rect, selected_style, truncate};
 use crate::app::App;
 use crate::app::state::hit::{Target, hover_line, hover_row};
+use crate::keymap::Context;
 use crate::keymap::Keymap;
+use crate::keymap::action::Action;
 use crate::keymap::key::display_seq;
 use crate::settings_page::KmRow;
 use crate::ui::widgets::to_u16;
@@ -110,36 +112,9 @@ pub(super) fn draw_keymaps(f: &mut Frame, app: &mut App, area: Rect) {
 
 /// The text of one row of the list: the preset, a gap, a context title or a binding.
 /// `shipped` is the built-in keymap of the same name (to mark changed keys); `w` is the list width.
-// Long function: one match over the three row kinds (preset, gap, context title, binding).
 fn keymaps_row_line(app: &App, row: &KmRow, shipped: Option<&Keymap>, w: usize) -> Line<'static> {
-    let leader = app.keymap.leader;
     match *row {
-        KmRow::Preset => {
-            let pos = app
-                .presets
-                .iter()
-                .position(|p| p.name == app.keymap.name)
-                .map_or(0, |p| p + 1);
-            Line::from(vec![
-                Span::styled(" Preset  ", Style::new().bold()),
-                Span::styled(
-                    format!("[ {} ▾ ]", app.keymap.name),
-                    Style::new().yellow().bold(),
-                ),
-                Span::styled(
-                    format!(
-                        "  {pos}/{}  {}",
-                        app.presets.len(),
-                        if shipped.is_some() {
-                            "shipped"
-                        } else {
-                            "yours"
-                        }
-                    ),
-                    Style::new().dark_gray(),
-                ),
-            ])
-        }
+        KmRow::Preset => preset_line(app, shipped),
         KmRow::Gap => Line::raw(""),
         KmRow::Header(ctx) => {
             let open = !app.settings_page.km_closed.contains(&ctx);
@@ -148,44 +123,79 @@ fn keymaps_row_line(app: &App, row: &KmRow, shipped: Option<&Keymap>, w: usize) 
                 Span::styled(ctx.title(), Style::new().bold().cyan()),
             ])
         }
-        KmRow::Binding(ctx, action) => {
-            let keys = app.keymap.keys_of(ctx, action);
-            let text: Vec<String> = keys.iter().map(|k| display_seq(k, leader)).collect();
-            let changed = shipped
-                .as_ref()
-                .is_some_and(|s| s.keys_of(ctx, action) != keys);
-            let clash = keys
-                .iter()
-                .any(|k| !app.keymap.conflicts(ctx, action, k).is_empty());
-            let label_w = w.saturating_sub(24).clamp(20, 48);
-            let mut spans = vec![
-                Span::raw(format!(
-                    "   {:<label_w$}",
-                    truncate(&action.describe(), label_w)
-                )),
-                Span::styled(if changed { "• " } else { "  " }, Style::new().cyan()),
-            ];
-            if text.is_empty() {
-                spans.push(Span::styled("no keys", Style::new().dark_gray().italic()));
-            } else {
-                spans.push(Span::styled(text.join("  "), Style::new().yellow()));
-            }
-            if clash {
-                spans.push(Span::styled("  ! clash", Style::new().red().bold()));
-            }
-            Line::from(spans)
-        }
+        KmRow::Binding(ctx, action) => binding_line(app, (ctx, action), shipped, w),
     }
 }
 
+/// The preset row: the name, its position in the list, and whether it is shipped or yours.
+fn preset_line(app: &App, shipped: Option<&Keymap>) -> Line<'static> {
+    let pos = app
+        .presets
+        .iter()
+        .position(|p| p.name == app.keymap.name)
+        .map_or(0, |p| p + 1);
+    Line::from(vec![
+        Span::styled(" Preset  ", Style::new().bold()),
+        Span::styled(
+            format!("[ {} ▾ ]", app.keymap.name),
+            Style::new().yellow().bold(),
+        ),
+        Span::styled(
+            format!(
+                "  {pos}/{}  {}",
+                app.presets.len(),
+                if shipped.is_some() {
+                    "shipped"
+                } else {
+                    "yours"
+                }
+            ),
+            Style::new().dark_gray(),
+        ),
+    ])
+}
+
+/// A binding row: the action, a mark when its keys changed, the keys, and a clash warning.
+fn binding_line(
+    app: &App,
+    (ctx, action): (Context, Action),
+    shipped: Option<&Keymap>,
+    w: usize,
+) -> Line<'static> {
+    let leader = app.keymap.leader;
+    let keys = app.keymap.keys_of(ctx, action);
+    let text: Vec<String> = keys.iter().map(|k| display_seq(k, leader)).collect();
+    let changed = shipped
+        .as_ref()
+        .is_some_and(|s| s.keys_of(ctx, action) != keys);
+    let clash = keys
+        .iter()
+        .any(|k| !app.keymap.conflicts(ctx, action, k).is_empty());
+    let label_w = w.saturating_sub(24).clamp(20, 48);
+    let mut spans = vec![
+        Span::raw(format!(
+            "   {:<label_w$}",
+            truncate(&action.describe(), label_w)
+        )),
+        Span::styled(if changed { "• " } else { "  " }, Style::new().cyan()),
+    ];
+    if text.is_empty() {
+        spans.push(Span::styled("no keys", Style::new().dark_gray().italic()));
+    } else {
+        spans.push(Span::styled(text.join("  "), Style::new().yellow()));
+    }
+    if clash {
+        spans.push(Span::styled("  ! clash", Style::new().red().bold()));
+    }
+    Line::from(spans)
+}
+
 /// The lines of the info column: what the selected row is, what can be done, and warnings.
-// Long function: one match over the selected row kind, then the keymap warnings.
 fn km_info_lines(
     app: &App,
     selected: Option<&KmRow>,
     shipped: Option<&Keymap>,
 ) -> Vec<Line<'static>> {
-    let leader = app.keymap.leader;
     let mut lines: Vec<Line> = Vec::new();
     match selected {
         Some(KmRow::Preset) => {
@@ -196,41 +206,7 @@ fn km_info_lines(
             lines.push(Line::raw("delete or reset one."));
         }
         Some(KmRow::Binding(ctx, action)) => {
-            lines.push(Line::styled(action.describe(), Style::new().bold()));
-            lines.push(Line::styled(
-                format!("in {} · {}", ctx.title(), action.id()),
-                Style::new().dark_gray(),
-            ));
-            lines.push(Line::raw(""));
-            if let Some(s) = shipped {
-                let k: Vec<String> = s
-                    .keys_of(*ctx, *action)
-                    .iter()
-                    .map(|k| display_seq(k, leader))
-                    .collect();
-                lines.push(Line::from(vec![
-                    Span::raw("shipped: "),
-                    Span::styled(
-                        if k.is_empty() {
-                            "no keys".into()
-                        } else {
-                            k.join("  ")
-                        },
-                        Style::new().yellow(),
-                    ),
-                ]));
-            }
-            for k in app.keymap.keys_of(*ctx, *action) {
-                for c in app.keymap.conflicts(*ctx, *action, &k) {
-                    lines.push(Line::styled(format!("! {c}"), Style::new().red()));
-                }
-            }
-            lines.push(Line::raw(""));
-            lines.push(Line::raw("Enter  press new keys (replace)"));
-            lines.push(Line::raw("a      press keys to add"));
-            lines.push(Line::raw("i      type keys (Vim notation)"));
-            lines.push(Line::raw("d      unbind"));
-            lines.push(Line::raw("n      save the keymap as a preset"));
+            lines.extend(binding_info_lines(app, (*ctx, *action), shipped));
         }
         _ => {}
     }
@@ -241,5 +217,52 @@ fn km_info_lines(
             lines.push(Line::styled(format!("⚠ {w}"), Style::new().red()));
         }
     }
+    lines
+}
+
+/// The info lines of a binding: its name, shipped keys, clashes and what each key does.
+// Long function: the order of the lines is the order on screen: name, shipped keys, clashes, then the key help.
+fn binding_info_lines(
+    app: &App,
+    (ctx, action): (Context, Action),
+    shipped: Option<&Keymap>,
+) -> Vec<Line<'static>> {
+    let leader = app.keymap.leader;
+    let mut lines: Vec<Line> = Vec::new();
+    lines.push(Line::styled(action.describe(), Style::new().bold()));
+    lines.push(Line::styled(
+        format!("in {} · {}", ctx.title(), action.id()),
+        Style::new().dark_gray(),
+    ));
+    lines.push(Line::raw(""));
+    if let Some(s) = shipped {
+        let k: Vec<String> = s
+            .keys_of(ctx, action)
+            .iter()
+            .map(|k| display_seq(k, leader))
+            .collect();
+        lines.push(Line::from(vec![
+            Span::raw("shipped: "),
+            Span::styled(
+                if k.is_empty() {
+                    "no keys".into()
+                } else {
+                    k.join("  ")
+                },
+                Style::new().yellow(),
+            ),
+        ]));
+    }
+    for k in app.keymap.keys_of(ctx, action) {
+        for c in app.keymap.conflicts(ctx, action, &k) {
+            lines.push(Line::styled(format!("! {c}"), Style::new().red()));
+        }
+    }
+    lines.push(Line::raw(""));
+    lines.push(Line::raw("Enter  press new keys (replace)"));
+    lines.push(Line::raw("a      press keys to add"));
+    lines.push(Line::raw("i      type keys (Vim notation)"));
+    lines.push(Line::raw("d      unbind"));
+    lines.push(Line::raw("n      save the keymap as a preset"));
     lines
 }

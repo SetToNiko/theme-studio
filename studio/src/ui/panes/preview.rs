@@ -145,7 +145,6 @@ fn heading(p: &Palette, t: &str) -> Line<'static> {
 }
 
 /// Terminal colours, as Ghostty gets them (terminal-colors.json).
-// Long function: one section of the swatch view: the 16 ANSI swatches and the sample line, in drawing order.
 fn terminal_lines(lines: &mut Vec<Line<'static>>, app: &App) {
     let p = &app.editor.palette;
     let bg = p.get("bg0");
@@ -157,20 +156,7 @@ fn terminal_lines(lines: &mut Vec<Line<'static>>, app: &App) {
         ));
         return;
     };
-    for half in [0..8, 8..16] {
-        let mut spans: Vec<Span> = vec!["  ".into()];
-        for i in half {
-            let c = map
-                .ansi
-                .get(i)
-                .and_then(|k| palette::key(k))
-                .map_or(bg, |k| p.get(k));
-            spans.push(Span::styled(format!("{i:>2} "), fg(p, "grey0")));
-            spans.push(swatch(c, 4));
-            spans.push(" ".into());
-        }
-        lines.push(Line::from(spans));
-    }
+    lines.extend(ansi_rows(p, map));
     let sample: Vec<Span> = ["red", "green", "yellow", "blue", "purple", "aqua"]
         .iter()
         .map(|k| Span::styled(format!(" {k}"), fg(p, k)))
@@ -187,9 +173,30 @@ fn terminal_lines(lines: &mut Vec<Line<'static>>, app: &App) {
     lines.push(Line::from(spans));
 }
 
+/// The 16 ANSI swatches of the terminal colours, in two rows of eight.
+fn ansi_rows(p: &Palette, map: &crate::model::store::TerminalMap) -> Vec<Line<'static>> {
+    let bg = p.get("bg0");
+    let mut rows = Vec::new();
+    for half in [0..8, 8..16] {
+        let mut spans: Vec<Span> = vec!["  ".into()];
+        for i in half {
+            let c = map
+                .ansi
+                .get(i)
+                .and_then(|k| palette::key(k))
+                .map_or(bg, |k| p.get(k));
+            spans.push(Span::styled(format!("{i:>2} "), fg(p, "grey0")));
+            spans.push(swatch(c, 4));
+            spans.push(" ".into());
+        }
+        rows.push(Line::from(spans));
+    }
+    rows
+}
+
 /// The sample code: tokens and line backgrounds as nvim shows them
 /// (mini.base16 mapping from nvim/lua/theme.lua).
-// Long function: a data table: the six sample code lines with their token colours.
+// Long function: a pure data table: one row per sample code line, each with its tokens and their colour keys.
 fn code_sample() -> Vec<CodeLine<'static>> {
     vec![
         (
@@ -253,9 +260,7 @@ fn code_sample() -> Vec<CodeLine<'static>> {
 }
 
 /// Code as nvim shows it, then its status line.
-// Long function: one section of the swatch view: code lines, then the nvim status line of four coloured spans.
 fn editor_lines(lines: &mut Vec<Line<'static>>, p: &Palette) {
-    let bg = p.get("bg0");
     lines.push(heading(p, "Editor"));
     let num = |n: u32, cur: bool| {
         Span::styled(
@@ -277,7 +282,13 @@ fn editor_lines(lines: &mut Vec<Line<'static>>, p: &Palette) {
         }
         lines.push(Line::from(spans));
     }
-    lines.push(Line::from(vec![
+    lines.push(nvim_status_line(p));
+}
+
+/// The nvim status line: mode, file name, filler and position, each on its own background.
+fn nvim_status_line(p: &Palette) -> Line<'static> {
+    let bg = p.get("bg0");
+    Line::from(vec![
         "  ".into(),
         Span::styled(
             " NORMAL ",
@@ -302,11 +313,11 @@ fn editor_lines(lines: &mut Vec<Line<'static>>, p: &Palette) {
                 .bg(p.get("bg_statusline3").color())
                 .fg(p.get("fg0").color()),
         ),
-    ]));
+    ])
 }
 
 /// i3 window borders and bar (i3/theme roles).
-// Long function: one section of the swatch view: the seven coloured spans of the i3 borders and bar.
+// Long function: a pure data row: the seven spans of the i3 borders and bar, listed in their on-screen order, each with its own colour pair.
 fn i3_lines(lines: &mut Vec<Line<'static>>, p: &Palette) {
     let bg = p.get("bg0");
     lines.push(heading(p, "Window borders and bar"));

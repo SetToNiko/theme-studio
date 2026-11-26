@@ -38,7 +38,7 @@ pub(super) fn draw_history(f: &mut Frame, app: &mut App, area: Rect) {
 }
 
 /// The Files box: one row per file that has a history.
-// Long function: one box with a block, a row loop and the hover and cursor handling of each row.
+// Long function: the row loop needs the block's inner rectangle, and each row's style depends on the click-area result of the same row.
 fn draw_files(f: &mut Frame, app: &mut App, files: Rect, focus: HistFocus) {
     let block = Block::bordered()
         .title(" Files ")
@@ -72,7 +72,7 @@ fn draw_files(f: &mut Frame, app: &mut App, files: Rect, focus: HistFocus) {
 }
 
 /// The Versions box: one row per saved version of the selected file.
-// Long function: one box: empty note, scroll, and a row loop with hover and cursor handling.
+// Long function: the scroll offset follows the selection and the box height, and the row loop then uses that offset and registers each row's click area.
 fn draw_versions(
     f: &mut Frame,
     app: &mut App,
@@ -147,7 +147,7 @@ fn draw_versions(
 }
 
 /// The preview box: the selected version in place of what's there now.
-// Long function: one box: title, hit area, scroll limits and the line loop.
+// Long function: the scroll limit depends on the head lines built first and on the box height, and the diff area is registered before the lines are drawn.
 fn draw_preview(
     f: &mut Frame,
     app: &mut App,
@@ -191,8 +191,25 @@ fn draw_preview(
 }
 
 /// The lines above the differences: the palette strips and the legend, or "Same as now."
-// Long function: builds the palette strips and the legend as one list of lines.
 fn preview_head(app: &App, view: &DiffView) -> Vec<Line<'static>> {
+    let mut lines = palette_lines(app, view);
+    if view.lines.is_empty() {
+        lines.push(Line::styled(" Same as now.", Style::new().dark_gray()));
+    } else {
+        lines.push(Line::from(vec![
+            Span::styled(" changed ", Style::new().black().on_yellow()),
+            Span::styled(" now → selected   ", Style::new().dark_gray()),
+            Span::styled("+ ", Style::new().green()),
+            Span::styled("restoring adds   ", Style::new().dark_gray()),
+            Span::styled("- ", Style::new().red()),
+            Span::styled("restoring removes", Style::new().dark_gray()),
+        ]));
+    }
+    lines
+}
+
+/// The palette strips of "now" and "selected" (nothing when both are empty).
+fn palette_lines(app: &App, view: &DiffView) -> Vec<Line<'static>> {
     let mut lines: Vec<Line> = Vec::new();
     if let Some((now, then)) = &view.palette {
         let strip = |label: &str, cs: &[(String, Rgb)]| {
@@ -213,70 +230,74 @@ fn preview_head(app: &App, view: &DiffView) -> Vec<Line<'static>> {
             lines.push(Line::raw(""));
         }
     }
-    if view.lines.is_empty() {
-        lines.push(Line::styled(" Same as now.", Style::new().dark_gray()));
-    } else {
-        lines.push(Line::from(vec![
-            Span::styled(" changed ", Style::new().black().on_yellow()),
-            Span::styled(" now → selected   ", Style::new().dark_gray()),
-            Span::styled("+ ", Style::new().green()),
-            Span::styled("restoring adds   ", Style::new().dark_gray()),
-            Span::styled("- ", Style::new().red()),
-            Span::styled("restoring removes", Style::new().dark_gray()),
-        ]));
-    }
     lines
 }
 
 /// One line of the difference list, coloured by the kind of change.
-// Long function: one match over all five kinds of difference line.
 fn diff_line(l: &DiffLine) -> Line<'static> {
     let pad = |d: usize| "  ".repeat(d + 1);
     match l {
         DiffLine::Head { depth, key } => {
             Line::styled(format!("{}{key}", pad(*depth)), Style::new().bold())
         }
-        DiffLine::Same { depth, key, value } => {
-            let mut s = vec![Span::raw(format!("{}{key}: ", pad(*depth)))];
-            s.extend(value_spans(value, Style::new()));
-            Line::from(s)
-        }
+        DiffLine::Same { depth, key, value } => same_line(&pad(*depth), key, value),
         DiffLine::Changed {
             depth,
             key,
             now,
             then,
-        } => {
-            let mut s = vec![Span::styled(
-                format!("{}{key}: ", pad(*depth)),
-                Style::new().black().on_yellow(),
-            )];
-            s.extend(value_spans(
-                now,
-                Style::new().dark_gray().add_modifier(Modifier::CROSSED_OUT),
-            ));
-            s.push(Span::raw(" → "));
-            s.extend(value_spans(then, Style::new().yellow().bold()));
-            Line::from(s)
-        }
-        DiffLine::Added { depth, key, value } => {
-            let mut s = vec![Span::styled(
-                format!("{}+ {key}: ", pad(*depth)),
-                Style::new().green(),
-            )];
-            s.extend(value_spans(value, Style::new().green()));
-            Line::from(s)
-        }
-        DiffLine::Removed { depth, key, value } => {
-            let mut s = vec![Span::styled(
-                format!("{}- {key}: ", pad(*depth)),
-                Style::new().red(),
-            )];
-            s.extend(value_spans(
-                value,
-                Style::new().red().add_modifier(Modifier::CROSSED_OUT),
-            ));
-            Line::from(s)
-        }
+        } => changed_line(&pad(*depth), key, now, then),
+        DiffLine::Added { depth, key, value } => marked_line(
+            &pad(*depth),
+            '+',
+            key,
+            value,
+            Style::new().green(),
+            Style::new().green(),
+        ),
+        DiffLine::Removed { depth, key, value } => marked_line(
+            &pad(*depth),
+            '-',
+            key,
+            value,
+            Style::new().red(),
+            Style::new().red().add_modifier(Modifier::CROSSED_OUT),
+        ),
     }
+}
+
+/// A changed line: the key on yellow, the old value crossed out, then the new value.
+fn changed_line(pad: &str, key: &str, now: &str, then: &str) -> Line<'static> {
+    let mut s = vec![Span::styled(
+        format!("{pad}{key}: "),
+        Style::new().black().on_yellow(),
+    )];
+    s.extend(value_spans(
+        now,
+        Style::new().dark_gray().add_modifier(Modifier::CROSSED_OUT),
+    ));
+    s.push(Span::raw(" → "));
+    s.extend(value_spans(then, Style::new().yellow().bold()));
+    Line::from(s)
+}
+
+/// An added (`+`) or removed (`-`) line: the marker and key in `key_style`, the value in `value_style`.
+fn marked_line(
+    pad: &str,
+    marker: char,
+    key: &str,
+    value: &str,
+    key_style: Style,
+    value_style: Style,
+) -> Line<'static> {
+    let mut s = vec![Span::styled(format!("{pad}{marker} {key}: "), key_style)];
+    s.extend(value_spans(value, value_style));
+    Line::from(s)
+}
+
+/// An unchanged line: the key and its value in the normal style.
+fn same_line(pad: &str, key: &str, value: &str) -> Line<'static> {
+    let mut s = vec![Span::raw(format!("{pad}{key}: "))];
+    s.extend(value_spans(value, Style::new()));
+    Line::from(s)
 }

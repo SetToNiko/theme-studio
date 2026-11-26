@@ -80,8 +80,76 @@ pub(super) fn draw_behaviour(f: &mut Frame, app: &mut App, area: Rect) {
     );
 }
 
+/// The sample line of the derived colours: four key names, two of them lit.
+fn derived_sample_line(looks: &Looks) -> Line<'static> {
+    let mut spans = vec![Span::styled("   Sample:  ", Style::new().dark_gray())];
+    for (key, lit) in [
+        ("bg_visual_red", false),
+        ("bg0", true),
+        ("red", true),
+        ("green", false),
+    ] {
+        let st = if lit {
+            looks.derived.apply(Style::new())
+        } else {
+            Style::new()
+        };
+        spans.push(Span::styled(format!(" {key:<14}"), st));
+        spans.push(Span::raw(" "));
+    }
+    spans.push(Span::styled(
+        " (bg_visual_red selected)",
+        Style::new().dark_gray(),
+    ));
+    Line::from(spans)
+}
+
+/// What a setting row shows right of its label: swatch (colour rows), text, text style and the note.
+fn setting_value(
+    app: &App,
+    row: BhRow,
+    value: &str,
+) -> (Option<ratatui::style::Color>, String, Style, &'static str) {
+    if row.is_button() {
+        (None, "[ Enter ]".to_string(), Style::new().cyan(), "")
+    } else if row.is_colour() {
+        // a colour: « key » in magenta, unlike the ‹ choices ›
+        (
+            Some(app.theme_colour(value)),
+            format!("« {value} »"),
+            Style::new().magenta(),
+            "Enter: choose",
+        )
+    } else if row == BhRow::Leader {
+        (
+            None,
+            format!("‹ {value} ›"),
+            Style::new().yellow(),
+            "Enter: press the new key",
+        )
+    } else {
+        (None, format!("‹ {value} ›"), Style::new().yellow(), "")
+    }
+}
+
+/// A setting row: label, swatch (colour rows), value in its own brackets, and what Enter does.
+fn setting_line(app: &App, row: BhRow) -> Line<'static> {
+    // columns: label | swatch | value | what Enter does
+    let label = App::behaviour_label(row);
+    let value = app.behaviour_value(row);
+    let (swatch, text, style, note) = setting_value(app, row, &value);
+    Line::from(vec![
+        Span::raw(format!("   {label:<50} ")),
+        match swatch {
+            Some(c) => Span::styled("██ ", Style::new().fg(c)),
+            None => Span::raw("   "),
+        },
+        Span::styled(format!("{text:<VALUE_W$}"), style),
+        Span::styled(format!("  {note}"), Style::new().dark_gray()),
+    ])
+}
+
 /// The text of one row of the list: a gap, a group title, a sample line or a setting.
-// Long function: one match over all kinds of Behaviour row (gap, title, two samples, button, colour, choice).
 fn behaviour_row_line(app: &App, row: &BhRow, looks: &Looks) -> Line<'static> {
     match *row {
         BhRow::Gap => Line::raw(""),
@@ -104,61 +172,7 @@ fn behaviour_row_line(app: &App, row: &BhRow, looks: &Looks) -> Line<'static> {
             Span::styled("   preview window ", Style::new().dark_gray()),
             Span::styled("──────", Style::new().fg(looks.preview)),
         ]),
-        BhRow::Sample(LookId::Derived) => {
-            let mut spans = vec![Span::styled("   Sample:  ", Style::new().dark_gray())];
-            for (key, lit) in [
-                ("bg_visual_red", false),
-                ("bg0", true),
-                ("red", true),
-                ("green", false),
-            ] {
-                let st = if lit {
-                    looks.derived.apply(Style::new())
-                } else {
-                    Style::new()
-                };
-                spans.push(Span::styled(format!(" {key:<14}"), st));
-                spans.push(Span::raw(" "));
-            }
-            spans.push(Span::styled(
-                " (bg_visual_red selected)",
-                Style::new().dark_gray(),
-            ));
-            Line::from(spans)
-        }
-        _ => {
-            // columns: label | swatch | value | what Enter does
-            let label = App::behaviour_label(*row);
-            let value = app.behaviour_value(*row);
-            let (swatch, text, style, note) = if row.is_button() {
-                (None, "[ Enter ]".to_string(), Style::new().cyan(), "")
-            } else if row.is_colour() {
-                // a colour: « key » in magenta, unlike the ‹ choices ›
-                (
-                    Some(app.theme_colour(&value)),
-                    format!("« {value} »"),
-                    Style::new().magenta(),
-                    "Enter: choose",
-                )
-            } else if *row == BhRow::Leader {
-                (
-                    None,
-                    format!("‹ {value} ›"),
-                    Style::new().yellow(),
-                    "Enter: press the new key",
-                )
-            } else {
-                (None, format!("‹ {value} ›"), Style::new().yellow(), "")
-            };
-            Line::from(vec![
-                Span::raw(format!("   {label:<50} ")),
-                match swatch {
-                    Some(c) => Span::styled("██ ", Style::new().fg(c)),
-                    None => Span::raw("   "),
-                },
-                Span::styled(format!("{text:<VALUE_W$}"), style),
-                Span::styled(format!("  {note}"), Style::new().dark_gray()),
-            ])
-        }
+        BhRow::Sample(LookId::Derived) => derived_sample_line(looks),
+        _ => setting_line(app, *row),
     }
 }

@@ -27,18 +27,9 @@ fn weights_text(e: &Entry) -> String {
     }
 }
 
-/// The lines for a font of a catalogue, and the button that fits its status.
-// Long function: one list of detail rows, each row a label and a value with its own fallback text.
-fn entry_lines(
-    app: &App,
-    e: &Entry,
-    listed: &Map<String, Value>,
-) -> (Vec<Line<'static>>, Option<(&'static str, char)>) {
-    let status = app.dl_status(e, listed);
-    let mut lines = vec![
-        Line::styled(e.family.clone(), Style::new().bold()),
-        Line::raw(""),
-    ];
+/// The label and value rows of a catalogue font (Nerd fonts show no weights or italic).
+fn detail_rows(e: &Entry) -> Vec<Line<'static>> {
+    let mut rows: Vec<Line> = Vec::new();
     let source = match &e.source {
         Source::Google => "Google Fonts (the google/fonts repo)".to_string(),
         Source::Fontsource => "Fontsource (latin + latin-ext)".to_string(),
@@ -61,12 +52,27 @@ fn entry_lines(
         ("from", source),
     ] {
         if !(k == "weights" || k == "italic") || !matches!(e.source, Source::Nerd { .. }) {
-            lines.push(Line::from(vec![
+            rows.push(Line::from(vec![
                 Span::styled(format!("{k:<9}"), Style::new().dark_gray()),
                 Span::raw(v),
             ]));
         }
     }
+    rows
+}
+
+/// The lines for a font of a catalogue, and the button that fits its status.
+fn entry_lines(
+    app: &App,
+    e: &Entry,
+    listed: &Map<String, Value>,
+) -> (Vec<Line<'static>>, Option<(&'static str, char)>) {
+    let status = app.dl_status(e, listed);
+    let mut lines = vec![
+        Line::styled(e.family.clone(), Style::new().bold()),
+        Line::raw(""),
+    ];
+    lines.extend(detail_rows(e));
     lines.push(Line::raw(""));
     lines.push(Line::from(vec![status_span(&status)]));
     let button = match status {
@@ -122,6 +128,36 @@ fn draw_button(f: &mut Frame, app: &mut App, inner: Rect, y: u16, (text, id): (&
     f.render_widget(Paragraph::new(Span::styled(text.to_string(), style)), area);
 }
 
+/// The detail lines and the button for the highlighted row (none: no lines, no button).
+fn highlighted_lines(app: &mut App) -> (Vec<Line<'static>>, Option<(&'static str, char)>) {
+    let listed = app.dl_listed();
+    match app.dl_rows().get(app.dl.sel).cloned() {
+        Some(DlRow::Entry(index)) => {
+            let entry = app.dl_entries()[index].clone();
+            entry_lines(app, &entry, &listed)
+        }
+        Some(DlRow::Listed(name)) => (listed_lines(&name, &listed), Some((" Remove ", 'r'))),
+        None => (Vec::new(), None),
+    }
+}
+
+/// The two grey lines under the details: where the files go and the list for Nix.
+fn files_note(app: &App) -> [Line<'static>; 2] {
+    [
+        Line::styled(
+            format!(
+                " Files go to {}; the list for Nix is",
+                crate::model::paths::installed_fonts_dir().display()
+            ),
+            Style::new().dark_gray(),
+        ),
+        Line::styled(
+            app.installed_list_path().display().to_string(),
+            Style::new().dark_gray(),
+        ),
+    ]
+}
+
 /// The details of the highlighted font, then where the files go.
 pub(super) fn draw_details(f: &mut Frame, app: &mut App, area: Rect) {
     let block = Block::new()
@@ -135,34 +171,11 @@ pub(super) fn draw_details(f: &mut Frame, app: &mut App, area: Rect) {
         ..inner
     };
     f.render_widget(block, area);
-    let listed = app.dl_listed();
-    let mut lines: Vec<Line> = Vec::new();
-    let mut button: Option<(&str, char)> = None;
-    match app.dl_rows().get(app.dl.sel).cloned() {
-        Some(DlRow::Entry(index)) => {
-            let entry = app.dl_entries()[index].clone();
-            (lines, button) = entry_lines(app, &entry, &listed);
-        }
-        Some(DlRow::Listed(name)) => {
-            lines = listed_lines(&name, &listed);
-            button = Some((" Remove ", 'r'));
-        }
-        None => {}
-    }
+    let (mut lines, button) = highlighted_lines(app);
     lines.push(Line::raw(""));
     let button_y = inner.y + to_u16(lines.len());
     lines.push(Line::raw(""));
-    lines.push(Line::styled(
-        format!(
-            " Files go to {}; the list for Nix is",
-            crate::model::paths::installed_fonts_dir().display()
-        ),
-        Style::new().dark_gray(),
-    ));
-    lines.push(Line::styled(
-        app.installed_list_path().display().to_string(),
-        Style::new().dark_gray(),
-    ));
+    lines.extend(files_note(app));
     f.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), inner);
     if let Some(button) = button
         && button_y < inner.bottom()

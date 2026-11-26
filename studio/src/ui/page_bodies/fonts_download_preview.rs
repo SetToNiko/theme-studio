@@ -37,20 +37,32 @@ fn preview_title(
     }
     let size = pv.size;
     // the title starts after the corner
-    let mut x = area.x + 1 + to_u16(title[0].width());
+    let x = area.x + 1 + to_u16(title[0].width());
+    title.extend(menu_spans(app, area, x, menus));
+    title.push(format!(" {size}pt ").into());
+    (title, Some(kind))
+}
+
+/// The clickable dropdown labels of the title, from column `x` on, each registered as a click area.
+fn menu_spans(
+    app: &mut App,
+    area: Rect,
+    mut x: u16,
+    menus: Vec<(u8, String)>,
+) -> Vec<Span<'static>> {
+    let mut spans: Vec<Span> = Vec::new();
     for (menu, text) in menus {
-        title.push(" ".into());
+        spans.push(" ".into());
         x += 1;
         let width = to_u16(text.chars().count()).min(area.right().saturating_sub(x));
         let rect = Rect::new(x, area.y, width, 1);
         let base = Style::new().yellow();
         let hovered = app.hits.add(rect, Target::PreviewMenu(menu));
-        title.push(Span::styled(text, if hovered { hover(base) } else { base }));
+        spans.push(Span::styled(text, if hovered { hover(base) } else { base }));
         x += width + 1;
-        title.push(" ".into());
+        spans.push(" ".into());
     }
-    title.push(format!(" {size}pt ").into());
-    (title, Some(kind))
+    spans
 }
 
 /// Draws the preview image in `inner`, or the note when there is none.

@@ -189,15 +189,20 @@ fn draw_square(
     if parts.sq_hover
         && let Some((x, y)) = mouse
     {
-        let under = buf
-            .cell((x, y))
-            .and_then(|cell| match cell.fg {
-                Color::Rgb(red, green, blue) => Some(Rgb(red, green, blue)),
-                _ => None,
-            })
-            .unwrap_or(current);
-        set_cell(buf, x, y, "┼", under.text_on(), under);
+        draw_crosshair(buf, (x, y), current);
     }
+}
+
+/// The crosshair cell at `(x, y)`: it keeps the colour already drawn there (`current` if none).
+fn draw_crosshair(buf: &mut Buffer, (x, y): (u16, u16), current: Rgb) {
+    let under = buf
+        .cell((x, y))
+        .and_then(|cell| match cell.fg {
+            Color::Rgb(red, green, blue) => Some(Rgb(red, green, blue)),
+            _ => None,
+        })
+        .unwrap_or(current);
+    set_cell(buf, x, y, "┼", under.text_on(), under);
 }
 
 /// The hue strip, with a marker at the current hue and a pale one under the mouse.

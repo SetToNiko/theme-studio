@@ -167,7 +167,6 @@ fn chip_lines(app: &mut App, inner: Rect) -> Vec<Line<'static>> {
 
 /// One row of the font list: a group heading or a font with its tags.
 /// `current` is the lower-case family of the selected role's font.
-// Long function: one match over the two row kinds (group heading, font), each building its spans in column order.
 fn font_row_line(app: &App, row: &Row, selected: bool, current: &str) -> Line<'static> {
     let sel_style = if selected {
         Style::new().add_modifier(Modifier::REVERSED)
@@ -181,49 +180,68 @@ fn font_row_line(app: &App, row: &Row, selected: bool, current: &str) -> Line<'s
             expanded,
             count,
             ..
-        } => Line::from(vec![
-            Span::raw(format!(" {indent}")),
-            Span::styled(if *expanded { "▾ " } else { "▸ " }, Style::new().yellow()),
-            Span::styled(name.clone(), sel_style.bold()),
-            Span::styled(format!("  {count}"), Style::new().dark_gray()),
-        ]),
-        Row::Font { index, .. } => {
-            let font = &app.fonts.installed[*index];
-            let width = 34usize.saturating_sub(indent.len());
-            let mut spans = vec![
-                Span::styled(
-                    if font.family.to_lowercase() == current {
-                        " ●"
-                    } else {
-                        "  "
-                    },
-                    Style::new().yellow(),
-                ),
-                Span::raw(indent.clone()),
-            ];
-            // the cursor on the name, not the padding after it
-            spans.extend(crate::app::state::hit::cursor_spans(
-                format!("{:<width$}", truncate(&font.family, width)),
-                Style::new(),
-                sel_style,
-            ));
-            if font.mono {
-                spans.push(Span::styled(" mono", Style::new().dark_gray()));
-            }
-            if font.nerd {
-                spans.push(Span::styled(" NF", Style::new().green()));
-            }
-            if font.bitmap {
-                spans.push(Span::styled(" bitmap", Style::new().red()));
-            }
-            Line::from(spans)
-        }
+        } => group_line(&indent, name, *expanded, *count, sel_style),
+        Row::Font { index, .. } => font_line(app, *index, &indent, current, sel_style),
     }
+}
+
+/// A group heading: open or closed arrow, the name, and the number of fonts in it.
+fn group_line(
+    indent: &str,
+    name: &str,
+    expanded: bool,
+    count: usize,
+    sel_style: Style,
+) -> Line<'static> {
+    Line::from(vec![
+        Span::raw(format!(" {indent}")),
+        Span::styled(if expanded { "▾ " } else { "▸ " }, Style::new().yellow()),
+        Span::styled(name.to_string(), sel_style.bold()),
+        Span::styled(format!("  {count}"), Style::new().dark_gray()),
+    ])
+}
+
+/// A font row: a dot when it is the role's font, the name, and its tags (mono, NF, bitmap).
+fn font_line(
+    app: &App,
+    index: usize,
+    indent: &str,
+    current: &str,
+    sel_style: Style,
+) -> Line<'static> {
+    let font = &app.fonts.installed[index];
+    let width = 34usize.saturating_sub(indent.len());
+    let mut spans = vec![
+        Span::styled(
+            if font.family.to_lowercase() == current {
+                " ●"
+            } else {
+                "  "
+            },
+            Style::new().yellow(),
+        ),
+        Span::raw(indent.to_string()),
+    ];
+    // the cursor on the name, not the padding after it
+    spans.extend(crate::app::state::hit::cursor_spans(
+        format!("{:<width$}", truncate(&font.family, width)),
+        Style::new(),
+        sel_style,
+    ));
+    if font.mono {
+        spans.push(Span::styled(" mono", Style::new().dark_gray()));
+    }
+    if font.nerd {
+        spans.push(Span::styled(" NF", Style::new().green()));
+    }
+    if font.bitmap {
+        spans.push(Span::styled(" bitmap", Style::new().red()));
+    }
+    Line::from(spans)
 }
 
 /// The note under an empty font list: no fonts at all, none fit the role, or
 /// none match the search.
-// Long function: one if/else chain over the three reasons for an empty list, each with its own text.
 fn empty_list_notes(app: &App, rows: &[Row]) -> Vec<Line<'static>> {
     let t = &app.fonts;
     if t.installed.is_empty() {
@@ -236,21 +254,7 @@ fn empty_list_notes(app: &App, rows: &[Row]) -> Vec<Line<'static>> {
         && let Some(role) = t.filters.need
     {
         // picking, and nothing installed fits the role
-        let page = if role == 1 {
-            "Google Fonts"
-        } else {
-            "Nerd Fonts"
-        };
-        vec![
-            Line::styled(
-                format!("   no installed font is {}", ROLE_NEEDS[role]),
-                Style::new().yellow(),
-            ),
-            Line::styled(
-                format!("   Enter: get one ({page}, on the Fonts page)"),
-                Style::new().dark_gray(),
-            ),
-        ]
+        need_notes(role)
     } else if rows.is_empty() {
         vec![Line::styled(
             "   no fonts match the search and filters",
@@ -259,6 +263,25 @@ fn empty_list_notes(app: &App, rows: &[Row]) -> Vec<Line<'static>> {
     } else {
         Vec::new()
     }
+}
+
+/// The two lines when no installed font fits the role `role` (1: Google Fonts page, else Nerd Fonts).
+fn need_notes(role: usize) -> Vec<Line<'static>> {
+    let page = if role == 1 {
+        "Google Fonts"
+    } else {
+        "Nerd Fonts"
+    };
+    vec![
+        Line::styled(
+            format!("   no installed font is {}", ROLE_NEEDS[role]),
+            Style::new().yellow(),
+        ),
+        Line::styled(
+            format!("   Enter: get one ({page}, on the Fonts page)"),
+            Style::new().dark_gray(),
+        ),
+    ]
 }
 
 /// ² the installed fonts: search line, filter chips, then the grouped list
