@@ -72,7 +72,7 @@ fn to_u8(x: f64) -> u8 {
     clippy::many_single_char_names,
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
-    reason = "h, s, v, c, x, m, r, g, b are the standard names of the HSV formula; `h` is in 0..6 here, so the cast to an integer is safe"
+    reason = "h, s, v, c, x, m, r, g, b are the standard names of the HSV formula; `h` is in 0..=6 here (6 falls into the last arm, because `rem_euclid(360.0)` can return 360.0 for a tiny negative input), so the cast to an integer is safe"
 )]
 pub fn hsv_to_rgb(h: f64, s: f64, v: f64) -> Rgb {
     let h = h.rem_euclid(360.0) / 60.0;

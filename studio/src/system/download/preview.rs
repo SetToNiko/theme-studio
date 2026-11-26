@@ -50,8 +50,9 @@ pub fn preview_fontconfig_for(id: &str) -> PathBuf {
         download_cache_dir().join("fontconfig").display()
     );
     if std::fs::read_to_string(&path).ok().as_deref() != Some(conf.as_str()) {
-        // Ignored on purpose: the callers take the path either way, and a font
-        // that does not draw falls back to the default font in the preview.
+        // Ignored on purpose: the callers take the path either way. If the
+        // write fails, the preview fails to draw (fontconfig finds no .conf);
+        // the next call writes the file again, so nothing is lost for good.
         let _ = std::fs::create_dir_all(&dir);
         let _ = std::fs::write(&path, conf);
     }

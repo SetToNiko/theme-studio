@@ -75,7 +75,10 @@ fn main() -> Result<()> {
                 dir: store.dir.clone(),
             };
             if !themes.exists()
-                && let (Some(p), Some(f)) = (store.active_name(), fonts.active_name())
+                && let (Some(p), Some(f)) = (
+                    store.active_name(),
+                    fonts::presets::FontStore::active_name(),
+                )
             {
                 match themes.save(
                     &p,

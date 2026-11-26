@@ -271,13 +271,8 @@ impl FontStore {
     }
 
     /// The preset font-switch.sh last applied.
-    #[expect(
-        clippy::unused_self,
-        reason = "the store is the one handle for fonts.json and its sibling files; main.rs calls this on it"
-    )]
-    pub fn active_name(&self) -> Option<String> {
-        let s = std::fs::read_to_string(crate::model::paths::fonts_dir().join("current")).ok()?;
-        Some(s.trim().to_string()).filter(|s| !s.is_empty())
+    pub fn active_name() -> Option<String> {
+        crate::model::store::read_name_file(&crate::model::paths::fonts_dir().join("current"))
     }
 
     /// This machine's size offsets (~/.config/host/fonts.json, either key

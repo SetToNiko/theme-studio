@@ -72,7 +72,7 @@ impl FontsTab {
             dir: data.to_path_buf(),
             share: share.to_path_buf(),
         };
-        let active = store.active_name();
+        let active = FontStore::active_name();
         let (name, preset, is_new, load_error) = load_active(&store, active.as_deref());
         FontsTab {
             store,
