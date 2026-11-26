@@ -10,9 +10,9 @@
 //! resize-mode keys (they move the borders of the focused pane).
 
 use crate::app::App;
-use crate::app::input::actions;
 use crate::app::state::nav::{Focus, Page, Side};
-use crate::keymap::{Action, Context};
+use crate::keymap::Context;
+use crate::keymap::action::{Action, ActionGroup};
 use crate::preview::{Mode as PreviewMode, PaneId};
 
 impl App {
@@ -44,7 +44,7 @@ impl App {
             Action::Up if !top => self.layout.page_tabs_focused = false,
             Action::Confirm | Action::Back => self.layout.page_tabs_focused = false,
             // page keys, quitting and help work as anywhere
-            _ if actions::is_page_action(a) => return false,
+            _ if a.group() == ActionGroup::Page => return false,
             _ => {}
         }
         true

@@ -13,7 +13,8 @@ use crate::app::state::nav::{BhRow, Capture, LookId, Overlay};
 use crate::behaviour::{selectable_ends, theme_keys, visible_behaviour_rows};
 use crate::config::settings::{LookSettings, Settings};
 use crate::hit::{Look, Looks, Underline};
-use crate::keymap::{Action, Key, display_seq};
+use crate::keymap::action::Action;
+use crate::keymap::key::{Key, display_seq};
 use crate::palette::GROUPS;
 use crate::settings::wrap;
 

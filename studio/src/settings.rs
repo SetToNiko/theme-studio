@@ -8,7 +8,8 @@ use serde_json::Value;
 
 use crate::color::Rgb;
 use crate::history::SnapshotInfo;
-use crate::keymap::{Action, Context};
+use crate::keymap::Context;
+use crate::keymap::action::Action;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Tab {

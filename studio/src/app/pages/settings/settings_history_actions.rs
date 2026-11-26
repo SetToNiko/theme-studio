@@ -13,7 +13,7 @@ use crate::app::App;
 use crate::app::state::nav::{Deferred, Naming};
 use crate::color::Rgb;
 use crate::history::{History, SnapshotInfo};
-use crate::keymap::Action;
+use crate::keymap::action::Action;
 use crate::settings::{Colours, DiffView, FILES, HistFocus, diff_lines};
 
 impl App {

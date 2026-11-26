@@ -89,7 +89,7 @@ mod tests {
     /// A leader change as the Behaviour tab makes it: the keymap, then its preset.
     fn change_leader(app: &mut App) {
         app.with_draft(|a| {
-            let comma = crate::keymap::Key::parse_seq(",", a.keymap.leader).unwrap()[0];
+            let comma = crate::keymap::key::Key::parse_seq(",", a.keymap.leader).unwrap()[0];
             a.keymap = a.keymap.with_leader(comma);
             a.sync_preset();
         });
@@ -225,7 +225,7 @@ mod tests {
     #[test]
     fn save_writes_keymaps_json_when_the_keymap_changed() {
         let (mut app, dir) = test_app("save-keymap");
-        let comma = crate::keymap::Key::parse_seq(",", app.keymap.leader).unwrap()[0];
+        let comma = crate::keymap::key::Key::parse_seq(",", app.keymap.leader).unwrap()[0];
         change_leader(&mut app);
         app.settings_save();
         assert!(dir.join("keymaps.json").exists());

@@ -236,7 +236,9 @@ pub fn load(dir: &Path, write: bool) -> Loaded {
 mod tests {
     use super::*;
     use crate::fonts::Spacing;
-    use crate::keymap::{Action, Context, Key, Lookup};
+    use crate::keymap::action::Action;
+    use crate::keymap::key::Key;
+    use crate::keymap::{Context, Lookup};
     use crate::store::to_jq_string;
 
     fn temp(tag: &str) -> PathBuf {
@@ -442,7 +444,7 @@ mod migrate_tests {
         assert_eq!(
             km.key_for(
                 &[crate::keymap::Context::Downloads],
-                crate::keymap::Action::UseFor(0)
+                crate::keymap::action::Action::UseFor(0)
             )
             .as_deref(),
             Some("7")

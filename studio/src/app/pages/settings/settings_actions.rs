@@ -13,7 +13,8 @@ use std::path::PathBuf;
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Naming, Overlay};
 use crate::history::History;
-use crate::keymap::{Action, Key};
+use crate::keymap::action::Action;
+use crate::keymap::key::Key;
 use crate::settings::{FILES, HistFocus, KmRow, SettingsPage, TABS, Tab, ends, wrap};
 
 impl App {

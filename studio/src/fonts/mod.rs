@@ -16,7 +16,7 @@ use serde_json::{Map, Value, json};
 
 use crate::color::Rgb;
 use crate::font_tree::Node;
-use crate::keymap::Action;
+use crate::keymap::action::Action;
 use crate::palette::Palette;
 
 pub mod types;
@@ -1396,7 +1396,8 @@ mod tests {
     /// A key as the app routes it: typing while searching, otherwise the
     /// Vim keymap's action for the font list or roles.
     fn press(t: &mut FontsTab, k: KeyEvent) {
-        use crate::keymap::{Context, Key, Keymap, Lookup};
+        use crate::keymap::key::Key;
+        use crate::keymap::{Context, Keymap, Lookup};
         if t.focus == FontFocus::Search {
             return t.on_search_key(k);
         }
