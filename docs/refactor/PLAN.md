@@ -216,7 +216,7 @@ Completes: none (cycle count decreases, measured)
 - [ ] P5.14a `ui/page_bodies/settings.rs` (844 production lines) under 500: divide by tab | Files: the file, new files next to it | Target: limits | Check: tests
 - [ ] P5.14b `system/download.rs` (699) under 500 | Files: the file, new files in system/ | Target: limits | Check: tests
 - [x] P5.14c `model/samples.rs` (523) under 500 | Files: the file, new files in model/ | Target: limits | Check: tests
-- [ ] P5.14d `app/pages/themes/behaviour_actions.rs` (521) under 500 | Files: the file, new files next to it | Target: limits | Check: tests
+- [x] P5.14d `app/pages/themes/behaviour_actions.rs` (521) under 500: moved to app/pages/settings/ (it serves only the Behaviour tab) and divided | Files: settings/behaviour_actions.rs, behaviour_colours_actions.rs, behaviour_rows_actions.rs | Target: limits | Check: tests
 Removed: the old "settings: tabs into separate files" step (Phase 4 moved the impl App blocks out; settings.rs is under 500).
 Completes: criterion 5 (with the docs action), no dependency cycles
 
