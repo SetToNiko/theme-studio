@@ -1,4 +1,4 @@
 # Ratchet baselines (scripts/dev/lint-counts.sh): clippy and shellcheck warnings, and the modules in dependency cycles. Lower a number when the count goes down. Never raise it.
-clippy 237
+clippy 131
 shellcheck 0
 cycles 0

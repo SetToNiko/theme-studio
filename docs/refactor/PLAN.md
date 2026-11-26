@@ -228,7 +228,7 @@ Completes: criterion 5 (with the docs action), no dependency cycles
 ### Phase 6: Lint and errors to zero
 Wave 1 (parallel, one folder group each; no two steps change the same file). Each step: clippy pedantic to zero in its folders, and each function over 30 body lines gets a true `// Long function: <reason>.` or is divided (Phase 5 review list). Casts: `From`/`into` where lossless; `try_from` with a clear fallback where a value can be too large; `#[expect(clippy::cast_..., reason = "...")]` only where the range is proven. A step does not change the signature of an item that another folder uses (NEEDS instead).
 - [x] P6.1 model/, config/, keymap/ (87 warnings) | Files: those folders | Target: goal 7, limits | Check: 0 warnings in those files; long-function scan clean
-- [ ] P6.2 fonts/, settings_page/, system/, preview_term/ (114) | Files: those folders | Target: goal 7, limits | Check: same
+- [x] P6.2 fonts/, settings_page/, system/, preview_term/ (114) | Files: those folders | Target: goal 7, limits | Check: same
 - [x] P6.3 app/ (144), and TopFocus if both flags are never true at once (not done: palette_menu_action keeps the menu focused while it focuses the page tabs; a test checks that state) | Files: app/ | Target: goal 7, limits | Check: same
 - [ ] P6.4 ui/ (126) | Files: ui/ | Target: goal 7, limits | Check: same
 - [x] P6.6 Shellcheck to zero | Files: `scripts/*.sh`, `scripts/lib/*.sh` | Target: rule 3 | Check: count = 0
