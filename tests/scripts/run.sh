@@ -21,33 +21,11 @@
 # The result of a case is: the files under HOME, calls.log, stderr, and the exit
 # code. They are compared with tests/scripts/golden/<case>/ with `diff -r`.
 #
-# Not covered: the rofi picker (no name given), and the login-screen part of
-# font-switch.sh (it needs a writable /var/lib/ascii-boot, so it skips itself).
+# Not covered: the rofi picker (no name given).
 # Stub assumption: fc-list calls each family with "Mono" in its name
 # monospaced (also "... Nerd Font Propo"). The golden files record the
 # script under that assumption.
 set -euo pipefail
-
-# Safety: font-switch.sh copies a font into /var/lib/ascii-boot and rewrites
-# the login screen's config when it can write there. The path is fixed in the
-# script until plan step P1.3. On a machine where the folder is writable, the
-# tests run in a private mount namespace with an empty READ-ONLY folder over
-# it. Then the script skips the login-screen part, and the real folder stays
-# unchanged. If that is not possible, the tests stop.
-login_dir=/var/lib/ascii-boot
-if [ -w "$login_dir" ]; then
-  if [ -n "${IN_TEST_NAMESPACE:-}" ]; then
-    echo "run.sh: $login_dir is still writable in the namespace. Stopped." >&2
-    exit 1
-  fi
-  if ! unshare --user --map-root-user --mount true 2> /dev/null; then
-    echo "run.sh: $login_dir is writable, and no private namespace is possible. Stopped," >&2
-    echo "        so the tests do not change the real login screen." >&2
-    exit 1
-  fi
-  exec env IN_TEST_NAMESPACE=1 unshare --user --map-root-user --mount \
-    bash -c 'mount -t tmpfs -o ro tmpfs "$0" && exec "$@"' "$login_dir" "$0" "$@"
-fi
 
 here=$(dirname "$(readlink -f "$0")")
 project=$(readlink -f "$here/../..")

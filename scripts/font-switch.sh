@@ -95,45 +95,6 @@ printf 'configuration {\n    font: "%s %s";\n}\n' "$ui" "$ui_size" > "$out/rofi.
 # Lock screen (sourced by lock/lock-screen.sh)
 printf 'export XSECURELOCK_FONT=%q\n' "$mono:size=$mono_size" > "$out/lock.sh"
 
-# Login screen (LightDM's mini greeter, modules/ascii-boot.nix): it runs as
-# lightdm and can't see our fonts, so the monospace font's regular file is
-# copied to /var/lib/ascii-boot/font (a system fontconfig folder) and the
-# greeter config is filled in from its template. Shows at the next login.
-boot=/var/lib/ascii-boot
-template=/etc/ascii-boot/greeter.conf.in
-if [ -w "$boot" ] && [ -f "$template" ]; then
-  # The font's own file, the regular face (fc-match -s lists the best match
-  # first), and one that still exists. $boot/font is a fontconfig folder
-  # too: when the copy there is this font, fontconfig lists it in place of
-  # the original, and it stays as it is.
-  file= copied=
-  while IFS=$'\t' read -r fam f; do
-    [ "$fam" = "$mono" ] && [ -f "$f" ] || continue
-    case $f in
-      "$boot"/*) [ -n "$copied" ] || copied=$f ;;
-      *) file=$f; break ;;
-    esac
-  done < <(fc-match -s -f '%{family[0]}\t%{file}\n' ":family=$mono:style=Regular")
-  if [ -z "$file" ] && [ -n "$copied" ]; then
-    login_font=$mono
-  elif [ -n "$file" ]; then
-    mkdir -p "$boot/font"
-    # copy first, then drop the others (the copy may share the old one's name)
-    cp -f "$file" "$boot/font/"
-    keep=$(basename "$file")
-    for old in "$boot/font/"*; do
-      [ "$(basename "$old")" = "$keep" ] || rm -f "$old"
-    done
-    login_font=$mono
-  else
-    echo "warning: no file for '$mono'; the login screen keeps monospace" >&2
-    login_font=monospace
-  fi
-  esc=$(printf '%s' "$login_font" | sed 's/[&|\\]/\\&/g')
-  sed "s|@FONT@|$esc|; s|@SIZE@|${mono_size}pt|" "$template" > "$boot/greeter.conf.tmp" &&
-    mv -f "$boot/greeter.conf.tmp" "$boot/greeter.conf"
-fi
-
 # GTK 3 and 4: set gtk-font-name in [Settings], keeping any other settings.
 # Apps pick it up when they next start.
 for v in 3.0 4.0; do

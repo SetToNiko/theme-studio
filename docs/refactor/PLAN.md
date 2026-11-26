@@ -106,7 +106,7 @@ Advanced techniques that the refactor adds:
 - Rust: 119 tests in 25 modules (115 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
 - No tests: `behaviour`, `draft`, `fonts_dl`, `fonts_dl_ui`, `fonts_preview`, `fonts_ui`, `settings_ui`, `tour_page`, `tour_ui`, `main`.
 - Scripts: no tests → golden-file tests in Phase 0.
-- Scripts: golden-file tests in `tests/scripts/run.sh` (P0.6 to P0.8). Not covered: the rofi picker, and the login-screen part of font-switch.sh (skipped: /var/lib/ascii-boot is read-only in the test namespace until R.2 removes the part).
+- Scripts: golden-file tests in `tests/scripts/run.sh` (P0.6 to P0.8). Not covered: the rofi picker.
 - Nix sandbox: data tests use `studio/tests/fixtures/data` (P0.5). Sandbox skips: 13 before, 10 after. The remaining skips need jq, ImageMagick, fontconfig, a pty, or the checkout (docs, share).
 - Before Phase 5 changes a module without tests, the revise action adds a safety-net step for it.
 
@@ -128,7 +128,7 @@ Completes: criterion 4 (the check command exists)
 
 ### Phase R: Removals (goal change, 2026-11-26)
 - [x] R.1 [removal] Wallpaper hook: theme-switch.sh no longer runs `wallpaper-rotate refresh` | Files: `scripts/theme-switch.sh`, `tests/scripts/run.sh` (stub list) | Target: goal (colours, themes, configured programs) | Check: golden files lose only the wallpaper-rotate call
-- [ ] R.2 [removal] Login screen in font-switch.sh: remove the greeter part. Remove the namespace protection from `tests/scripts/run.sh` (nothing writes to /var/lib/ascii-boot any more) | Files: `scripts/font-switch.sh`, `tests/scripts/run.sh` | Target: goal | Check: golden files unchanged (the part was skipped), `grep ascii-boot scripts/` = 0
+- [x] R.2 [removal] Login screen in font-switch.sh: remove the greeter part. Remove the namespace protection from `tests/scripts/run.sh` (nothing writes to /var/lib/ascii-boot any more) | Files: `scripts/font-switch.sh`, `tests/scripts/run.sh` | Target: goal | Check: golden files unchanged (the part was skipped), `grep ascii-boot scripts/` = 0
 - [ ] R.3 [removal] NixOS module: remove `packaging/nix/nixos-module.nix` and the `nixosModules` output, and its documentation | Files: `packaging/nix/nixos-module.nix`, `flake.nix`, `README.md`, `docs/theme-studio.md` | Target: goal | Check: `nix flake check`
 - [ ] R.4 Shared data reader: move `json_data` from `rofi-picker.sh` into `scripts/lib/data.sh` (no behavior change) | Files: `scripts/lib/rofi-picker.sh`, `scripts/lib/data.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: T1 | Check: golden files unchanged
 - [ ] R.5 [removal] rofi picker: remove `scripts/lib/rofi-picker.sh` and the picker branches. No name: a usage message, exit 2 | Files: `scripts/lib/rofi-picker.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh`, `tests/scripts/run.sh` (new no-name cases) | Target: goal | Check: golden files unchanged, new no-name cases pass
