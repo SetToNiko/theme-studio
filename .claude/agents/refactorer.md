@@ -58,7 +58,7 @@ The project-conventions skill gives the limits, their kinds, and the exception m
   - All other tests must pass without changes.
 - Do not add new dependencies.
 - Do not commit. The refactor-kit skill commits.
-- Stay in the scope of the step. If the step is larger than expected, change nothing. Propose how to divide the step.
+- Stay in the scope of the step. If the step is larger than the step size of the skill, check the exceptions of the skill first (moves, test data, access-path-only edits, atomic steps). If it is still too large, change nothing and propose how to divide the step.
 
 ## Reply (12 lines or fewer)
 Start with one status word:
