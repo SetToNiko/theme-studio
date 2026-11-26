@@ -200,7 +200,9 @@ Completes: none (cycle count decreases, measured)
 - [x] P5.0 app/ sub-folders: `app/state/` (palette_editor, layout, messages, nav), `app/input/` (actions, focus, mouse, overlay, colours), `app/pages/settings/`, `app/pages/fonts/`, `app/pages/themes/` (the *_actions files, without the suffix inside their folder); persist.rs and tests.rs stay at the top. Mostly `git mv` and mod lines; the app/mod.rs map follows | Files: app/ (moves) | Target: T5, audience | Check: tests; each folder 10 files or fewer
 - [x] P5.1 `ui/widgets.rs` as a leaf: friendly and panel_number move there (ratatui only); pane_border and pane_title need App, so they go to `ui/pane_chrome.rs`; ui.rs becomes ui/mod.rs | Files: `ui.rs` -> `ui/mod.rs`, `ui/widgets.rs`, `widgets.rs`, users (access paths) | Target: T5 | Check: tests; the {ui, settings_ui, fonts_ui} cycle is gone
 - [x] P5.2 ui: page drawing into `ui/pages.rs` | Files: `ui/mod.rs`, `ui/pages.rs` | Target: limits | Check: tests
-- [ ] P5.3 ui: pane and overlay drawing into `ui/panes.rs` and `ui/overlays.rs` | Files: `ui/mod.rs`, `ui/panes.rs`, `ui/overlays.rs` | Target: limits | Check: tests, ui/mod.rs under 500
+- [ ] P5.3a ui: layout and status line: `ui/layout.rs` (arrange, MainLayout, Arrangement, borders, constants), `ui/status.rs` (draw_status, fit_hints, draw_message_only) | Files: `ui/mod.rs`, the two new files | Target: limits | Check: tests
+- [ ] P5.3b ui: panes into `ui/panes/` (colours.rs: draw_list, draw_palette_menu; picker.rs; preview.rs: draw_preview, draw_swatches) | Files: `ui/mod.rs`, `ui/panes/*` | Target: limits | Check: tests
+- [ ] P5.3c ui: overlays into `ui/overlays/` (mod.rs: draw_pending, draw_notice, popup, centered; dialogs.rs: draw_overlay, divided by overlay kind) | Files: `ui/mod.rs`, `ui/overlays/*` | Target: limits | Check: tests, ui/mod.rs under 500
 - [ ] P5.4 ui/ complete: settings_ui, fonts_ui, fonts_dl_ui, tour_ui, preview move into ui/ (sub-folders if over 10 modules) | Files: moves + mod lines | Target: T5 | Check: tests; ui/ folders 10 modules or fewer
 - [x] P5.5 `fonts/types.rs` as a leaf: CHIPS, ROLES, ROLE_NAMES, Installed, FontFocus, Row; keymap, fonts_pick, font_tree import the leaf, not fonts | Files: `fonts.rs` -> `fonts/mod.rs`, `fonts/types.rs`, keymap.rs, fonts_pick.rs, font_tree.rs | Target: T5 | Check: tests; the {keymap, fonts, fonts_pick, font_tree} cycle is gone
 - [x] P5.6 keymap: default bindings as data, separate from keymap logic; `Action::group()` (Window, Theme, Fonts or Colours), so run_action reads the group from data (Phase 3 review, note 2) | Files: `keymap.rs` -> `keymap/mod.rs`, `keymap/defaults.rs`, app/input/actions.rs | Target: T2, limits | Check: tests
@@ -268,6 +270,7 @@ Completes: criterion 6
 | 3 | TopFocus enum for the two top-row focus flags | DEFER to Phase 6 | Small; check first that both are never true. |
 | 3 | Break the big cycle group: nav as a leaf, draw function passed in, impl App blocks of the feature modules into app/ | ACCEPT: Phase 4 replaced (P4.2 to P4.14) | P3.12 moved the nav enums but the cycles did not shrink (2 groups, 22 modules): Overlay names settings and behaviour types, and the feature modules impl App. |
 | 4 | Revise Phase 5: app/ sub-folders first (P5.0), ui/widgets leaf, fonts/types leaf, folder lists complete, cycles to 0 | ACCEPT: Phase 5 rewritten (P5.0 to P5.10) | Phase 5 was written before Phases 3 and 4; the two remaining cycles break on splits that Phase 5 does anyway. |
+| 5 | P5.3 is too large (panes ~700, overlays ~520 lines) | ACCEPT: divided into P5.3a, P5.3b, P5.3c (same goal) | Found in P5.2; the three parts take different functions out of ui/mod.rs. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
