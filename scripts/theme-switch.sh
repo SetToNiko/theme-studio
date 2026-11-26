@@ -2,6 +2,8 @@
 # Switch colour scheme.
 # Usage: theme-switch.sh <palette name>
 here=$(dirname "$(readlink -f "$0")")
+# shellcheck source=/dev/null
+# (paths.sh is checked on its own; shellcheck does not follow sourced files unless run with -x.)
 . "$here/lib/paths.sh" # data_file, share_file, colors_dir, cache_dir
 palettes="${PALETTES:-$(data_file palettes.json)}"
 out=$(colors_dir)

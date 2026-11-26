@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+# (The line above tells shellcheck the shell: this file is sourced and has no shebang.)
 # Where the theme scripts find things (the studio's model/paths.rs does the same).
 # Source this after setting $here to the script's own folder (resolved
 # through links), then:

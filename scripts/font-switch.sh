@@ -16,6 +16,8 @@
 # proportional offset).
 # Usage: font-switch.sh <font preset name>
 here=$(dirname "$(readlink -f "$0")")
+# shellcheck source=/dev/null
+# (paths.sh is checked on its own; shellcheck does not follow sourced files unless run with -x.)
 . "$here/lib/paths.sh" # data_file, share_file, colors_dir, fonts_dir, host_fonts_file
 fonts="${FONTS:-$(data_file fonts.json)}"
 out=$(fonts_dir)
