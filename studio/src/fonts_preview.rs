@@ -279,7 +279,7 @@ impl App {
                     };
                     let msg = format!("Fetching {} for its preview{what}…", e.family);
                     download::fetch_preview(e, self.dl_sender());
-                    self.info(msg);
+                    self.messages.info(msg);
                 }
                 _ => {}
             },

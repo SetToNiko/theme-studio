@@ -266,7 +266,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     app.redraw_at = None;
     // set again if the Palette pane is drawn (the palette list hangs from it)
     app.layout.palette_pane = None;
-    app.hover_note = None;
+    app.messages.hover_note = None;
     crate::hit::set_looks(app.looks(&app.settings));
     let full = f.area();
     // tabs on top: their own row; at the bottom they share the status line
@@ -349,7 +349,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
 /// A save confirmation in a box (settings.messages.saved = "popup").
 fn draw_notice(f: &mut Frame, app: &App, area: Rect) {
-    let Some(text) = &app.notice else {
+    let Some(text) = &app.messages.notice else {
         return;
     };
     let hint = "press any key to dismiss";
@@ -1277,6 +1277,7 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
     let fonts = app.side == Side::Fonts;
     // the message at the left (after the tabs), the key hints at the right
     let message = app
+        .messages
         .message
         .as_ref()
         .map(|(msg, err)| {
@@ -1291,7 +1292,7 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
         })
         // otherwise, a note about what the mouse is over
         .or_else(|| {
-            app.hover_note.as_ref().map(|n| {
+            app.messages.hover_note.as_ref().map(|n| {
                 Span::styled(
                     truncate(&format!(" {n} "), area.width as usize),
                     Style::new().dark_gray(),

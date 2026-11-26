@@ -501,7 +501,8 @@ fn esc_discards_picker_changes_enter_keeps_them() {
     assert_eq!(app.editor.palette, before);
     assert!(!app.dirty() && !app.layout.picker_visible);
     assert!(
-        app.message
+        app.messages
+            .message
             .as_ref()
             .is_some_and(|(m, _)| m.contains("Discarded"))
     );
@@ -941,11 +942,12 @@ fn settings_changes_wait_for_save() {
     app.settings_page.km_sel = row_of(&mut app, KmRow::Binding(Context::Colours, Action::Pin));
     press(&mut app, "ay\n");
     assert!(
-        app.message
+        app.messages
+            .message
             .as_ref()
             .is_some_and(|(m, err)| *err && m.contains("is also")),
         "{:?}",
-        app.message
+        app.messages.message
     );
     assert_eq!(draft_keys(&mut app, Context::Colours, Action::Pin).len(), 2);
     press(&mut app, "D");
@@ -1095,7 +1097,8 @@ fn settings_history_tab_previews_restores_and_names_versions() {
     app.settings_page.hist_sel = 1;
     press(&mut app, "d");
     assert!(
-        app.message
+        app.messages
+            .message
             .as_ref()
             .is_some_and(|(m, _)| m.contains("Only named"))
     );
@@ -1434,7 +1437,8 @@ fn preset_browser_previews_loads_creates_and_deletes() {
     );
     press(&mut app, "ggd"); // Helix keys are live now: gg, ge
     assert!(
-        app.message
+        app.messages
+            .message
             .as_ref()
             .is_some_and(|(m, _)| m.contains("can't be deleted"))
     );
@@ -1732,11 +1736,12 @@ fn a_family_fills_every_role() {
     );
     assert!(!app.fonts.dirty(), "saved straight away");
     assert!(
-        app.message
+        app.messages
+            .message
             .as_ref()
             .is_some_and(|(m, _)| m.contains("From JetBrains")),
         "{:?}",
-        app.message
+        app.messages.message
     );
     // a font in no group: the family is its own name, so Inter for all
     let i = app
@@ -1773,11 +1778,12 @@ fn a_family_fills_every_role() {
     );
     assert!(!matches!(app.overlay, Overlay::Ask { .. }));
     assert!(
-        app.message
+        app.messages
+            .message
             .as_ref()
             .is_some_and(|(m, _)| m.contains("Monospace, Icons kept")),
         "{:?}",
-        app.message
+        app.messages.message
     );
     std::fs::remove_dir_all(dir).unwrap();
 }
@@ -1937,42 +1943,42 @@ fn messages_time_out_and_saves_can_pop_up() {
     let mut app = test_app(store, Start::Named("One".into()));
     let ago = |s: u64| Some(Instant::now() - Duration::from_secs(s));
     // info messages go after settings.messages.seconds (3 by default)
-    app.info("hello");
-    assert!(!app.expire_message());
-    app.message_at = ago(3);
-    assert!(app.expire_message());
-    assert_eq!(app.message, None);
+    app.messages.info("hello");
+    assert!(!app.messages.expire(app.settings.messages.seconds));
+    app.messages.message_at = ago(3);
+    assert!(app.messages.expire(app.settings.messages.seconds));
+    assert_eq!(app.messages.message, None);
     // errors stay until a key
-    app.error("bad");
-    assert!(!app.expire_message());
-    assert!(app.message.is_some());
+    app.messages.error("bad");
+    assert!(!app.messages.expire(app.settings.messages.seconds));
+    assert!(app.messages.message.is_some());
     // 0: until a key
     app.settings.messages.seconds = 0;
-    app.info("stays");
-    app.message_at = ago(100);
-    assert!(!app.expire_message());
+    app.messages.info("stays");
+    app.messages.message_at = ago(100);
+    assert!(!app.messages.expire(app.settings.messages.seconds));
     app.settings.messages.seconds = 3;
     // saving the settings says "Saved"; switched to popup, that save
     // already shows in a box
     app.with_draft(|a| a.settings.messages.saved = "popup".into());
     app.settings_save();
-    assert_eq!(app.notice.as_deref(), Some("Saved"));
-    assert_eq!(app.message, None);
+    assert_eq!(app.messages.notice.as_deref(), Some("Saved"));
+    assert_eq!(app.messages.message, None);
     assert!(render(&mut app, 160, 45).contains("press any key to dismiss"));
     // a key closes it and does nothing else
     let sel = app.sel;
     press(&mut app, "j");
-    assert_eq!(app.notice, None);
+    assert_eq!(app.messages.notice, None);
     assert_eq!(app.sel, sel);
     // so does a click
     app.notify_saved("Saved \"One\"");
     mouse(&mut app, MouseEventKind::Down(MouseButton::Left), 1, 1);
-    assert_eq!(app.notice, None);
+    assert_eq!(app.messages.notice, None);
     // bar: the status line, like any message
     app.settings.messages.saved = "bar".into();
     app.notify_saved("Saved");
-    assert_eq!(app.message, Some(("Saved".into(), false)));
-    assert_eq!(app.notice, None);
+    assert_eq!(app.messages.message, Some(("Saved".into(), false)));
+    assert_eq!(app.messages.notice, None);
     std::fs::remove_dir_all(dir).unwrap();
 }
 
@@ -1987,7 +1993,7 @@ fn status_line_hints_sit_at_the_right() {
     assert!(row.trim_end().ends_with("? keys"), "{row}");
     assert!(row.contains("F1"));
     // a message sits after the tabs; the hints stay at the right
-    app.info("Nothing to undo");
+    app.messages.info("Nothing to undo");
     let row = last_row(&mut app);
     let (msg, keys) = (
         row.find("Nothing to undo").unwrap(),
@@ -2157,7 +2163,7 @@ fn hints_and_previews_toggle_per_page() {
     press(&mut app, " th");
     let s = screen(&mut app);
     assert!(!s.contains("? keys"), "{s}");
-    app.info("Hello");
+    app.messages.info("Hello");
     assert!(screen(&mut app).contains("Hello"));
     // the settings say how a run starts
     let mut config = crate::config::Settings::default();
@@ -2501,7 +2507,7 @@ fn studio_applies_fonts_like_font_switch() {
         key(&mut app, KeyCode::Enter); // use it
         eprintln!(
             "  -> {:?}  message {:?}",
-            app.fonts.preset.fonts[role], app.message
+            app.fonts.preset.fonts[role], app.messages.message
         );
     }
 }

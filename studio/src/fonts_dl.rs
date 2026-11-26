@@ -246,7 +246,7 @@ impl App {
                         mb(done)
                     };
                     let family = job.0.clone();
-                    self.info(format!("Downloading {family}: {pct}"));
+                    self.messages.info(format!("Downloading {family}: {pct}"));
                 }
                 Msg::Preview { id, result } => {
                     // the font on screen, or one the page asked for
@@ -283,7 +283,9 @@ impl App {
                                 self.apply_fill(fill);
                             }
                         }
-                        Err(e) => self.error(format!("Downloading {family} failed: {e}")),
+                        Err(e) => self
+                            .messages
+                            .error(format!("Downloading {family} failed: {e}")),
                     }
                 }
             }
@@ -303,11 +305,13 @@ impl App {
         list.insert(name.to_string(), entry);
         self.dl.listed = None;
         match download::write_list(&path, list) {
-            Ok(()) => self.info(format!(
+            Ok(()) => self.messages.info(format!(
                 "Installed {name}: it's in the font list now; a rebuild keeps it (listed in {})",
                 path.display()
             )),
-            Err(e) => self.error(format!("Installed {name}, but {}: {e:#}", path.display())),
+            Err(e) => self
+                .messages
+                .error(format!("Installed {name}, but {}: {e:#}", path.display())),
         }
         self.fonts.refresh_installed();
     }
@@ -348,7 +352,7 @@ impl App {
         if fill.changed {
             self.apply_picked_fonts(fill.msg);
         } else {
-            self.info(fill.msg);
+            self.messages.info(fill.msg);
         }
     }
 
@@ -396,11 +400,13 @@ impl App {
     pub fn dl_install_entry(&mut self, e: Entry) {
         let listed = self.dl_listed();
         match self.dl_status(&e, &listed) {
-            DlStatus::Downloading(..) => self.info(format!("{} is downloading", e.family)),
-            DlStatus::Listed => self.info(format!("{} is installed already", e.family)),
+            DlStatus::Downloading(..) => self.messages.info(format!("{} is downloading", e.family)),
+            DlStatus::Listed => self
+                .messages
+                .info(format!("{} is installed already", e.family)),
             _ => {
                 self.dl.jobs.insert(e.id.clone(), (e.family.clone(), 0, 0));
-                self.info(format!("Downloading {}…", e.family));
+                self.messages.info(format!("Downloading {}…", e.family));
                 download::install(e, crate::paths::installed_fonts_dir(), self.dl.tx.clone());
             }
         }
@@ -419,7 +425,9 @@ impl App {
         let path = self.installed_list_path();
         let mut list = download::read_list(&path);
         let Some(entry) = list.remove(&name) else {
-            return self.info(format!("{name} wasn't installed by the studio"));
+            return self
+                .messages
+                .info(format!("{name} wasn't installed by the studio"));
         };
         let id = entry
             .get("id")
@@ -430,8 +438,10 @@ impl App {
             .and_then(|_| download::write_list(&path, list));
         self.dl.listed = None;
         match result {
-            Ok(()) => self.info(format!("Removed {name} (a rebuild drops it from Nix too)")),
-            Err(e) => self.error(format!("{e:#}")),
+            Ok(()) => self
+                .messages
+                .info(format!("Removed {name} (a rebuild drops it from Nix too)")),
+            Err(e) => self.messages.error(format!("{e:#}")),
         }
         self.fonts.refresh_installed();
         let n = self.dl_rows().len();

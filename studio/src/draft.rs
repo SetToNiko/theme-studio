@@ -122,7 +122,7 @@ impl App {
     /// Writes the draft to keymaps.json and settings.json, and uses it.
     pub fn settings_save(&mut self) {
         let Some(mut d) = self.settings_page.draft.take() else {
-            return self.info("No unsaved settings");
+            return self.messages.info("No unsaved settings");
         };
         let old_sizes = self.settings.layout.sizes.clone();
         let before = Draft::of(self).files();
@@ -150,7 +150,8 @@ impl App {
         if errors.is_empty() {
             self.notify_saved("Saved");
         } else {
-            self.error(format!("Saving: {}", errors.join("; ")));
+            self.messages
+                .error(format!("Saving: {}", errors.join("; ")));
         }
     }
 
@@ -158,7 +159,7 @@ impl App {
     pub fn settings_discard(&mut self) {
         if self.settings_page.draft.take().is_some() {
             self.settings_page.browse = None;
-            self.info("Discarded the unsaved settings");
+            self.messages.info("Discarded the unsaved settings");
         }
     }
 }
@@ -312,7 +313,7 @@ mod tests {
         let (mut app, dir) = test_app("save-none");
         app.settings_save();
         assert_eq!(
-            app.message,
+            app.messages.message,
             Some(("No unsaved settings".to_string(), false))
         );
         assert!(!dir.join("settings.json").exists());
@@ -332,11 +333,11 @@ mod tests {
         let loaded = crate::config::load(&dir, false);
         assert_eq!(loaded.settings.font_list.hide_bitmap, want);
         assert_eq!(
-            app.message,
+            app.messages.message,
             Some(("Saved".to_string(), false)),
             "the default is the status line"
         );
-        assert_eq!(app.notice, None);
+        assert_eq!(app.messages.notice, None);
     }
 
     #[test]
@@ -357,8 +358,8 @@ mod tests {
         app.settings.messages.saved = "popup".into();
         flip_hide_bitmap(&mut app);
         app.settings_save();
-        assert_eq!(app.notice.as_deref(), Some("Saved"));
-        assert_eq!(app.message, None);
+        assert_eq!(app.messages.notice.as_deref(), Some("Saved"));
+        assert_eq!(app.messages.message, None);
     }
 
     #[test]
@@ -388,7 +389,7 @@ mod tests {
         flip_hide_bitmap(&mut app);
         let want = app.show_draft(|a| a.settings.font_list.hide_bitmap);
         app.settings_save();
-        let (m, is_error) = app.message.clone().unwrap();
+        let (m, is_error) = app.messages.message.clone().unwrap();
         assert!(is_error && m.starts_with("Saving: settings.json:"), "{m}");
         // behaviour as it is: the draft is gone and its values are live
         // although nothing was written
@@ -407,7 +408,7 @@ mod tests {
         assert_eq!(app.settings_page.browse, None);
         assert_eq!(app.settings.font_list.hide_bitmap, live);
         assert_eq!(
-            app.message,
+            app.messages.message,
             Some(("Discarded the unsaved settings".to_string(), false))
         );
     }
@@ -418,6 +419,6 @@ mod tests {
         app.settings_page.browse = Some(1);
         app.settings_discard();
         assert_eq!(app.settings_page.browse, Some(1));
-        assert_eq!(app.message, None);
+        assert_eq!(app.messages.message, None);
     }
 }

@@ -157,7 +157,7 @@ pub fn draw_fonts(f: &mut Frame, app: &mut App, slots_area: Rect, list_area: Rec
         }
         .intersection(inner);
         if app.hits.over(name) {
-            app.hover_note = Some(format!("{}: needs {}", ROLE_NAMES[i], ROLE_NEEDS[i]));
+            app.messages.hover_note = Some(format!("{}: needs {}", ROLE_NAMES[i], ROLE_NEEDS[i]));
         }
         if app.hits.add(r, Target::FontRole(i)) {
             // the row look on all three lines; the underline only under the

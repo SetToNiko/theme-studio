@@ -396,7 +396,7 @@ impl App {
                 self.settings = l.settings;
                 // unsaved Settings page changes were made against the old file
                 if self.settings_page.draft.take().is_some() && !self.settings_page.reloaded {
-                    self.info("The unsaved settings were dropped");
+                    self.messages.info("The unsaved settings were dropped");
                 }
                 self.settings_page.reloaded = true;
             }
@@ -408,7 +408,7 @@ impl App {
     /// wrote (which itself is kept, so doing it again redoes).
     pub fn undo_config(&mut self) {
         let Some((file, path)) = crate::history::last_write() else {
-            return self.info("No config change to undo yet");
+            return self.messages.info("No config change to undo yet");
         };
         let Some(h) = self.history() else { return };
         let newest = h
@@ -416,17 +416,17 @@ impl App {
             .into_iter()
             .find(|(_, s)| s.name.is_none());
         let Some(snap) = newest.and_then(|(p, _)| History::load(&p)) else {
-            return self.info(format!("No earlier version of {file}"));
+            return self.messages.info(format!("No earlier version of {file}"));
         };
         match crate::store::write_json_file(&path, &snap.content) {
             Ok(()) => {
                 self.reload_file(&file);
-                self.info(format!(
+                self.messages.info(format!(
                     "Undid the last change to {file} ({}); again to redo",
                     snap.summary
                 ));
             }
-            Err(e) => self.error(format!("{e:#}")),
+            Err(e) => self.messages.error(format!("{e:#}")),
         }
     }
 
@@ -712,9 +712,9 @@ impl App {
                 format!("Reset \"{}\" to the shipped keys?", self.keymap.name),
                 Deferred::ResetPreset(self.keymap.name.clone()),
             ),
-            (_, Action::ResetPreset) => {
-                self.info("Only shipped presets can be reset; this one is yours")
-            }
+            (_, Action::ResetPreset) => self
+                .messages
+                .info("Only shipped presets can be reset; this one is yours"),
             (Some(KmRow::Binding(ctx, action)), Action::Confirm | Action::Right) => {
                 self.overlay = Overlay::Capture {
                     what: Capture::Binding {
@@ -758,7 +758,7 @@ impl App {
             (Some(KmRow::Binding(ctx, action)), Action::Delete) => {
                 self.keymap.set_keys(ctx, action, Vec::new());
                 self.sync_preset();
-                self.info(format!(
+                self.messages.info(format!(
                     "\"{}\" has no keys now ({})",
                     action.describe(),
                     ctx.title()
@@ -783,9 +783,11 @@ impl App {
         self.keymap.set_keys(ctx, action, all);
         self.sync_preset();
         if clashes.is_empty() {
-            self.info(format!("New keys for \"{}\" (unsaved)", action.describe()));
+            self.messages
+                .info(format!("New keys for \"{}\" (unsaved)", action.describe()));
         } else {
-            self.error(format!("New keys (unsaved), but: {}", clashes.join("; ")));
+            self.messages
+                .error(format!("New keys (unsaved), but: {}", clashes.join("; ")));
         }
     }
 
@@ -925,14 +927,14 @@ impl App {
                     ),
                     Deferred::Restore { file, version: path },
                 ),
-                None => self.info(format!("{file} has no saved versions yet")),
+                None => self.messages.info(format!("{file} has no saved versions yet")),
             },
             Action::SaveNamed => self.prompt(&format!("Name for the current {file}"), Naming::Version(file), ""),
             Action::Delete => match selected {
                 Some((path, s)) if s.name.is_some() => {
                     self.ask(format!("Delete the version \"{}\"?", s.name.unwrap()), Deferred::DeleteVersion(path))
                 }
-                Some(_) => self.info("Only named versions can be deleted (snapshots are pruned on their own)"),
+                Some(_) => self.messages.info("Only named versions can be deleted (snapshots are pruned on their own)"),
                 None => {}
             },
             _ => {}
@@ -949,13 +951,16 @@ impl App {
             Naming::PresetFrom(from) => self.new_preset_from(&from, text),
             Naming::Preset => {
                 if self.presets.iter().any(|p| p.name == text) {
-                    return self.error(format!("There's already a preset \"{text}\""));
+                    return self
+                        .messages
+                        .error(format!("There's already a preset \"{text}\""));
                 }
                 let mut km = self.keymap.clone();
                 km.name = text.clone();
                 self.keymap = km;
                 self.sync_preset();
-                self.info(format!("New preset \"{text}\", now active (unsaved)"));
+                self.messages
+                    .info(format!("New preset \"{text}\", now active (unsaved)"));
             }
             Naming::Version(file) => {
                 let now = std::fs::read_to_string(self.file_path(file))
@@ -964,9 +969,9 @@ impl App {
                 match (self.history(), now) {
                     (Some(h), Some(content)) => match h.save_named(file, &text, &content) {
                         Ok(_) => self.notify_saved(format!("Saved {file} as \"{text}\"")),
-                        Err(e) => self.error(format!("{e:#}")),
+                        Err(e) => self.messages.error(format!("{e:#}")),
                     },
-                    _ => self.error(format!("Can't read {file}")),
+                    _ => self.messages.error(format!("Can't read {file}")),
                 }
             }
             Naming::BindingText { ctx, action, add } => {
@@ -974,7 +979,7 @@ impl App {
                 for part in text.split_whitespace() {
                     match Key::parse_seq(part, self.keymap.leader) {
                         Ok(k) => seqs.push(k),
-                        Err(e) => return self.error(format!("{part}: {e}")),
+                        Err(e) => return self.messages.error(format!("{part}: {e}")),
                     }
                 }
                 self.bind(ctx, action, seqs, add);
@@ -987,24 +992,24 @@ impl App {
         match d {
             Deferred::Restore { file, version } => {
                 let Some(snap) = History::load(&version) else {
-                    return self.error("That version can't be read");
+                    return self.messages.error("That version can't be read");
                 };
                 match crate::store::write_json_file(&self.file_path(file), &snap.content) {
                     Ok(()) => {
                         self.reload_file(file);
                         self.settings_page.hist_sel = 0;
-                        self.info(format!(
+                        self.messages.info(format!(
                             "Restored {file} (the version before is in the history)"
                         ));
                     }
-                    Err(e) => self.error(format!("{e:#}")),
+                    Err(e) => self.messages.error(format!("{e:#}")),
                 }
             }
             Deferred::DeleteVersion(path) => {
                 if let Some(h) = self.history() {
                     match h.delete(&path) {
-                        Ok(()) => self.info("Deleted that version"),
-                        Err(e) => self.error(format!("{e:#}")),
+                        Ok(()) => self.messages.info("Deleted that version"),
+                        Err(e) => self.messages.error(format!("{e:#}")),
                     }
                 }
             }
@@ -1020,9 +1025,9 @@ impl App {
                     pv.families.clear();
                     pv.image = None;
                     self.prefetch.reset();
-                    self.info("Deleted the preview fonts");
+                    self.messages.info("Deleted the preview fonts");
                 }
-                Err(e) => self.error(format!("{e:#}")),
+                Err(e) => self.messages.error(format!("{e:#}")),
             },
         }
     }
@@ -1057,7 +1062,8 @@ impl App {
                     self.overlay = Overlay::None;
                     self.keymap = self.keymap.with_leader(key);
                     self.sync_preset();
-                    self.info(format!("Leader is now {}", key.display()));
+                    self.messages
+                        .info(format!("Leader is now {}", key.display()));
                 }
                 _ => {
                     keys.push(key);

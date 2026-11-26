@@ -225,12 +225,12 @@ impl App {
                     self.theme_new = false;
                     self.theme_saved = Some(now);
                     let _ = ThemeStore::set_active(&self.theme);
-                    self.info(format!(
+                    self.messages.info(format!(
                         "Made the theme \"{}\" from the active palette and fonts",
                         self.theme
                     ));
                 }
-                Err(e) => self.error(format!("themes.json: {e:#}")),
+                Err(e) => self.messages.error(format!("themes.json: {e:#}")),
             }
         }
     }
@@ -244,10 +244,13 @@ impl App {
                 self.editor.load(p);
                 self.reset_history();
             }
-            Err(e) => self.error(format!("Palette \"{}\": {e:#}", t.palette)),
+            Err(e) => self
+                .messages
+                .error(format!("Palette \"{}\": {e:#}", t.palette)),
         }
         if let Err(e) = self.fonts.open(&t.fonts) {
-            self.error(format!("Font preset \"{}\": {e:#}", t.fonts));
+            self.messages
+                .error(format!("Font preset \"{}\": {e:#}", t.fonts));
         }
         if let Some(s) = t.sizes {
             self.fonts.preset.set_sizes(s);
@@ -269,7 +272,7 @@ impl App {
         {
             t.sizes = Some(sizes);
             if let Err(e) = self.themes.save(&self.theme, &t) {
-                return self.error(format!("Saving the sizes: {e:#}"));
+                return self.messages.error(format!("Saving the sizes: {e:#}"));
             }
             if let Some(s) = self.theme_saved.as_mut() {
                 s.sizes = Some(sizes);
@@ -277,7 +280,7 @@ impl App {
             saved = format!(", saved to \"{}\"", self.theme);
         }
         if self.fonts.is_new {
-            return self.info(format!(
+            return self.messages.info(format!(
                 "Sizes {shown}: applied when the font preset is saved"
             ));
         }
@@ -285,21 +288,22 @@ impl App {
         match self.fonts.store.apply(&name, sizes) {
             Ok(()) => {
                 self.fonts.active = Some(name);
-                self.info(format!("Sizes {shown}{saved} and applied"));
+                self.messages
+                    .info(format!("Sizes {shown}{saved} and applied"));
             }
-            Err(e) => self.error(format!("Applying the sizes: {e:#}")),
+            Err(e) => self.messages.error(format!("Applying the sizes: {e:#}")),
         }
     }
 
     pub fn open_theme(&mut self, name: &str) {
         let Some(t) = self.themes.get(name) else {
-            return self.error(format!("No theme \"{name}\""));
+            return self.messages.error(format!("No theme \"{name}\""));
         };
         self.load_theme_parts(&t);
         self.theme = name.to_string();
         self.theme_new = false;
         self.theme_saved = Some(t);
-        self.info(format!("Opened the theme \"{name}\""));
+        self.messages.info(format!("Opened the theme \"{name}\""));
     }
 
     /// A new theme: a copy of this one, named when saved.
@@ -307,7 +311,8 @@ impl App {
         self.theme = "untitled".into();
         self.theme_new = true;
         self.theme_saved = None;
-        self.info("New theme (a copy of the current one); s asks for a name");
+        self.messages
+            .info("New theme (a copy of the current one); s asks for a name");
     }
 
     /// Save (s): asks for a name the first time.
@@ -335,7 +340,7 @@ impl App {
         let presets = self.fonts.store.load_all().unwrap_or_default();
         if self.is_new || (fork && self.dirty()) {
             if palettes.contains_key(name) && name != self.name {
-                return self.error(format!(
+                return self.messages.error(format!(
                     "There's a palette \"{name}\" already: pick another theme name"
                 ));
             }
@@ -351,12 +356,12 @@ impl App {
                 self.fonts.name.clone()
             };
             if n != self.fonts.name && presets.contains_key(&n) {
-                return self.error(format!(
+                return self.messages.error(format!(
                     "There's a font preset \"{n}\" already: pick another theme name"
                 ));
             }
             if let Err(e) = self.fonts.save_as(&n) {
-                return self.error(format!("Saving the fonts: {e:#}"));
+                return self.messages.error(format!("Saving the fonts: {e:#}"));
             }
         }
         if self.dirty() || self.fonts.dirty() {
@@ -365,7 +370,7 @@ impl App {
         }
         let t = self.theme_now();
         if let Err(e) = self.themes.save(name, &t) {
-            return self.error(format!("Saving the theme: {e:#}"));
+            return self.messages.error(format!("Saving the theme: {e:#}"));
         }
         self.theme = name.to_string();
         self.theme_new = false;
@@ -391,11 +396,11 @@ impl App {
         let t = self.theme_now();
         let sizes = t.sizes.unwrap_or(crate::fonts::DEFAULT_SIZES);
         if let Err(e) = self.fonts.store.apply_quietly(&t.fonts, sizes) {
-            return self.error(format!("Applying the fonts: {e:#}"));
+            return self.messages.error(format!("Applying the fonts: {e:#}"));
         }
         self.fonts.active = Some(t.fonts.clone());
         if let Err(e) = self.store.apply(&t.palette) {
-            return self.error(format!("Applying the palette: {e:#}"));
+            return self.messages.error(format!("Applying the palette: {e:#}"));
         }
         self.active = Some(t.palette.clone());
         self.system_palette = Some(self.editor.palette.clone());
@@ -427,7 +432,7 @@ impl App {
             })
             .collect();
         if entries.is_empty() {
-            return self.info("No themes saved yet (s saves this one)");
+            return self.messages.info("No themes saved yet (s saves this one)");
         }
         let sel = entries
             .iter()

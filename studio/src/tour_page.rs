@@ -183,7 +183,7 @@ impl App {
         let (key, label) = POOLS[pool];
         let all = self.tour_pool(key);
         if self.dl.catalogue.is_none() && !key.starts_with("installed") {
-            return self.info("The catalogue is still loading");
+            return self.messages.info("The catalogue is still loading");
         }
         let size = SIZES[self.tour().size];
         let n = if size == 0 {
@@ -192,7 +192,9 @@ impl App {
             size.min(all.len())
         };
         if n < 2 {
-            return self.info(format!("{label}: not enough fonts for a tournament"));
+            return self
+                .messages
+                .info(format!("{label}: not enough fonts for a tournament"));
         }
         // what fetching the previews takes (a guess for the random pick)
         let missing: Vec<&Entry> = all
@@ -294,7 +296,8 @@ impl App {
             if ready.len() < 2 {
                 t.stage = Stage::Setup;
                 return {
-                    self.error("Too few previews could be fetched for a tournament");
+                    self.messages
+                        .error("Too few previews could be fetched for a tournament");
                     true
                 };
             }
@@ -305,7 +308,7 @@ impl App {
             t.past = None;
             self.tour_save();
             if failed > 0 {
-                self.info(format!(
+                self.messages.info(format!(
                     "{failed} fonts left out: their previews couldn't be fetched"
                 ));
             }
@@ -401,7 +404,7 @@ impl App {
             && let Err(e) = t.save(&dir)
         {
             let msg = format!("{e:#}");
-            self.error(msg);
+            self.messages.error(msg);
         }
     }
 
@@ -476,7 +479,7 @@ impl App {
                 {
                     let _ = std::fs::remove_file(&path);
                     self.tour().past = None;
-                    self.info("Deleted that tournament");
+                    self.messages.info("Deleted that tournament");
                 }
             }
             _ => return false,
@@ -500,14 +503,14 @@ impl App {
                 t.past = None;
                 self.tour_save();
                 if self.tour().stage == Stage::Results {
-                    self.info("The tournament is over: the top 10");
+                    self.messages.info("The tournament is over: the top 10");
                 }
             }
             Action::TourUndo => {
                 if x.undo() {
                     self.tour_save();
                 } else {
-                    self.info("No pick to take back");
+                    self.messages.info("No pick to take back");
                 }
             }
             Action::TourNames => t.names = !t.names,
@@ -528,7 +531,7 @@ impl App {
             Action::Back => {
                 t.stage = Stage::Setup;
                 t.past = None;
-                self.info("Saved: pick it up again from the list");
+                self.messages.info("Saved: pick it up again from the list");
             }
             _ => return false,
         }
@@ -614,7 +617,9 @@ impl App {
     /// Enter on a result: installs it (catalogue fonts).
     fn tour_install(&mut self, who: usize) {
         if self.tour_installed(who).is_some() {
-            return self.info("Installed already: 1, 2 or 3 use it, F fills every role");
+            return self
+                .messages
+                .info("Installed already: 1, 2 or 3 use it, F fills every role");
         }
         let Some(id) = self.tour().t.as_ref().map(|t| t.entrants[who].id.clone()) else {
             return;
@@ -628,14 +633,14 @@ impl App {
             .cloned();
         match entry {
             Some(e) => self.dl_install_entry(e),
-            None => self.info("The catalogue is still loading"),
+            None => self.messages.info("The catalogue is still loading"),
         }
     }
 
     /// 1 / 2 / 3 or F on a result: uses it for roles (applied at once).
     fn tour_use(&mut self, who: usize, roles: &[usize]) {
         let Some(family) = self.tour_installed(who) else {
-            return self.info("Install it first (Enter)");
+            return self.messages.info("Install it first (Enter)");
         };
         let fill = self.fonts.fill_roles(&family, roles);
         self.after_fill(fill);

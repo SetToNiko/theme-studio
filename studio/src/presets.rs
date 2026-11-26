@@ -102,7 +102,8 @@ impl App {
         let Some(p) = self.highlighted() else { return };
         // the current keymap's edits stay in its preset
         self.sync_preset();
-        self.info(format!("Loaded the preset \"{}\" (unsaved)", p.name));
+        self.messages
+            .info(format!("Loaded the preset \"{}\" (unsaved)", p.name));
         self.keymap = p;
         self.settings_page.browse = None;
     }
@@ -135,9 +136,9 @@ impl App {
                     purpose: Naming::PresetFrom(name),
                 };
             }
-            Action::Delete if is_shipped(&self.presets[i].name) => {
-                self.info("Shipped presets can't be deleted (R resets them)")
-            }
+            Action::Delete if is_shipped(&self.presets[i].name) => self
+                .messages
+                .info("Shipped presets can't be deleted (R resets them)"),
             Action::Delete => {
                 let name = self.presets[i].name.clone();
                 self.overlay = crate::app::Overlay::Ask {
@@ -152,9 +153,9 @@ impl App {
                     then: Deferred::ResetPreset(name),
                 };
             }
-            Action::ResetPreset => {
-                self.info("Only shipped presets can be reset; this one is yours")
-            }
+            Action::ResetPreset => self
+                .messages
+                .info("Only shipped presets can be reset; this one is yours"),
             _ => {}
         }
         if self.settings_page.browse != Some(i) {
@@ -175,7 +176,9 @@ impl App {
     /// A new preset, a copy of `from`, highlighted in the list.
     pub fn new_preset_from(&mut self, from: &str, name: String) {
         if self.presets.iter().any(|p| p.name == name) {
-            return self.error(format!("There's already a preset \"{name}\""));
+            return self
+                .messages
+                .error(format!("There's already a preset \"{name}\""));
         }
         let Some(mut km) = self.presets.iter().find(|p| p.name == from).cloned() else {
             return;
@@ -183,7 +186,7 @@ impl App {
         km.name = name.clone();
         self.presets.push(km);
         self.settings_page.browse = Some(self.presets.len() - 1);
-        self.info(format!(
+        self.messages.info(format!(
             "New preset \"{name}\" from \"{from}\" (unsaved); Enter loads it"
         ));
     }
@@ -202,7 +205,8 @@ impl App {
         if let Some(i) = self.settings_page.browse {
             self.settings_page.browse = Some(i.min(self.presets.len().saturating_sub(1)));
         }
-        self.info(format!("Deleted the preset \"{name}\" (unsaved)"));
+        self.messages
+            .info(format!("Deleted the preset \"{name}\" (unsaved)"));
     }
 
     /// Puts a shipped preset back to its shipped keys.
@@ -216,7 +220,8 @@ impl App {
         if self.keymap.name == name {
             self.keymap = b;
         }
-        self.info(format!("\"{name}\" is back to the shipped keys (unsaved)"));
+        self.messages
+            .info(format!("\"{name}\" is back to the shipped keys (unsaved)"));
     }
 }
 

@@ -1,6 +1,7 @@
 //! Editor state and input handling.
 
 mod layout;
+mod messages;
 mod palette_editor;
 
 use std::io::Write;
@@ -23,6 +24,7 @@ use crate::preview::{Mode as PreviewMode, PaneId, Preview};
 use crate::store::{Store, TerminalMap};
 use crate::theme::ThemeStore;
 use layout::Layout;
+use messages::Messages;
 use palette_editor::PaletteEditor;
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
@@ -169,13 +171,8 @@ pub struct App {
     /// The active system palette (hover colours are its keys).
     pub system_palette: Option<Palette>,
     pub terminal: Option<TerminalMap>,
-    /// Status-line message and whether it's an error.
-    pub message: Option<(String, bool)>,
-    /// When an info message was shown (it goes after settings.messages.seconds).
-    pub message_at: Option<Instant>,
-    /// A save confirmation in a box (settings.messages.saved = "popup");
-    /// stays until a key or a click.
-    pub notice: Option<String>,
+    /// The status-line message, the save confirmation box, and the hover note.
+    pub messages: Messages,
     pub overlay: Overlay,
     /// What's clickable where (from the last draw), and where the mouse is.
     pub hits: crate::hit::HitMap,
@@ -219,9 +216,6 @@ pub struct App {
     /// it while it's highlighted, and the palette from before the list opened.
     pub open_palettes: Vec<Option<Palette>>,
     pub open_original: Option<Palette>,
-    /// A note for the status line about what the mouse is over (set while
-    /// drawing, e.g. a font role.s requirement).
-    pub hover_note: Option<String>,
     /// The theme: a name for the palette plus the font preset.
     pub themes: ThemeStore,
     pub theme: String,
@@ -318,7 +312,6 @@ impl App {
             overlay_for: For::Palette,
             open_palettes: Vec::new(),
             open_original: None,
-            hover_note: None,
             themes: ThemeStore {
                 dir: store.dir.clone(),
             },
@@ -348,9 +341,7 @@ impl App {
             active,
             system_palette,
             terminal,
-            message: None,
-            message_at: None,
-            notice: None,
+            messages: Messages::new(),
             overlay: Overlay::None,
             hits: Default::default(),
             pointer_hand: false,
@@ -369,22 +360,23 @@ impl App {
             ("fonts.json", app.fonts.store.migrate()),
         ] {
             match result {
-                Ok(Some(v)) => app.info(format!(
+                Ok(Some(v)) => app.messages.info(format!(
                     "{what} updated to file format version {v} (the old file is in the history)"
                 )),
                 Ok(None) => {}
-                Err(e) => app.error(format!("{what}: {e:#}")),
+                Err(e) => app.messages.error(format!("{what}: {e:#}")),
             }
         }
         if start_new {
             app.new_theme();
-            app.message = None;
+            app.messages.message = None;
         } else {
             app.init_theme(named.as_deref());
         }
         app.sync_row();
         if !config.warnings.is_empty() {
-            app.error(format!("Settings: {}", config.warnings.join("; ")));
+            app.messages
+                .error(format!("Settings: {}", config.warnings.join("; ")));
         }
         Ok(app)
     }
@@ -407,7 +399,7 @@ impl App {
             if self.poll_tournament() {
                 redraw = true;
             }
-            if self.expire_message() {
+            if self.messages.expire(self.settings.messages.seconds) {
                 redraw = true;
             }
             // a role's size, once h / l have been still for a moment: saved
@@ -515,10 +507,10 @@ impl App {
                     self.fonts.active = Some(name.to_string());
                     self.notify_saved(format!("Saved and applied \"{name}\""));
                 }
-                Err(e) => self.error(format!("Apply failed: {e:#}")),
+                Err(e) => self.messages.error(format!("Apply failed: {e:#}")),
             },
             Ok(()) => self.notify_saved(format!("Saved \"{name}\"")),
-            Err(e) => self.error(format!("Save failed: {e:#}")),
+            Err(e) => self.messages.error(format!("Save failed: {e:#}")),
         }
     }
 
@@ -538,42 +530,17 @@ impl App {
                     entries,
                 };
             }
-            Err(e) => self.error(format!("{e:#}")),
+            Err(e) => self.messages.error(format!("{e:#}")),
         }
-    }
-
-    pub fn info(&mut self, s: impl Into<String>) {
-        self.message = Some((s.into(), false));
-        self.message_at = Some(Instant::now());
-    }
-
-    pub fn error(&mut self, s: impl Into<String>) {
-        self.message = Some((s.into(), true));
-        self.message_at = None;
     }
 
     /// A save confirmation: in the status line like any message, or in a
     /// box (settings.messages.saved).
     pub fn notify_saved(&mut self, s: impl Into<String>) {
         if self.settings.messages.saved_in_popup() {
-            self.message = None;
-            self.notice = Some(s.into());
+            self.messages.popup(s);
         } else {
-            self.info(s);
-        }
-    }
-
-    /// Takes an info message away once it has been shown long enough.
-    /// Returns whether it went.
-    fn expire_message(&mut self) -> bool {
-        let secs = self.settings.messages.seconds;
-        match self.message_at {
-            Some(at) if secs > 0 && at.elapsed() >= Duration::from_secs(secs.into()) => {
-                self.message = None;
-                self.message_at = None;
-                true
-            }
-            _ => false,
+            self.messages.info(s);
         }
     }
 
@@ -631,22 +598,23 @@ impl App {
     fn toggle_pin(&mut self) {
         let key = self.key();
         if palette::is_base(key) {
-            self.info(format!("{key} is a base colour; it's always set by hand"));
+            self.messages
+                .info(format!("{key} is a base colour; it's always set by hand"));
             return;
         }
         let message = self.editor.toggle_pin(key, palette::sources(key));
-        self.info(message);
+        self.messages.info(message);
     }
 
     fn undo(&mut self) {
         if !self.editor.undo(self.key()) {
-            self.info("Nothing to undo");
+            self.messages.info("Nothing to undo");
         }
     }
 
     fn redo(&mut self) {
         if !self.editor.redo(self.key()) {
-            self.info("Nothing to redo");
+            self.messages.info("Nothing to redo");
         }
     }
 
@@ -655,7 +623,7 @@ impl App {
         let seq = format!("\x1b]52;c;{}\x07", base64(text.as_bytes()));
         let mut out = std::io::stdout();
         let _ = out.write_all(seq.as_bytes()).and_then(|_| out.flush());
-        self.info(format!("Copied {text}"));
+        self.messages.info(format!("Copied {text}"));
     }
 
     // ----- files -----------------------------------------------------------
@@ -686,7 +654,7 @@ impl App {
                     self.notify_saved(format!("Saved \"{name}\""));
                 }
             }
-            Err(e) => self.error(format!("Save failed: {e:#}")),
+            Err(e) => self.messages.error(format!("Save failed: {e:#}")),
         }
     }
 
@@ -707,7 +675,7 @@ impl App {
                 self.system_palette = Some(self.editor.palette.clone());
                 self.notify_saved(format!("Saved and applied \"{name}\""));
             }
-            Err(e) => self.error(format!("Apply failed: {e:#}")),
+            Err(e) => self.messages.error(format!("Apply failed: {e:#}")),
         }
     }
 
@@ -718,9 +686,9 @@ impl App {
                 self.is_new = false;
                 self.editor.load(p);
                 self.reset_history();
-                self.info(format!("Opened \"{name}\""));
+                self.messages.info(format!("Opened \"{name}\""));
             }
-            Err(e) => self.error(format!("{e:#}")),
+            Err(e) => self.messages.error(format!("{e:#}")),
         }
     }
 
@@ -729,7 +697,8 @@ impl App {
         self.is_new = true;
         self.editor.start_blank();
         self.reset_history();
-        self.info("New palette: edit the 8 base colours first, the rest follow");
+        self.messages
+            .info("New palette: edit the 8 base colours first, the rest follow");
     }
 
     pub(crate) fn reset_history(&mut self) {
@@ -765,11 +734,12 @@ impl App {
             Pending::OpenTheme(n) => self.open_theme(&n),
             Pending::NewFonts => {
                 self.fonts.new_preset();
-                self.info("New font preset (a copy of the current fonts); s asks for a name");
+                self.messages
+                    .info("New font preset (a copy of the current fonts); s asks for a name");
             }
             Pending::OpenFonts(n) => match self.fonts.open(&n) {
-                Ok(()) => self.info(format!("Opened font preset \"{n}\"")),
-                Err(e) => self.error(format!("{e:#}")),
+                Ok(()) => self.messages.info(format!("Opened font preset \"{n}\"")),
+                Err(e) => self.messages.error(format!("{e:#}")),
             },
         }
     }
@@ -836,7 +806,7 @@ impl App {
                     entries,
                 };
             }
-            Err(e) => self.error(format!("{e:#}")),
+            Err(e) => self.messages.error(format!("{e:#}")),
         }
     }
 
@@ -958,7 +928,8 @@ impl App {
                     .iter()
                     .any(|(p, _)| *p == id || (n == 7 && *p != PaneId::Nvim));
                 if !shown && !self.preview.rects.is_empty() {
-                    self.info("That preview window isn't shown at this window size");
+                    self.messages
+                        .info("That preview window isn't shown at this window size");
                     return;
                 }
                 self.preview.focus = Some(id);
@@ -1024,7 +995,8 @@ impl App {
     /// unless Settings says it stays open.
     fn leave_picker(&mut self, discard: bool) {
         if self.editor.end_session(self.key(), discard) {
-            self.info(format!("Discarded the change to {}", self.key()));
+            self.messages
+                .info(format!("Discarded the change to {}", self.key()));
         }
         self.focus = Focus::List;
         if self.settings.colours.picker_hides_on_esc() {
@@ -1257,7 +1229,7 @@ impl App {
         let key = Key::from_event(k);
         // A save confirmation box: any key closes it (Ctrl+C still goes on
         // to quit).
-        if self.notice.take().is_some()
+        if self.messages.notice.take().is_some()
             && key != Key::new(KeyCode::Char('c'), KeyModifiers::CONTROL)
         {
             return;
@@ -1291,7 +1263,7 @@ impl App {
             self.on_overlay_key(k);
             return;
         }
-        self.message = None;
+        self.messages.message = None;
         // Text fields: keys are typing, not actions.
         if self.pending_keys.is_empty() {
             if self.page == Page::Downloads && self.dl.searching {
@@ -1381,7 +1353,7 @@ impl App {
                 Page::Downloads => {
                     self.layout.fonts_preview_visible = !self.layout.fonts_preview_visible
                 }
-                Page::Settings => self.info("This page has no preview"),
+                Page::Settings => self.messages.info("This page has no preview"),
             },
             Action::ToggleSample => {
                 use crate::fonts::FontFocus;
@@ -1438,13 +1410,13 @@ impl App {
             Action::FillFamily if fonts && self.fonts.focus == FontFocus::List => {
                 match self.fonts.fill_from_family() {
                     Ok(fill) => self.after_fill(fill),
-                    Err(e) => self.info(e),
+                    Err(e) => self.messages.info(e),
                 }
             }
             Action::FixRoleFont if fonts && self.fonts.focus == FontFocus::Slots => {
                 match self.fonts.fix_role() {
                     Ok(fill) => self.after_fill(fill),
-                    Err(e) => self.info(e),
+                    Err(e) => self.messages.info(e),
                 }
             }
             // picking, and no installed font fits the role: the Fonts page,
@@ -1511,9 +1483,10 @@ impl App {
         match result {
             Ok(()) => {
                 self.fonts.active = Some(name.clone());
-                self.info(format!("{what}: saved to \"{name}\" and applied"));
+                self.messages
+                    .info(format!("{what}: saved to \"{name}\" and applied"));
             }
-            Err(e) => self.error(format!("{what}: {e:#}")),
+            Err(e) => self.messages.error(format!("{what}: {e:#}")),
         }
     }
 
@@ -1617,7 +1590,8 @@ impl App {
                 let to = self.keys.iter().position(|k| *k == target).unwrap_or(0);
                 self.select(to);
                 self.set_key(target, c);
-                self.info(format!("{target} = {from} ({})", c.hex()));
+                self.messages
+                    .info(format!("{target} = {from} ({})", c.hex()));
             }
             Action::Back => self.overlay = Overlay::None,
             Action::Up
@@ -1651,7 +1625,7 @@ impl App {
                     self.load_picker();
                     self.leave_picker(false);
                 }
-                None => self.error(format!(
+                None => self.messages.error(format!(
                     "Not a colour: {} (use #rrggbb)",
                     self.editor.hex_input
                 )),
@@ -1792,7 +1766,7 @@ impl App {
                                 then_apply,
                             }
                         } else if exists && name != self.theme && !overwrite {
-                            self.error(format!(
+                            self.messages.error(format!(
                                 "The theme \"{name}\" exists. Enter again to overwrite it"
                             ));
                             Overlay::SaveAs {
@@ -1830,7 +1804,8 @@ impl App {
                         self.fonts_save_as(&name, then_apply);
                         Overlay::None
                     } else if exists && name != current && !overwrite {
-                        self.error(format!("\"{name}\" exists. Enter again to overwrite it"));
+                        self.messages
+                            .error(format!("\"{name}\" exists. Enter again to overwrite it"));
                         Overlay::SaveAs {
                             input,
                             overwrite: true,
@@ -1960,9 +1935,9 @@ impl App {
         let (x, y) = (m.column, m.row);
         self.hits.mouse = Some((x, y));
         // a save confirmation box: a click anywhere closes it
-        if self.notice.is_some() {
+        if self.messages.notice.is_some() {
             if matches!(m.kind, MouseEventKind::Down(_)) {
-                self.notice = None;
+                self.messages.notice = None;
             }
             return;
         }
@@ -2220,11 +2195,11 @@ impl App {
             (Overlay::None, Some(c)) => {
                 let key = self.key();
                 self.set_key(key, c);
-                self.info(format!("{key} = {}", c.hex()));
+                self.messages.info(format!("{key} = {}", c.hex()));
             }
-            (Overlay::None, None) => {
-                self.error(format!("Pasted text isn't a colour: {}", s.trim()))
-            }
+            (Overlay::None, None) => self
+                .messages
+                .error(format!("Pasted text isn't a colour: {}", s.trim())),
             _ => {}
         }
     }

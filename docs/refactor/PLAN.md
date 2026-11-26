@@ -167,7 +167,7 @@ Completes: criteria 1, 2, project rule 2
 - [x] P3.2 App folder: `app.rs` → `app/mod.rs`, tests → `app/tests.rs` | Files: `app/mod.rs`, `app/tests.rs` | Target: T4 | Check: tests
 - [x] P3.3 PaletteEditor: palette, saved, undo, redo, HSV, hex, edit session, and their methods | Files: `app/mod.rs`, `app/palette_editor.rs`, `app/tests.rs`, `ui.rs`, `fonts_ui.rs`, `theme.rs`, `settings.rs`, `tour_page.rs`, `fonts_preview.rs` | Target: T1, T4 | Check: tests
 - [x] P3.4 Layout: sizes, borders, dragging, resize, visibility flags, pane columns | Files: `app/mod.rs`, `app/layout.rs`, `app/tests.rs`, `behaviour.rs`, `draft.rs`, `ui.rs`, `fonts_ui.rs`, `fonts_dl_ui.rs`, `fonts_preview.rs`, `settings_ui.rs`, `tour_ui.rs` | Target: T1 | Check: tests
-- [ ] P3.5 Messages: message, notice, hover note, timing | Files: `app/mod.rs`, `app/messages.rs`, `ui.rs`, `fonts_ui.rs` | Target: T1 | Check: tests
+- [x] P3.5 Messages: message, notice, hover note, timing | Files: `app/mod.rs`, `app/messages.rs`, `app/tests.rs`, `ui.rs`, `fonts_ui.rs`, `behaviour.rs`, `draft.rs`, `fonts_dl.rs`, `fonts_preview.rs`, `presets.rs`, `settings.rs`, `theme.rs`, `tour_page.rs` | Target: T1 | Check: tests
 - [ ] P3.6 Overlay keys: `on_overlay_key` and overlay state | Files: `app/mod.rs`, `app/overlay.rs`, `ui.rs` | Target: T1, limits | Check: tests
 - [ ] P3.7 Mouse: `handle_mouse`, `click`, `on_mouse` | Files: `app/mod.rs`, `app/mouse.rs` | Target: T1, limits | Check: tests
 - [ ] P3.8 Key dispatch: `handle_key`, `run_action`, `on_key` | Files: `app/mod.rs`, `app/actions.rs` | Target: T1, limits | Check: tests, `app/mod.rs` under 500 production lines

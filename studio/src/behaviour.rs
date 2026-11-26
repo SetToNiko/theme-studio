@@ -491,7 +491,8 @@ impl App {
             }
             BhRow::SaveSizes => {
                 self.settings.layout.sizes = self.layout.sizes.clone();
-                self.info("The current pane sizes become the default (when saved)");
+                self.messages
+                    .info("The current pane sizes become the default (when saved)");
             }
             BhRow::ClearPreviews => {
                 let question = match self.prefetch.used {
@@ -505,7 +506,8 @@ impl App {
             }
             BhRow::ResetSizes => {
                 self.settings.layout.sizes = crate::config::Sizes::default();
-                self.info("Default pane sizes back to the shipped ones (applied when saved)");
+                self.messages
+                    .info("Default pane sizes back to the shipped ones (applied when saved)");
             }
             _ => {
                 let s = &mut self.settings;
@@ -1100,7 +1102,8 @@ mod tests {
             0.31
         );
         assert!(
-            app.message
+            app.messages
+                .message
                 .as_ref()
                 .is_some_and(|(m, err)| !*err && m.contains("pane sizes become the default"))
         );
