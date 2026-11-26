@@ -10,7 +10,8 @@
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
-use super::{App, ColourRow, Focus, Overlay, Side};
+use super::App;
+use super::nav::{ColourRow, Focus, Overlay, Side};
 use crate::color::Rgb;
 use crate::keymap::Action;
 use crate::palette::GROUPS;

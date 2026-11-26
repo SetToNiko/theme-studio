@@ -130,7 +130,7 @@ impl App {
             Action::Back => p.browse = None,
             Action::SaveNamed => {
                 let name = self.presets[i].name.clone();
-                self.overlay = crate::app::Overlay::Prompt {
+                self.overlay = crate::app::nav::Overlay::Prompt {
                     title: format!("Name for a new preset made from \"{name}\""),
                     input: String::new(),
                     purpose: Naming::PresetFrom(name),
@@ -141,14 +141,14 @@ impl App {
                 .info("Shipped presets can't be deleted (R resets them)"),
             Action::Delete => {
                 let name = self.presets[i].name.clone();
-                self.overlay = crate::app::Overlay::Ask {
+                self.overlay = crate::app::nav::Overlay::Ask {
                     question: format!("Delete the preset \"{name}\"? (Save makes it final)"),
                     then: Deferred::DeletePreset(name),
                 };
             }
             Action::ResetPreset if is_shipped(&self.presets[i].name) => {
                 let name = self.presets[i].name.clone();
-                self.overlay = crate::app::Overlay::Ask {
+                self.overlay = crate::app::nav::Overlay::Ask {
                     question: format!("Reset \"{name}\" to the shipped keys?"),
                     then: Deferred::ResetPreset(name),
                 };

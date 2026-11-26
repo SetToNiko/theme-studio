@@ -3,7 +3,8 @@
 
 use ratatui::style::{Color, Modifier};
 
-use crate::app::{App, Overlay};
+use crate::app::App;
+use crate::app::nav::Overlay;
 use crate::config::{LookSettings, Settings};
 use crate::hit::{Look, Looks, Underline};
 use crate::keymap::{Action, Key, display_seq};

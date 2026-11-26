@@ -9,7 +9,8 @@
 //! page tabs focus, the keymap contexts that follow the focus, and the
 //! resize-mode keys (they move the borders of the focused pane).
 
-use super::{App, Focus, Page, Side, actions};
+use super::nav::{Focus, Page, Side};
+use super::{App, actions};
 use crate::keymap::{Action, Context};
 use crate::preview::{Mode as PreviewMode, PaneId};
 

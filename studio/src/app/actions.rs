@@ -14,7 +14,8 @@
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use super::{App, ColourRow, Focus, For, Overlay, Page, Pending, PreviewMode, Side};
+use super::nav::{ColourRow, Focus, For, Overlay, Page, Pending, Side};
+use super::{App, PreviewMode};
 use crate::keymap::{Action, Context, Key, Lookup};
 
 impl App {

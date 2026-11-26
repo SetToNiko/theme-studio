@@ -212,7 +212,7 @@ impl App {
     /// Background results: the catalogue, progress, finished installs. True
     /// when something changed (redraw).
     pub fn poll_downloads(&mut self) -> bool {
-        if self.page == crate::app::Page::Downloads
+        if self.page == crate::app::nav::Page::Downloads
             && self.dl.catalogue.is_none()
             && !self.dl.loading
         {
@@ -332,7 +332,7 @@ impl App {
                 Source::Nerd { size, .. } => format!(" ({})", crate::prefetch::size(*size)),
                 _ => String::new(),
             };
-            self.overlay = crate::app::Overlay::Ask {
+            self.overlay = crate::app::nav::Overlay::Ask {
                 question: format!(
                     "{group} has no {} installed. Download {}{size}?",
                     crate::fonts_pick::faces(&missing),
@@ -514,7 +514,7 @@ impl App {
             Action::Search => self.dl.searching = true,
             Action::Confirm => self.dl_install(),
             Action::Delete => self.dl_remove(),
-            Action::Back => self.page = crate::app::Page::Main,
+            Action::Back => self.page = crate::app::nav::Page::Main,
             _ => {
                 crate::settings::move_over(&mut self.dl.sel, &ok, a);
             }

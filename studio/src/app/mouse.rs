@@ -15,7 +15,8 @@ use ratatui::crossterm::event::{
 };
 use ratatui::layout::Rect;
 
-use super::{App, ColourRow, Focus, Overlay, PreviewMode, Side};
+use super::nav::{ColourRow, Focus, Overlay, Side};
+use super::{App, PreviewMode};
 use crate::hit::Target as T;
 use crate::keymap::Action;
 

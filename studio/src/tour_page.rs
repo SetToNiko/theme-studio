@@ -7,7 +7,8 @@ use std::path::PathBuf;
 
 use ratatui_image::protocol::StatefulProtocol;
 
-use crate::app::{App, Overlay};
+use crate::app::App;
+use crate::app::nav::Overlay;
 use crate::download::{self, Entry};
 use crate::fonts::SampleRenderer;
 use crate::keymap::Action;
@@ -271,7 +272,7 @@ impl App {
     /// Each loop on the Tournament tab: the bracket once the previews are
     /// in, the two fonts drawn. True when something changed.
     pub fn poll_tournament(&mut self) -> bool {
-        if self.page != crate::app::Page::Downloads
+        if self.page != crate::app::nav::Page::Downloads
             || self.dl.tab != crate::fonts_dl::DlTab::Tournament
             || self.tour_page.is_none()
         {

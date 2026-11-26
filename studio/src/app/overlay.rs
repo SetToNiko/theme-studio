@@ -10,7 +10,8 @@
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use super::{App, For, Overlay, Pending, open_matches};
+use super::nav::{For, Overlay, Pending};
+use super::{App, open_matches};
 use crate::color::Rgb;
 use crate::palette::Palette;
 

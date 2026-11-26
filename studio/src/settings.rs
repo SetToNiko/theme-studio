@@ -6,7 +6,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-use crate::app::{App, Overlay};
+use crate::app::App;
+use crate::app::nav::Overlay;
 use crate::color::Rgb;
 use crate::history::{History, SnapshotInfo};
 use crate::keymap::{Action, Context, Key, Keymap, all_actions, display_seq};
@@ -551,7 +552,7 @@ impl App {
                 return;
             }
             Action::Back => {
-                self.page = crate::app::Page::Main;
+                self.page = crate::app::nav::Page::Main;
                 return;
             }
             // past the edge of the list next to the tabs: onto the tabs

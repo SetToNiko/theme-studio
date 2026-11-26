@@ -4,7 +4,7 @@
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
-use crate::app::Page;
+use crate::app::nav::Page;
 use crate::preview::PaneId;
 
 #[derive(Clone, Copy, Debug, PartialEq)]

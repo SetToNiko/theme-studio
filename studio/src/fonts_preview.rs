@@ -135,7 +135,7 @@ impl App {
     /// Each loop: fetch the highlighted font after a pause, render it, pick
     /// up a finished image. True when something changed.
     pub fn poll_preview(&mut self) -> bool {
-        if self.page != crate::app::Page::Downloads || !self.layout.fonts_preview_visible {
+        if self.page != crate::app::nav::Page::Downloads || !self.layout.fonts_preview_visible {
             return false;
         }
         let Some(e) = self.preview_entry() else {
@@ -382,12 +382,12 @@ impl App {
         } else {
             pv.lang
         };
-        self.overlay = crate::app::Overlay::Menu { menu, sel, at };
+        self.overlay = crate::app::nav::Overlay::Menu { menu, sel, at };
     }
 
     /// A choice from a title dropdown.
     pub fn choose_menu(&mut self, menu: u8, i: usize) {
-        self.overlay = crate::app::Overlay::None;
+        self.overlay = crate::app::nav::Overlay::None;
         if menu == 0 {
             self.set_preview_kind(KINDS[i % KINDS.len()].0);
         } else {

@@ -10,7 +10,8 @@ use std::path::PathBuf;
 use anyhow::Result;
 use serde_json::{Map, Value, json};
 
-use crate::app::{App, For, Overlay};
+use crate::app::App;
+use crate::app::nav::{For, Overlay};
 use crate::color::Rgb;
 use crate::fonts::ROLES;
 

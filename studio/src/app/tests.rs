@@ -1,5 +1,6 @@
 //! Tests for the app: key handling, panes, palette editing, fonts, and the tour.
 
+use super::nav::{ColourRow, Pending};
 use super::*;
 
 use crate::keymap::{Action, Context};

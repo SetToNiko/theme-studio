@@ -259,7 +259,7 @@ impl App {
     /// The Behaviour tab shows the space the previews take: measured on a
     /// thread while it's open, every few seconds.
     fn measure_previews(&mut self) {
-        let shown = self.page == crate::app::Page::Settings
+        let shown = self.page == crate::app::nav::Page::Settings
             && self.settings_page.tab == crate::settings::Tab::Behaviour;
         let p = &mut self.prefetch;
         if !shown || p.measuring || p.measured.is_some_and(|t| t.elapsed() < SIZE_EVERY) {
