@@ -13,6 +13,9 @@
 //! - `behaviour_actions.rs`: the Settings page's Behaviour tab (looks, colour rows, row values, the key list, `run_behaviour_tab`); the row list and `theme_keys` stay in `behaviour.rs`
 //! - `fonts_dl_actions.rs`: the Download fonts page (rows, status, polling downloads, install, remove, keys, clicks, the Nerd Font offer); `DlPage` and its types stay in `fonts_dl.rs`
 //! - `fonts_preview_actions.rs`: the Fonts page's preview (fetch and draw the highlighted font, its keys, wheel, title dropdowns); `FontPreview`, its text kinds and the dropdown lists stay in `fonts_preview.rs`
+//! - `settings_actions.rs`: the Settings page as a whole (clicks, scrolling, keys, undo, the prompt and yes/no questions); its data types stay in `settings.rs`
+//! - `settings_keymaps_actions.rs`: the Settings page's Keymaps tab (key list rows, keys, `bind`, recording keys)
+//! - `settings_history_actions.rs`: the Settings page's History tab (versions, the difference view, keys)
 //! - `focus.rs`: which pane has the keyboard (`focus_pane`, `move_pane`), keymap contexts, resize mode keys
 //! - `colours.rs`: colour list rows, hex input, paste, Tab order through the picker
 //! - `actions.rs`: `run_action`, which sends a keymap action to the right method
@@ -26,7 +29,7 @@
 //! The run loop (`App::run`) does not draw by itself: `main.rs` passes in `ui::draw`.
 //!
 //! Other `impl App` blocks live next to the feature they serve, outside this
-//! folder: `settings.rs`, `tour_page.rs`.
+//! folder: `tour_page.rs`.
 
 mod actions;
 mod behaviour_actions;
@@ -44,6 +47,9 @@ mod palette_editor;
 mod persist;
 mod prefetch_actions;
 mod presets_actions;
+mod settings_actions;
+mod settings_history_actions;
+mod settings_keymaps_actions;
 mod theme_actions;
 
 use std::io::Write;
