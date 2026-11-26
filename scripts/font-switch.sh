@@ -21,6 +21,8 @@ fonts="${FONTS:-$(data_file fonts.json)}"
 out=$(fonts_dir)
 # shellcheck disable=SC1091 # the other lib files are not followed either
 . "$here/lib/data.sh" # json_data (either file layout)
+# shellcheck disable=SC1091 # the lib files are found at run time, beside the script
+. "$here/lib/integrations.sh" # write_font_outputs
 
 name=${1:-}
 [ -n "$name" ] || { echo "usage: font-switch.sh <font preset name>" >&2; exit 2; }
@@ -66,15 +68,15 @@ done
 mkdir -p "$out"
 echo "$name" > "$out/current"
 
-# Ghostty (included from ghostty/config.ghostty). The empty value clears
-# font-family's fallback list first.
-printf 'font-family = ""\nfont-family = "%s"\nfont-size = %s\n' "$mono" "$mono_size" > "$out/ghostty"
-
-# i3 window titles and the bar (i3blocks): the icons font
-printf 'font pango:%s %s\n' "$bar" "$bar_size" > "$out/i3"
-
-# rofi (imported from rofi/config.rasi)
-printf 'configuration {\n    font: "%s %s";\n}\n' "$ui" "$ui_size" > "$out/rofi.rasi"
+# Ghostty, i3, and rofi: written from the list in share/integrations.json.
+# The generators get the three fonts as one JSON object.
+fonts_json=$(mktemp)
+trap 'rm -f "$data" "$fonts_json"' EXIT
+jq -n --arg m "$mono" --arg ms "$mono_size" --arg u "$ui" --arg us "$ui_size" \
+  --arg b "$bar" --arg bs "$bar_size" \
+  '{monospace: {family: $m, size: $ms}, proportional: {family: $u, size: $us},
+    icons: {family: $b, size: $bs}}' > "$fonts_json"
+write_font_outputs "$fonts_json"
 
 # Lock screen (sourced by lock/lock-screen.sh)
 printf 'export XSECURELOCK_FONT=%q\n' "$mono:size=$mono_size" > "$out/lock.sh"

@@ -4,31 +4,34 @@
     {
       "name": "i3",
       "outputs": [
-        { "kind": "jq", "dir": "colors_dir", "file": "i3", "generator": "i3-colors.jq" }
+        { "kind": "jq", "switch": "theme", "dir": "colors_dir", "file": "i3", "generator": "i3-colors.jq" },
+        { "kind": "jq", "switch": "fonts", "dir": "fonts_dir", "file": "i3", "generator": "i3-font.jq" }
       ]
     },
     {
       "name": "rofi",
       "outputs": [
-        { "kind": "jq", "dir": "colors_dir", "file": "rofi.rasi", "generator": "rofi-colors.jq" }
+        { "kind": "jq", "switch": "theme", "dir": "colors_dir", "file": "rofi.rasi", "generator": "rofi-colors.jq" },
+        { "kind": "jq", "switch": "fonts", "dir": "fonts_dir", "file": "rofi.rasi", "generator": "rofi-font.jq" }
       ]
     },
     {
       "name": "shell",
       "outputs": [
-        { "kind": "jq", "dir": "colors_dir", "file": "colors.sh", "generator": "shell-colors.jq" }
+        { "kind": "jq", "switch": "theme", "dir": "colors_dir", "file": "colors.sh", "generator": "shell-colors.jq" }
       ]
     },
     {
       "name": "ghostty",
       "outputs": [
-        { "kind": "hook", "dir": "colors_dir", "file": "ghostty", "generator": "ghostty-colors.sh" }
+        { "kind": "hook", "switch": "theme", "dir": "colors_dir", "file": "ghostty", "generator": "ghostty-colors.sh" },
+        { "kind": "jq", "switch": "fonts", "dir": "fonts_dir", "file": "ghostty", "generator": "ghostty-font.jq" }
       ]
     },
     {
       "name": "pywalfox",
       "outputs": [
-        { "kind": "jq", "dir": "cache_dir", "file": "colors.json", "generator": "pywalfox-colors.jq" }
+        { "kind": "jq", "switch": "theme", "dir": "cache_dir", "file": "colors.json", "generator": "pywalfox-colors.jq" }
       ]
     }
   ]
