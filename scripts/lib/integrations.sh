@@ -13,7 +13,9 @@
 #       the one place that runs app reload commands. SWITCH is "theme" or
 #       "fonts". It reloads each app that has an output for that switch and a
 #       "reload" field, in list order. The scripts call it unless NO_RESTART is
-#       set. Its exit status is the one of the last reload command.
+#       set. A reload whose program is not installed is skipped with a line on
+#       stderr. A reload that fails prints a warning on stderr. Neither
+#       changes the exit status: it is 0 (see the function).
 #
 # integrations.json is the one list of apps. Each output has:
 #   switch     which switch writes it: "theme" (theme-switch.sh) or
@@ -120,27 +122,41 @@ write_font_outputs() {
 
 # reload_apps SWITCH
 # Returns 1 if the list cannot be read or has an unknown reload_output.
-# Otherwise the status is the one of the last reload command.
+# A reload whose program is missing is skipped with a line on stderr. A reload
+# that fails prints a warning with its exit code. The files are already
+# written, so neither makes the status non-zero: the status is 0.
 reload_apps() {
-  local switch=$1 line mode list list_file
+  local switch=$1 line mode list list_file app rc me
   local -a cmd
+  me=${0##*/}
+  me=${me%.sh} # the installed commands have no ".sh"
   list_file=$(share_file integrations.json)
   list=$(jq -c --arg s "$switch" '.apps[]
     | select(.reload and any(.outputs[]; .switch == $s))
-    | [.reload_output // "show"] + .reload' "$list_file") \
+    | [.name, .reload_output // "show"] + .reload' "$list_file") \
     || { echo "reload_apps: cannot read $list_file" >&2; return 1; }
-  # Each line is a JSON array: the output mode, then the command, for example
-  # ["hide","i3-msg","restart"].
+  # Each line is a JSON array: the app name, the output mode, then the
+  # command, for example ["i3","hide","i3-msg","restart"].
   while IFS= read -r line; do
-    mode=$(jq -r '.[0]' <<<"$line")
-    mapfile -t cmd < <(jq -r '.[1:][]' <<<"$line")
+    app=$(jq -r '.[0]' <<<"$line")
+    mode=$(jq -r '.[1]' <<<"$line")
+    mapfile -t cmd < <(jq -r '.[2:][]' <<<"$line")
+    if ! command -v "${cmd[0]}" >/dev/null 2>&1; then
+      echo "$me: skipped the $app reload: ${cmd[0]} is not installed" >&2
+      continue
+    fi
+    rc=0
     case "$mode" in
-      show) "${cmd[@]}" ;;
-      hide) "${cmd[@]}" >/dev/null ;;
-      hide-all) "${cmd[@]}" >/dev/null 2>&1 ;;
+      show) "${cmd[@]}" || rc=$? ;;
+      hide) "${cmd[@]}" >/dev/null || rc=$? ;;
+      hide-all) "${cmd[@]}" >/dev/null 2>&1 || rc=$? ;;
       *) echo "integrations.json: unknown reload_output '$mode' for ${cmd[*]}" >&2; return 1 ;;
     esac
+    if [ "$rc" -ne 0 ]; then
+      echo "$me: the $app reload failed with exit code $rc" >&2
+    fi
   done <<<"$list"
+  return 0
 }
 
 # run_hook_to_file TARGET COMMAND...: runs COMMAND and saves its stdout as TARGET.

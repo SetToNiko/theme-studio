@@ -172,12 +172,36 @@ make_ghostty_stub() {
   chmod +x "$CASE_DIR/bin/ghostty"
 }
 
+# pywalfox is not installed: its reload entry names a program that no PATH
+# folder has. (The stubs folder is shared by all cases, so the case uses its
+# own copy of share/ with another program name.)
+setup_theme_switch_missing_program() {
+  cp -r "$project/share" "$CASE_DIR/share"
+  ln -s "$project/scripts" "$CASE_DIR/scripts" # hooks source ../scripts/lib/paths.sh
+  chmod -R u+w "$CASE_DIR/share"
+  jq '(.apps[] | select(.name == "pywalfox") | .reload[0]) = "pywalfox-absent"' \
+    "$project/share/integrations.json" > "$CASE_DIR/share/integrations.json"
+}
+
+# The i3-msg reload fails (exit 1): a warning, the next reload still runs,
+# and the switch exits 0.
+setup_theme_switch_reload_fails() {
+  mkdir -p "$CASE_DIR/bin"
+  # shellcheck disable=SC2016 # "$CALLS_LOG" and "$*" must stay literal: they expand when the stub runs, not here.
+  printf '#!%s\necho "i3-msg $*" >> "$CALLS_LOG"\nexit 1\n' "$(command -v bash)" > "$CASE_DIR/bin/i3-msg"
+  chmod +x "$CASE_DIR/bin/i3-msg"
+}
+
 cases_theme_switch() {
   run_case theme-switch-palette bash "$scripts/theme-switch$ext" "CRT Amber"
   run_case theme-switch-no-restart env NO_RESTART=1 bash "$scripts/theme-switch$ext" "0x96f"
   run_case theme-switch-unknown bash "$scripts/theme-switch$ext" "No Such Palette"
   run_case theme-switch-ghostty-theme bash "$scripts/theme-switch$ext" "CRT Amber"
   run_case theme-switch-ghostty-no-theme bash "$scripts/theme-switch$ext" "0x96f"
+  run_case theme-switch-missing-program env \
+    THEME_STUDIO_SHARE="$work/cases/theme-switch-missing-program/share" \
+    bash "$scripts/theme-switch$ext" "CRT Amber"
+  run_case theme-switch-reload-fails bash "$scripts/theme-switch$ext" "CRT Amber"
   run_case theme-switch-no-name bash "$scripts/theme-switch$ext"
 }
 
