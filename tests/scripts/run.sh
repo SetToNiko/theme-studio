@@ -15,7 +15,7 @@
 #   - THEME_STUDIO_SHARE = the project's share/ (or $SCRIPTS_SHARE)
 #   - a PATH with only the real tools that the scripts need (bash, jq, awk, ...)
 #     and stub commands for the desktop programs (pkill, i3-msg, pywalfox,
-#     fc-list, fc-match). Each stub writes its arguments to
+#     fc-list). Each stub writes its arguments to
 #     calls.log. ghostty is not on PATH, on purpose: then the result does not
 #     depend on the themes of an installed Ghostty.
 # The result of a case is: the files under HOME, calls.log, stderr, and the exit
@@ -66,7 +66,7 @@ make_stubs_dir() {
   local bash_path
   bash_path=$(command -v bash)
   local name
-  for name in pkill i3-msg pywalfox fc-cache fc-match; do
+  for name in pkill i3-msg pywalfox; do
     printf '#!%s\necho "%s $*" >> "$CALLS_LOG"\n' "$bash_path" "$name" > "$work/stubs/$name"
   done
   # fc-list: every font is installed (-q succeeds). For a spacing question, a

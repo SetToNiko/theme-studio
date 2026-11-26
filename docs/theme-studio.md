@@ -32,7 +32,7 @@ them.
   A preset only names the fonts. The **sizes**, one per role, belong to the
   theme (`themes.json`: `"sizes": {"monospace": 14, "proportional": 9,
   "icons": 9}`); `h` / `l` on a role in the studio change them, saved and
-  applied a moment after the last key press. `$mod+Shift+t` applies a
+  applied a moment after the last key press. `font-switch.sh <name>` applies a
   preset at the active theme's sizes. Each machine can add an offset from
   `~/.config/host/fonts.json` (`{"monospace": 0, "proportional": 3,
   "icons": 3}`).

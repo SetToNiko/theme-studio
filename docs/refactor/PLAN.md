@@ -209,7 +209,7 @@ Completes: criterion 6
 **Handover** (goal change, Phase R). After the removals, the dotfiles must provide these. No dotfiles change in this refactor.
 - Wallpaper border colour (R.1): run `wallpaper-rotate refresh` after a theme switch, for example in a dotfiles wrapper around `theme-switch`, or a watch on `~/.config/colors/current`.
 - Login screen (R.2, R.3): remove `services.theme-studio.loginFont` from the NixOS configuration. Set the greeter font in the dotfiles.
-- rofi menus (R.5): menus that list the names in `palettes.json`, `fonts.json`, and `themes.json` (the data folder) and run `theme-switch <name>`, `font-switch <name>`, or `themes-switch <name>`. Deleting a preset from a menu: the studio does it, or the dotfiles menu does.
+- rofi menus (R.5): menus that list the names in `palettes.json`, `fonts.json`, and `themes.json` (the data folder) and run `theme-switch <name>`, `font-switch <name>`, or `themes-switch <name>`. Replace the i3 key bindings (`$mod+t`, `$mod+p`, `$mod+Shift+t`) that ran the scripts without a name: they now get exit 2. Deleting a preset from a menu: the studio does it, or the dotfiles menu does.
 - `docs/migration.md` and `docs/plan.md` describe the old setup (login screen, wallpaper, pickers). The docs action updates or archives them.
 
 ## 8. Outcome

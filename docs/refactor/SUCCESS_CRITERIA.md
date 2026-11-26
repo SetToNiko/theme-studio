@@ -30,7 +30,7 @@ Main source: `docs/migration.md`, section "For the refactor: what still ties it 
 | To add a new app integration (for example, a terminal other than Ghostty), you change 2 files or fewer. You change no script logic. | On a temporary branch, add a sample integration. Run `git diff --stat`. List the modified files, not the added files. | manual (sample on a temporary branch). The integrations are hard-coded in `theme-switch.sh` and `font-switch.sh`. | 2 files or fewer, 0 logic files | |
 | One data list defines the app integrations: the files that each app reads, and the reload command for each app. | Count the locations that name each app. Example: `grep -ci ghostty scripts/theme-switch.sh scripts/font-switch.sh` | Number of mentions in the two scripts: ghostty 13, rofi 9, fontconfig 8, i3 6, gtk 5, pywalfox 3, i3blocks 2, nvim 1 | Each app has 1 entry in the list. Other mentions are only in comments. | |
 | Only one location runs the reload commands for apps. | `grep -n -E 'pkill\|i3-msg' scripts/*.sh` | 4 lines in 2 scripts: pkill (theme-switch.sh:74, font-switch.sh:185) and i3-msg (theme-switch.sh:75, font-switch.sh:186) | 1 location | |
-| Theme Studio has no wallpaper hook, login screen, or rofi picker (goal change). | `grep -rniE "wallpaper|ascii-boot|greeter|json_picker|rofi-picker" scripts packaging flake.nix` | 31 lines (wallpaper hook, login screen, rofi picker) | 0 | |
+| Theme Studio has no wallpaper hook, login screen, or rofi picker (goal change). | `grep -rniE "wallpaper|ascii-boot|greeter|json_picker|rofi-picker" scripts packaging flake.nix` | 31 lines (wallpaper hook, login screen, rofi picker) | 0 | 0 after Phase R |
 | To add a new palette, font preset, or theme, you add data. You change no code. | Add a sample to the data folder on a temporary branch. Run `git diff --stat`. | manual (sample on a temporary branch) | 0 code files | |
 
 ## 2. Change locality and structure
@@ -80,7 +80,7 @@ The constraint "All current functionality of the project must continue to work a
 | Clippy warnings, default lints. | `cargo clippy --all-targets` | 1 | 0 | |
 | Clippy warnings, pedantic + style + correctness (GOAL.md, criterion 7). Ratchet: the count never increases. | `cargo clippy --all-targets -- -W clippy::pedantic -W clippy::style -W clippy::correctness` | 490 (42 lints. Largest: cast lints about 215, many_single_char_names 53, semicolon_if_nothing_returned 41) | 0. Each allowed lint uses `#[expect(..., reason = "...")]`. | |
 | Rustdoc (GOAL.md, criterion 8). | `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --document-private-items`. Count `# Errors` sections for functions that return `Result`. | Fails: 3 "unclosed HTML tag" errors. 0 `# Errors` sections for 51 functions that return `Result`. | Passes. Each function that returns `Result` has `# Errors`. | |
-| Shellcheck warnings. | `shellcheck scripts/*.sh scripts/lib/*.sh` | 14 findings | 0 | |
+| Shellcheck warnings. | `shellcheck scripts/*.sh scripts/lib/*.sh` | 14 findings | 0 | 4 after Phase R |
 | Duplicate code. | `lizard -l rust -l bash -Eduplicate studio/src scripts` (jscpd is not in nixpkgs) | 1.13% | Less than the baseline | |
 
 ## 6. Feature: install without Nix
