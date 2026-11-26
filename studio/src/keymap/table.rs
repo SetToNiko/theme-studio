@@ -15,11 +15,13 @@ use super::action::{Action, ActionGroup};
 
 /// One row of the table: everything that describes a plain action.
 pub(super) struct Row {
+    /// The action that this row describes.
     pub action: Action,
     /// The name in keymaps.json.
     pub id: &'static str,
     /// Short description, for the help screen, hints and the leader popup.
     pub label: &'static str,
+    /// Which part of the app handles the action.
     pub group: ActionGroup,
 }
 

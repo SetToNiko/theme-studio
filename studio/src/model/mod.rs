@@ -1,8 +1,8 @@
 //! The data and rules of the studio. No screen code here: nothing in `model`
 //! depends on `app` or `ui`. Some modules read or write the studio's own data
-//! files (palettes, themes, history, saved tournaments); none starts a program
-//! or uses the network, except `store` (one
-//! command value for `theme-switch`).
+//! files (palettes, themes, history, saved tournaments). None starts a program
+//! or uses the network. The one exception is `store`: it builds (but does not
+//! run) one command value for `theme-switch`.
 //!
 //! - `color`: colour type and conversions (hex, HSV, HSL, WCAG contrast).
 //! - `encoding`: base64 encoding.

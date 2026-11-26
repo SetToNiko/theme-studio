@@ -134,9 +134,110 @@ const FILTER_IDS: [(char, &str); 8] = [
 ];
 
 impl Action {
+    /// True if the action has its own row in `ROWS`; false for the three
+    /// actions with data (`Panel`, `UseFor`, `Filter`), which have a rule instead.
+    ///
+    /// This `match` has no `_` arm on purpose: a new `Action` variant does not
+    /// compile until you list it here. Then add its row in `table.rs`
+    /// (the unit test and the `debug_assert` in `row` check that the row exists).
+    fn has_table_row(self) -> bool {
+        match self {
+            Action::Panel(_) | Action::UseFor(_) | Action::Filter(_) => false,
+            Action::Quit
+            | Action::Help
+            | Action::PageMain
+            | Action::PageDownloads
+            | Action::PageSettings
+            | Action::TogglePicker
+            | Action::ToggleSample
+            | Action::ToggleHints
+            | Action::TogglePreview
+            | Action::PaneLeft
+            | Action::PaneRight
+            | Action::PaneUp
+            | Action::PaneDown
+            | Action::ResizeMode
+            | Action::ResetSizes
+            | Action::UndoConfig
+            | Action::PreviewFetch
+            | Action::PreviewText
+            | Action::PreviewLang
+            | Action::PreviewNext
+            | Action::PreviewPrev
+            | Action::FillFamily
+            | Action::FixRoleFont
+            | Action::NextHeading
+            | Action::PrevHeading
+            | Action::TourNames
+            | Action::TourBracket
+            | Action::TourUndo
+            | Action::OpenPalette
+            | Action::OpenFonts
+            | Action::NewPalette
+            | Action::NewFonts
+            | Action::Discard
+            | Action::TabNext
+            | Action::TabPrev
+            | Action::Add
+            | Action::Delete
+            | Action::Restore
+            | Action::SaveNamed
+            | Action::ResetPreset
+            | Action::ToggleAll
+            | Action::EditText
+            | Action::PreviewCycle
+            | Action::SavePalette
+            | Action::SaveFonts
+            | Action::ApplyPalette
+            | Action::ApplyFonts
+            | Action::Save
+            | Action::SaveAs
+            | Action::Apply
+            | Action::Open
+            | Action::New
+            | Action::Undo
+            | Action::Redo
+            | Action::FocusNext
+            | Action::FocusPrev
+            | Action::Back
+            | Action::Confirm
+            | Action::Up
+            | Action::Down
+            | Action::Left
+            | Action::Right
+            | Action::UpBig
+            | Action::DownBig
+            | Action::LeftBig
+            | Action::RightBig
+            | Action::Top
+            | Action::Bottom
+            | Action::PageUp
+            | Action::PageDown
+            | Action::Pin
+            | Action::CopyHex
+            | Action::CopyFrom
+            | Action::HexEntry
+            | Action::ToggleYazi
+            | Action::ToggleRofi
+            | Action::ToggleView
+            | Action::SizeUp
+            | Action::SizeDown
+            | Action::PickFont
+            | Action::Search => true,
+        }
+    }
+
     /// The action's row in the table; `None` for `Panel`, `UseFor` and `Filter`.
+    ///
+    /// A plain action without a row is a bug: debug builds and tests stop with
+    /// a message that names the action.
     fn row(self) -> Option<&'static Row> {
-        ROWS.iter().find(|r| r.action == self)
+        let row = ROWS.iter().find(|r| r.action == self);
+        debug_assert!(
+            row.is_some() == self.has_table_row(),
+            "{self:?}: the row in table.rs and has_table_row disagree"
+        );
+        row
     }
 
     /// The action's name in keymaps.json.
@@ -227,11 +328,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_action_has_exactly_one_table_row_or_a_data_rule() {
-        for a in all_actions() {
+    fn every_table_row_variant_has_exactly_one_row() {
+        // `has_table_row` is an exhaustive `match`, so no variant is missed.
+        for row in ROWS {
+            let a = row.action;
+            assert!(a.has_table_row(), "{a:?} has a row but is a data action");
             let rows = ROWS.iter().filter(|r| r.action == a).count();
-            let has_data = matches!(a, Action::Panel(_) | Action::UseFor(_) | Action::Filter(_));
-            assert_eq!(rows, usize::from(!has_data), "{a:?}");
+            assert_eq!(rows, 1, "{a:?}");
+        }
+        for a in all_actions() {
+            // `row` also runs the `debug_assert` that finds a missing row.
+            assert_eq!(a.row().is_some(), a.has_table_row(), "{a:?}");
         }
     }
 

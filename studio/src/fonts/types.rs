@@ -23,7 +23,7 @@ pub struct Installed {
     pub special: bool,
 }
 
-/// Which kind of font a family is, decided by its name and flags (see [`kind`]).
+/// Which kind of font a family is, decided by its name and flags (see `kind`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum FontKind {
     /// A Nerd Font family whose name ends in "Nerd Font Mono".
