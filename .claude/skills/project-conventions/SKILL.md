@@ -9,10 +9,9 @@ description: Gives the stack, commands, refactor settings, coding rules, and doc
 - Build: `nix build` (dev: `cd studio && nix develop .. --command cargo build`)
 - Test: `cd studio && nix develop .. --command cargo test` (later: `nix flake check`)
 - Lint: `cd studio && nix develop .. --command cargo clippy --all-targets -- -D warnings` · `cargo fmt --check` · `shellcheck scripts/*.sh scripts/lib/*.sh`
-  Until clippy, rustfmt, and shellcheck are in the dev shell, the lint commands can fail. The plan adds them first.
 - Test style: inline `#[cfg(test)] mod tests` at the bottom of each .rs file. snake_case names that state the behavior.
 - Naming: Rust standard. Scripts: kebab-case files, snake_case functions. British spelling as in the code (colour, behaviour).
-- Tools not available yet: clippy, rustfmt, and shellcheck (not in the dev shell), cargo-modules, cargo-llvm-cov, jscpd.
+- Tools not available yet: none. (jscpd is not in nixpkgs: duplicates use `lizard -Eduplicate`.)
 
 ## Refactor settings
 - Refactor folder: `docs/refactor/` (GOAL.md, PRINCIPLES.md, SUCCESS_CRITERIA.md, PLAN.md)

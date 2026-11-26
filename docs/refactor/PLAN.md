@@ -112,7 +112,7 @@ Step format (one line for each step):
 `- [ ] P<phase>.<n> <title>: <what changes> | Files: <paths> | Target: <criterion or target> | Check: <how to test>`
 
 ### Phase 0: Foundation and safety net
-- [ ] P0.1 Dev tools: add clippy, rustfmt, shellcheck, cargo-modules, cargo-llvm-cov, and lizard to the dev shell | Files: `flake.nix` | Target: tools | Check: each tool runs in `nix develop`
+- [x] P0.1 Dev tools: add clippy, rustfmt, shellcheck, cargo-modules, cargo-llvm-cov, and lizard to the dev shell | Files: `flake.nix` | Target: tools | Check: each tool runs in `nix develop`
 - [ ] P0.2 Phase 0 baselines: measure cycles, dependency direction, coverage, and duplicates. Record them | Files: `docs/refactor/SUCCESS_CRITERIA.md`, `docs/refactor/PLAN.md` (section 2 numbers) | Target: baselines | Check: no "Phase 0" left in the baselines
 - [ ] P0.3 Lint configuration: `[lints.clippy]` pedantic, fix rustfmt at `paths.rs:196` | Files: `studio/Cargo.toml`, `studio/src/paths.rs` | Target: goal 7 | Check: `cargo fmt --check` passes, clippy count = 490
 - [ ] P0.4 Flake checks: `checks.x86_64-linux` with build, tests, fmt, and ratchet counts for clippy (490) and shellcheck (14) | Files: `flake.nix`, `scripts/dev/lint-counts.sh`, `docs/refactor/lint-baseline.txt` | Target: goal 4, 7 | Check: `nix flake check` passes

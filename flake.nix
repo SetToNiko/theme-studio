@@ -21,7 +21,23 @@
       # programs.theme-studio (home-manager) and services.theme-studio.loginFont
       homeManagerModules.default = ./packaging/nix/home-module.nix;
       nixosModules.default = ./packaging/nix/nixos-module.nix;
-      # cargo, rustc and the crate's dependencies, for working in studio/
-      devShells.${system}.default = pkgs.mkShell { inputsFrom = [ theme-studio.bin ]; };
+      # cargo, rustc and the crate's dependencies, for working in studio/,
+      # plus the refactor's check tools (docs/refactor/PRINCIPLES.md).
+      # clippy and rustfmt come from the same nixpkgs as rustc: a system
+      # clippy built for another rustc fails with error E0514.
+      devShells.${system}.default = pkgs.mkShell {
+        inputsFrom = [ theme-studio.bin ];
+        packages = [
+          pkgs.clippy
+          pkgs.rustfmt
+          pkgs.shellcheck
+          pkgs.cargo-modules # dependency cycles between modules
+          pkgs.cargo-llvm-cov # test coverage
+          pkgs.python3Packages.lizard # function length, complexity, duplicates
+        ];
+        # cargo-llvm-cov needs the llvm-cov and llvm-profdata of rustc's own LLVM.
+        LLVM_COV = "${pkgs.rustc.llvm}/bin/llvm-cov";
+        LLVM_PROFDATA = "${pkgs.rustc.llvm}/bin/llvm-profdata";
+      };
     };
 }
