@@ -994,7 +994,8 @@ fn settings_changes_wait_for_save() {
 
 #[test]
 fn settings_behaviour_tab_edits_then_saves() {
-    use crate::behaviour::{BhRow, behaviour_rows};
+    use crate::app::nav::BhRow;
+    use crate::behaviour::behaviour_rows;
     let store = temp_store("settings-behaviour");
     let dir = store.dir.clone();
     crate::history::init_for_test(dir.join("history"));
@@ -1151,7 +1152,8 @@ fn ctrl_c_quits_unless_the_keymap_uses_it() {
 
 #[test]
 fn hover_look_is_configurable_and_pane_borders_light_up() {
-    use crate::behaviour::{BhRow, LookId, behaviour_rows};
+    use crate::app::nav::{BhRow, LookId};
+    use crate::behaviour::behaviour_rows;
     use crate::hit::{Target as T, Underline};
     use ratatui::style::{Color, Modifier};
     let store = temp_store("hover-look");
@@ -1336,7 +1338,7 @@ fn settings_tabs_take_the_keyboard_at_the_list_edge() {
     // the first row is the first group's title (groups fold open / shut)
     assert_eq!(
         crate::behaviour::behaviour_rows()[app.settings_page.bh_sel],
-        crate::behaviour::BhRow::Header("Keys")
+        crate::app::nav::BhRow::Header("Keys")
     );
     press(&mut app, "jk");
     assert!(!app.settings_page.tabs_focused);
@@ -1483,7 +1485,8 @@ fn preset_browser_previews_loads_creates_and_deletes() {
 
 #[test]
 fn settings_groups_fold_and_only_names_are_underlined() {
-    use crate::behaviour::{BhRow, visible_behaviour_rows};
+    use crate::app::nav::BhRow;
+    use crate::behaviour::visible_behaviour_rows;
     use crate::hit::Target as T;
     use crate::settings::KmRow;
     let mut app = test_app(temp_store("fold"), Start::Named("One".into()));
@@ -1848,7 +1851,7 @@ fn a_family_without_fitting_faces_offers_its_nerd_font() {
             );
             assert_eq!(
                 *then,
-                crate::settings::Deferred::NerdForRoles {
+                crate::app::nav::Deferred::NerdForRoles {
                     id: "nerd-firacode".into(),
                     group: "Fira Code".into(),
                     roles: vec![0, 1, 2],
@@ -2071,7 +2074,8 @@ fn palette_list_hangs_from_its_row_and_previews() {
 
 #[test]
 fn behaviour_tab_sets_up_prefetching() {
-    use crate::behaviour::{BhRow, behaviour_rows};
+    use crate::app::nav::BhRow;
+    use crate::behaviour::behaviour_rows;
     let store = temp_store("prefetch-rows");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
@@ -2132,7 +2136,7 @@ fn behaviour_tab_sets_up_prefetching() {
     assert!(matches!(
         app.overlay,
         Overlay::Ask {
-            then: crate::settings::Deferred::ClearPreviews,
+            then: crate::app::nav::Deferred::ClearPreviews,
             ..
         }
     ));
@@ -2195,7 +2199,8 @@ fn hints_and_previews_toggle_per_page() {
 
 #[test]
 fn behaviour_cursor_keeps_the_swatch() {
-    use crate::behaviour::{BhRow, LookId, visible_behaviour_rows};
+    use crate::app::nav::{BhRow, LookId};
+    use crate::behaviour::visible_behaviour_rows;
     use ratatui::style::Modifier;
     let store = temp_store("cursor-swatch");
     let dir = store.dir.clone();

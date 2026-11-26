@@ -4,68 +4,12 @@
 use ratatui::style::{Color, Modifier};
 
 use crate::app::App;
-use crate::app::nav::Overlay;
+use crate::app::nav::{BhRow, Capture, LookId, Overlay};
 use crate::config::{LookSettings, Settings};
 use crate::hit::{Look, Looks, Underline};
 use crate::keymap::{Action, Key, display_seq};
 use crate::palette::GROUPS;
-use crate::settings::{Capture, wrap};
-
-/// Which highlight look a row sets.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LookId {
-    /// Clickable things under the mouse.
-    Hover,
-    /// The Palette pane's derivation relatives of the selected colour.
-    Derived,
-}
-
-/// A row of the Behaviour tab.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum BhRow {
-    /// A blank line before a group (not selectable).
-    Gap,
-    /// A group's title (not selectable).
-    Header(&'static str),
-    /// A look as it's set (not selectable).
-    Sample(LookId),
-    Leader,
-    Tabs,
-    InnerTabs,
-    KeyHints,
-    MainPreview,
-    FontsPreview,
-    /// How long messages stay in the status line.
-    MessageSeconds,
-    /// Save confirmations: status line or a box.
-    SavedAs,
-    SaveSizes,
-    ResetSizes,
-    Highlight(LookId),
-    HighlightColour(LookId),
-    Underline(LookId),
-    UnderlineColour(LookId),
-    Text(LookId),
-    TextColour(LookId),
-    TextWeight(LookId),
-    PaneBorder,
-    PreviewBorder,
-    GroupOpen(usize),
-    PickerAtStart,
-    PickerAfterEditing,
-    SampleAtStart,
-    ListOpensToCurrent,
-    HideBitmap,
-    HideSpecial,
-    Spacing,
-    NerdFont,
-    /// Fetch Fonts page previews ahead of time.
-    Prefetch,
-    /// Whether a category (config::PREFETCH_CATEGORIES) is prefetched.
-    PrefetchCategory(usize),
-    /// Delete the preview fonts.
-    ClearPreviews,
-}
+use crate::settings::wrap;
 
 impl BhRow {
     /// Rows whose value is a key of the system palette.
@@ -502,7 +446,7 @@ impl App {
                 };
                 self.overlay = Overlay::Ask {
                     question,
-                    then: crate::settings::Deferred::ClearPreviews,
+                    then: crate::app::nav::Deferred::ClearPreviews,
                 };
             }
             BhRow::ResetSizes => {

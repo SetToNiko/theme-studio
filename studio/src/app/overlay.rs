@@ -131,7 +131,7 @@ impl App {
         &mut self,
         title: String,
         mut input: String,
-        purpose: crate::settings::Naming,
+        purpose: crate::app::nav::Naming,
         k: KeyEvent,
     ) -> Option<Overlay> {
         match k.code {
@@ -158,7 +158,7 @@ impl App {
     fn ask_key(
         &mut self,
         question: String,
-        then: crate::settings::Deferred,
+        then: crate::app::nav::Deferred,
         k: KeyEvent,
     ) -> Option<Overlay> {
         match k.code {

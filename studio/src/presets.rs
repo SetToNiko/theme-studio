@@ -11,9 +11,9 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
 
 use crate::app::App;
+use crate::app::nav::{Deferred, Naming};
 use crate::hit::{Target, hover_line};
 use crate::keymap::{Action, Context, Keymap, all_actions, display_seq};
-use crate::settings::{Deferred, Naming};
 
 /// A line of the difference between two keymaps.
 #[derive(Clone, Debug, PartialEq)]

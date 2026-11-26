@@ -1912,11 +1912,11 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
         Overlay::Capture { what, keys } => {
             let typed = crate::keymap::display_seq(keys, app.keymap.leader);
             let lines = match what {
-                crate::settings::Capture::Leader => vec![
+                crate::app::nav::Capture::Leader => vec![
                     Line::raw(" Press the new leader key."),
                     Line::styled(" Esc cancels.", Style::new().dark_gray()),
                 ],
-                crate::settings::Capture::Binding { action, add, .. } => vec![
+                crate::app::nav::Capture::Binding { action, add, .. } => vec![
                     Line::raw(format!(
                         " {} keys for \"{}\":",
                         if *add { "Extra" } else { "New" },

@@ -4,7 +4,7 @@
 //! (Rust allows more than one `impl App` block, in any file of the crate).
 //! Where to look:
 //! - this file: the `App` struct and its core methods
-//! - `nav.rs`: plain enums for where the user is (`Page`, `Focus`, `Side`, `Overlay`, `Pending`, `For`, `ColourRow`)
+//! - `nav.rs`: plain enums for where the user is (`Page`, `Focus`, `Side`, `Overlay`, `Pending`, `For`, `ColourRow`, and the settings types `Capture`, `Naming`, `Deferred`, `BhRow`, `LookId`)
 //! - `persist.rs`: save, save as, apply, open, new, the unsaved-changes prompt (`guard`, `run_pending`)
 //! - `focus.rs`: which pane has the keyboard (`focus_pane`, `move_pane`), keymap contexts, resize mode keys
 //! - `colours.rs`: colour list rows, hex input, paste, Tab order through the picker

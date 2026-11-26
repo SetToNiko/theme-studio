@@ -218,7 +218,7 @@ impl App {
         };
         self.overlay = Overlay::Ask {
             question: format!("{label}: {n} fonts, {} picks; {fetch}. Start?", n - 1),
-            then: crate::settings::Deferred::StartTournament(pool),
+            then: crate::app::nav::Deferred::StartTournament(pool),
         };
     }
 

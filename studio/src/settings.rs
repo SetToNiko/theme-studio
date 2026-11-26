@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use serde_json::Value;
 
 use crate::app::App;
-use crate::app::nav::Overlay;
+use crate::app::nav::{Capture, Deferred, Naming, Overlay};
 use crate::color::Rgb;
 use crate::history::{History, SnapshotInfo};
 use crate::keymap::{Action, Context, Key, Keymap, all_actions, display_seq};
@@ -48,59 +48,6 @@ pub const FILES: [&str; 5] = [
     "keymaps.json",
     "settings.json",
 ];
-
-/// What a key press is being recorded for (the Keymaps / Behaviour tabs).
-#[derive(Clone, Debug, PartialEq)]
-pub enum Capture {
-    /// New keys for an action (`add`: next to the ones it has).
-    Binding {
-        ctx: Context,
-        action: Action,
-        add: bool,
-    },
-    /// The leader key.
-    Leader,
-}
-
-/// Something waiting for a name typed into the prompt.
-#[derive(Clone, Debug, PartialEq)]
-pub enum Naming {
-    /// Save the active keymap as a new preset.
-    Preset,
-    /// A new preset, a copy of the named one (the preset list).
-    PresetFrom(String),
-    /// Save a file's current state as a named version.
-    Version(&'static str),
-    /// Keys typed as text (Vim notation).
-    BindingText {
-        ctx: Context,
-        action: Action,
-        add: bool,
-    },
-}
-
-/// Something asked about first (y / n).
-#[derive(Clone, Debug, PartialEq)]
-pub enum Deferred {
-    Restore {
-        file: &'static str,
-        version: PathBuf,
-    },
-    DeleteVersion(PathBuf),
-    DeletePreset(String),
-    ResetPreset(String),
-    /// Deletes the preview fonts (Behaviour tab).
-    ClearPreviews,
-    /// Starts a tournament of a pool (Fonts page, Tournament tab).
-    StartTournament(usize),
-    /// Downloads a family.s Nerd Font (catalogue id), then fills these
-    /// roles from it.
-    NerdForRoles {
-        id: String,
-        group: String,
-        roles: Vec<usize>,
-    },
-}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HistFocus {

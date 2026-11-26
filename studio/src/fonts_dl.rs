@@ -338,7 +338,7 @@ impl App {
                     crate::fonts_pick::faces(&missing),
                     e.family
                 ),
-                then: crate::settings::Deferred::NerdForRoles {
+                then: crate::app::nav::Deferred::NerdForRoles {
                     id: e.id,
                     group,
                     roles: missing,
