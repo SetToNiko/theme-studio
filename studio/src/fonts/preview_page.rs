@@ -2,7 +2,7 @@
 //! it. Google / Fontsource fonts are fetched (one small file) after a short
 //! pause on them; Nerd Fonts on request (`p`), since they come as archives.
 //! Drawn by ImageMagick + Pango with a fontconfig setup that includes the
-//! preview cache (download.rs), in the theme's colours.
+//! preview cache (system/download.rs), in the theme's colours.
 
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
@@ -11,10 +11,10 @@ use std::time::{Duration, Instant};
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
 
-use crate::download::{Entry, Source};
 use crate::fonts::render::SampleRenderer;
 use crate::model::color::Rgb;
 use crate::model::samples::{self, KINDS, Kind, LANGS};
+use crate::system::download::{Entry, Source};
 
 /// How long the highlight rests on a font before its preview is fetched.
 const PAUSE: Duration = Duration::from_millis(150);

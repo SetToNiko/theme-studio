@@ -25,7 +25,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::Result;
 /// The terminal the studio draws on.
-pub type Term = ratatui::Terminal<ratatui::backend::CrosstermBackend<crate::out::Out>>;
+pub type Term = ratatui::Terminal<ratatui::backend::CrosstermBackend<crate::system::out::Out>>;
 use ratatui::Frame;
 use ratatui::crossterm::event::{self, Event, KeyEventKind};
 use ratatui::layout::Rect;
@@ -84,7 +84,7 @@ pub struct App {
     /// The sample's size while resizing (re-encoded once it holds still).
     pub sample_settle: crate::model::settle::Settle,
     /// Previews fetched ahead of time (settings: fonts-page.prefetch).
-    pub prefetch: crate::prefetch::Prefetch,
+    pub prefetch: crate::system::prefetch::Prefetch,
     /// When an image's size settles and the screen should be drawn again.
     pub redraw_at: Option<Instant>,
     pub sample_error: Option<String>,

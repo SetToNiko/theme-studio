@@ -10,8 +10,8 @@ use serde_json::Value;
 
 use crate::app::App;
 use crate::app::state::hit::{Target, hover, hover_line, hover_row};
-use crate::download::Source;
 use crate::fonts::download_page::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb};
+use crate::system::download::Source;
 
 fn status_span(s: &DlStatus) -> Span<'static> {
     match s {

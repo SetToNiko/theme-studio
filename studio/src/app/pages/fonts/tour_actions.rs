@@ -11,11 +11,11 @@ use std::path::PathBuf;
 
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Overlay, Page};
-use crate::download::{self, Entry};
 use crate::fonts::download_page::DlTab;
 use crate::fonts::tournament_page::{POOLS, SIZES, SetupRow, Stage, TourPage};
 use crate::keymap::action::Action;
 use crate::model::tournament::{self, Entrant, Tournament};
+use crate::system::download::{self, Entry};
 
 impl App {
     pub fn tour(&mut self) -> &mut TourPage {
@@ -117,13 +117,14 @@ impl App {
             "nothing to fetch".to_string()
         } else {
             let share = n as f64 / all.len() as f64;
-            let (_, bytes, _) = crate::prefetch::estimate(self.dl.catalogue.as_ref().unwrap(), key);
+            let (_, bytes, _) =
+                crate::system::prefetch::estimate(self.dl.catalogue.as_ref().unwrap(), key);
             let left = missing.len() as f64 * share;
             let bytes = bytes as f64 * missing.len() as f64 / all.len().max(1) as f64 * share;
             format!(
                 "previews to fetch: about {} ({})",
                 left.round() as usize,
-                crate::prefetch::size(bytes as u64)
+                crate::system::prefetch::size(bytes as u64)
             )
         };
         self.overlay = Overlay::Ask {

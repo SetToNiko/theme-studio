@@ -2,14 +2,14 @@
 //!
 //! This is a second `impl App { ... }` block (see `persist.rs` for the same
 //! style). The prefetch data (`Prefetch`, the queue, the size estimates) and
-//! its logic stay in `prefetch.rs`; this file only holds the methods that
+//! its logic stay in `system/prefetch.rs`; this file only holds the methods that
 //! need the whole `App`: the per-loop poll, feeding downloads, and measuring
 //! the space the previews use.
 
 use crate::app::App;
 use crate::app::state::nav::Page;
-use crate::download::{self, Msg};
-use crate::prefetch::queue;
+use crate::system::download::{self, Msg};
+use crate::system::prefetch::queue;
 
 impl App {
     // Long function: one top-to-bottom sequence of early exits (off, no catalogue, queue not built), then feed and progress.
@@ -55,7 +55,7 @@ impl App {
 
     /// Starts downloads from the urgent queue or the prefetch queue, up to
     /// `AT_ONCE` at a time (Nerd Font archives one at a time; see
-    /// [`crate::prefetch::Prefetch::take_next`]).
+    /// [`crate::system::prefetch::Prefetch::take_next`]).
     fn feed(&mut self, urgent: bool) {
         let fetch = self.prefetch.fetch.unwrap_or(download::fetch_preview);
         while let Some(e) = self.prefetch.take_next(urgent) {

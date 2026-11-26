@@ -184,9 +184,9 @@ impl App {
             BhRow::NerdFont => s.font_list.nerd_font.clone(),
             BhRow::Prefetch => yes(s.fonts_page.prefetch),
             BhRow::PrefetchCategory(i) => self.prefetch_category_value(i),
-            // measured on a thread (prefetch.rs)
+            // measured on a thread (system/prefetch.rs)
             BhRow::ClearPreviews => match self.prefetch.used {
-                Some(b) => format!("Enter  ({} used)", crate::prefetch::size(b)),
+                Some(b) => format!("Enter  ({} used)", crate::system::prefetch::size(b)),
                 None => "Enter  (measuring…)".into(),
             },
         }
@@ -205,9 +205,9 @@ impl App {
         let Some(c) = &self.dl.catalogue else {
             return on;
         };
-        let (n, get, keep) = crate::prefetch::estimate(c, cat);
+        let (n, get, keep) = crate::system::prefetch::estimate(c, cat);
         let fonts = if n == 1 { "font" } else { "fonts" };
-        let size = crate::prefetch::size;
+        let size = crate::system::prefetch::size;
         if get == keep {
             format!("{on}  ({n} {fonts}, about {})", size(get))
         } else {
@@ -382,7 +382,10 @@ impl App {
             }
             BhRow::ClearPreviews => {
                 let question = match self.prefetch.used {
-                    Some(b) => format!("Delete the preview fonts ({})?", crate::prefetch::size(b)),
+                    Some(b) => format!(
+                        "Delete the preview fonts ({})?",
+                        crate::system::prefetch::size(b)
+                    ),
                     None => "Delete the preview fonts?".into(),
                 };
                 self.overlay = Overlay::Ask {

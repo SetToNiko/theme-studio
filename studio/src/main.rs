@@ -4,15 +4,12 @@
 
 mod app;
 mod config;
-mod desktop;
-mod download;
 mod fonts;
 mod keymap;
 mod model;
-mod out;
-mod prefetch;
 mod preview_term;
 mod settings_page;
+mod system;
 mod ui;
 
 use std::io::stdout;
@@ -117,7 +114,7 @@ fn main() -> Result<()> {
         None => Start::Active,
     };
     // preview fonts moved from ~/.cache to ~/.local/share
-    download::migrate_previews();
+    system::download::migrate_previews();
     // Load before taking over the terminal, so errors print normally.
     let mut app = App::new(Store::locate(), start)?;
     if fonts_tab {
@@ -125,10 +122,11 @@ fn main() -> Result<()> {
     }
 
     // raw mode, the alternate screen and the panic hook; drawing goes
-    // through out::Out (for the hover underline styles)
+    // through system::out::Out (for the hover underline styles)
     drop(ratatui::init());
-    let mut terminal =
-        ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(out::Out::default()))?;
+    let mut terminal = ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(
+        system::out::Out::default(),
+    ))?;
     execute!(stdout(), EnableMouseCapture, EnableBracketedPaste)?;
     // The kitty keyboard protocol (Ghostty, kitty, foot, WezTerm…), so keys
     // like Ctrl+Shift+Z, Ctrl+1 or Ctrl+I (not Tab) arrive as themselves.

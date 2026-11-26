@@ -1,7 +1,7 @@
 //! Base64 encoding (the standard alphabet, with `=` padding).
 //!
 //! Two places need it: the clipboard copy in `app` (the terminal's OSC 52
-//! sequence) and the download check in `download.rs` (a `sha256-` hash in
+//! sequence) and the download check in `system/download.rs` (a `sha256-` hash in
 //! Subresource Integrity form). It is a small leaf module, so neither of them
 //! depends on the other for it.
 

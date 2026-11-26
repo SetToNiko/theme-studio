@@ -1556,8 +1556,8 @@ fn settings_groups_fold_and_only_names_are_underlined() {
 #[test]
 fn download_page_lists_searches_and_removes() {
     use crate::app::state::hit::Target as T;
-    use crate::download::{Catalogue, Entry, Source};
     use crate::fonts::download_page::{DlRow, DlStatus, DlTab};
+    use crate::system::download::{Catalogue, Entry, Source};
     let store = temp_store("dl");
     let dir = store.dir.clone();
     crate::model::history::init_for_test(dir.join("history"));
@@ -1671,10 +1671,10 @@ fn download_page_lists_searches_and_removes() {
         "Zen Loop".into(),
         serde_json::json!({"source": "google", "id": "zen-loop"}),
     );
-    crate::download::write_list(&list, m).unwrap();
+    crate::system::download::write_list(&list, m).unwrap();
 
     let zen = app.dl_entries()[2].clone();
-    let listed = crate::download::read_list(&list);
+    let listed = crate::system::download::read_list(&list);
     assert_eq!(app.dl_status(&zen, &listed), DlStatus::Listed);
     // the Installed tab (a click) lists it; d removes it
     render(&mut app, 160, 45);
@@ -1682,7 +1682,7 @@ fn download_page_lists_searches_and_removes() {
     assert_eq!(app.dl.tab, DlTab::Installed);
     assert_eq!(app.dl_rows(), vec![DlRow::Listed("Zen Loop".into())]);
     press(&mut app, "d");
-    assert!(crate::download::read_list(&list).is_empty());
+    assert!(crate::system::download::read_list(&list).is_empty());
     assert!(app.dl_rows().is_empty());
     // Nerd Fonts tab, with the release (past the Tournament tab)
     press(&mut app, "]");
@@ -1803,8 +1803,8 @@ fn a_family_fills_every_role() {
 
 #[test]
 fn a_family_without_fitting_faces_offers_its_nerd_font() {
-    use crate::download::{Catalogue, Entry, Source};
     use crate::fonts::types::{Installed, Row};
+    use crate::system::download::{Catalogue, Entry, Source};
     let store = temp_store("offer");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
@@ -2103,12 +2103,12 @@ fn behaviour_tab_sets_up_prefetching() {
         ["monospace", "nerd font"]
     );
     // with the catalogue, each category shows what it takes
-    let nerd = crate::download::Source::Nerd {
+    let nerd = crate::system::download::Source::Nerd {
         asset: "Hack".into(),
         url: String::new(),
         size: 40_000_000,
     };
-    let mut hack = crate::download::Entry {
+    let mut hack = crate::system::download::Entry {
         id: "hack".into(),
         family: "Hack".into(),
         category: "nerd font".into(),
@@ -2119,7 +2119,7 @@ fn behaviour_tab_sets_up_prefetching() {
         source: nerd,
         subset: "latin".into(),
     };
-    app.dl.catalogue = Some(crate::download::Catalogue {
+    app.dl.catalogue = Some(crate::system::download::Catalogue {
         nerd: vec![hack.clone()],
         ..Default::default()
     });
@@ -2128,7 +2128,7 @@ fn behaviour_tab_sets_up_prefetching() {
         "yes  (1 font: 40.0 MB to fetch, about 2.5 MB kept)"
     );
     hack.category = "monospace".into();
-    hack.source = crate::download::Source::Google;
+    hack.source = crate::system::download::Source::Google;
     app.dl.catalogue.as_mut().unwrap().google = vec![hack];
     assert_eq!(
         app.behaviour_value(BhRow::PrefetchCategory(0)),
@@ -2356,7 +2356,7 @@ fn installed_fonts_preview_from_their_files() {
 
 #[test]
 fn prefetching_keeps_the_main_loop_quick() {
-    use crate::download::{Catalogue, Entry, Msg, Source};
+    use crate::system::download::{Catalogue, Entry, Msg, Source};
     use std::sync::mpsc::Sender;
     // downloads answer at once (no network)
     fn stub(e: Entry, tx: Sender<Msg>) {

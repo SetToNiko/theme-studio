@@ -10,7 +10,7 @@ use std::collections::HashSet;
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
 
-use crate::download::{Catalogue, Entry, Msg, Source};
+use crate::system::download::{Catalogue, Entry, Msg, Source};
 
 /// How many previews download at once (Nerd Font archives: one).
 const AT_ONCE: usize = 3;

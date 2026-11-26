@@ -18,8 +18,8 @@ use portable_pty::CommandBuilder;
 use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::Rect;
 
-use crate::desktop::{self, BarBlock, Roles};
 use crate::model::palette::{KEYS, Palette};
+use crate::system::desktop::{self, BarBlock, Roles};
 use pane::{Pane, key_bytes};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

@@ -6,7 +6,7 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 
 use serde_json::Value;
 
-use crate::download::{self, Catalogue, Msg};
+use crate::system::download::{self, Catalogue, Msg};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DlTab {
