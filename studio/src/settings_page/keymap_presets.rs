@@ -111,58 +111,57 @@ pub fn draw_browse(
     let Some(then) = presets.get(sel).cloned() else {
         return;
     };
+    draw_preset_list(f, hits, presets, keymap, sel, list);
+    draw_difference(f, hits, keymap, &then, page, diff);
+}
 
-    // the list
-    let mut lines = vec![Line::styled("Presets", Style::new().bold()), Line::raw("")];
-    let top = list.y + 2;
-    for (i, p) in presets.iter().enumerate() {
-        if top + i as u16 >= list.bottom() {
-            break;
-        }
-        let active = p.name == keymap.name;
-        let style = if i == sel {
-            Style::new().reversed()
-        } else {
-            Style::new()
-        };
-        let r = Rect {
-            x: list.x,
-            y: top + i as u16,
-            width: list.width,
-            height: 1,
-        };
-        let hovered = hits.add(r, Target::PresetRow(i)) && i != sel;
-        // the cursor on the name, not the padding around it
-        let mut spans =
-            crate::app::state::hit::cursor_spans(format!(" {:<16}", p.name), Style::new(), style);
-        spans.push(Span::styled(
-            format!(
-                " {}{}",
-                if is_shipped(&p.name) {
-                    "shipped"
-                } else {
-                    "yours"
-                },
-                if active { ", active" } else { "" }
-            ),
-            Style::new().dark_gray(),
-        ));
-        let line = Line::from(spans);
-        // only the name is underlined
-        lines.push(if hovered { hover_line(line, 0) } else { line });
-    }
-    lines.push(Line::raw(""));
-    for h in [
-        "Enter  load it (then Save)",
-        "n      new preset from it",
-        "d      delete (yours only)",
-        "R      reset (shipped only)",
-        "A      everything / differences",
-        "PgUp/PgDn  scroll the keys",
-        "Esc    back",
-    ] {
-        lines.push(Line::styled(h, Style::new().dark_gray()));
-    }
+/// The keys of the preset browser, one line each.
+const BROWSE_HELP: [&str; 7] = [
+    "Enter  load it (then Save)",
+    "n      new preset from it",
+    "d      delete (yours only)",
+    "R      reset (shipped only)",
+    "A      everything / differences",
+    "PgUp/PgDn  scroll the keys",
+    "Esc    back",
+];
+
+/// One row of the preset list: the name (highlighted when `selected`), then
+/// whether the preset is shipped or yours, and whether it is active.
+fn preset_line(p: &Keymap, active: bool, selected: bool) -> Line<'static> {
+    let style = if selected {
+        Style::new().reversed()
+    } else {
+        Style::new()
+    };
+    // the cursor on the name, not the padding around it
+    let mut spans =
+        crate::app::state::hit::cursor_spans(format!(" {:<16}", p.name), Style::new(), style);
+    spans.push(Span::styled(
+        format!(
+            " {}{}",
+            if is_shipped(&p.name) {
+                "shipped"
+            } else {
+                "yours"
+            },
+            if active { ", active" } else { "" }
+        ),
+        Style::new().dark_gray(),
+    ));
+    Line::from(spans)
+}
+
+/// The preset list (the right column), with its key help.
+fn draw_preset_list(
+    f: &mut Frame,
+    hits: &mut HitMap,
+    presets: &[Keymap],
+    keymap: &Keymap,
+    sel: usize,
+    list: Rect,
+) {
+    let lines = preset_list_lines(hits, presets, keymap, sel, list);
     f.render_widget(
         Paragraph::new(lines).block(
             Block::new()
@@ -171,78 +170,135 @@ pub fn draw_browse(
         ),
         list,
     );
+}
 
-    // the difference
-    let all = page.browse_all;
-    let rows = keymap_diff(keymap, &then, all);
-    let changed = keymap_diff(keymap, &then, false)
-        .iter()
-        .filter(|d| !matches!(d, KmDiff::Context(_)))
-        .count();
-    let [head, body] = Layout::vertical([Constraint::Length(2), Constraint::Min(0)]).areas(diff);
-    let title = if then.name == keymap.name {
+/// The lines of the preset list: a title, a row for each preset that fits
+/// in `list` (each adds a click area to `hits`), and the key help.
+fn preset_list_lines(
+    hits: &mut HitMap,
+    presets: &[Keymap],
+    keymap: &Keymap,
+    sel: usize,
+    list: Rect,
+) -> Vec<Line<'static>> {
+    let mut lines = vec![Line::styled("Presets", Style::new().bold()), Line::raw("")];
+    let top = list.y + 2;
+    for (i, p) in presets.iter().enumerate() {
+        let y = top.saturating_add(u16::try_from(i).unwrap_or(u16::MAX));
+        if y >= list.bottom() {
+            break;
+        }
+        let r = Rect {
+            x: list.x,
+            y,
+            width: list.width,
+            height: 1,
+        };
+        let hovered = hits.add(r, Target::PresetRow(i)) && i != sel;
+        let line = preset_line(p, p.name == keymap.name, i == sel);
+        // only the name is underlined
+        lines.push(if hovered { hover_line(line, 0) } else { line });
+    }
+    lines.push(Line::raw(""));
+    for h in BROWSE_HELP {
+        lines.push(Line::styled(h, Style::new().dark_gray()));
+    }
+    lines
+}
+
+/// The title above the difference: `changed` is how many actions differ.
+fn diff_title(keymap: &Keymap, then: &Keymap, changed: usize) -> String {
+    if then.name == keymap.name {
         format!(" {} (the current keymap)", then.name)
     } else if changed == 0 {
         format!(" {} → {}: the same keys", keymap.name, then.name)
     } else {
         format!(" {} → {}: {changed} differ", keymap.name, then.name)
-    };
-    f.render_widget(
-        Paragraph::new(vec![
-            Line::styled(title, Style::new().bold()),
-            Line::from(vec![
-                Span::styled(" changed ", Style::new().black().on_yellow()),
-                Span::styled(" current → preset", Style::new().dark_gray()),
-            ]),
+    }
+}
+
+/// The two lines above the difference: the title and what the marks mean.
+fn diff_head(title: String) -> Paragraph<'static> {
+    Paragraph::new(vec![
+        Line::styled(title, Style::new().bold()),
+        Line::from(vec![
+            Span::styled(" changed ", Style::new().black().on_yellow()),
+            Span::styled(" current → preset", Style::new().dark_gray()),
         ]),
-        head,
-    );
+    ])
+}
+
+/// The difference (the left column): a title, then the keys that differ.
+fn draw_difference(
+    f: &mut Frame,
+    hits: &mut HitMap,
+    keymap: &Keymap,
+    then: &Keymap,
+    page: &mut SettingsPage,
+    diff: Rect,
+) {
+    let rows = keymap_diff(keymap, then, page.browse_all);
+    let changed = keymap_diff(keymap, then, false)
+        .iter()
+        .filter(|d| !matches!(d, KmDiff::Context(_)))
+        .count();
+    let [head, body] = Layout::vertical([Constraint::Length(2), Constraint::Min(0)]).areas(diff);
+    let title = diff_title(keymap, then, changed);
+    f.render_widget(diff_head(title), head);
     hits.add(body, Target::SettingsDiff);
-    let h = body.height as usize;
+    let h = usize::from(body.height);
     let max = rows.len().saturating_sub(h);
     page.browse_scroll = page.browse_scroll.min(max);
-    let w = (body.width as usize).saturating_sub(4).min(46);
+    let w = usize::from(body.width).saturating_sub(4).min(46);
     let out: Vec<Line> = rows
         .iter()
         .skip(page.browse_scroll)
         .take(h)
-        .map(|d| match d {
-            KmDiff::Context(c) => {
-                Line::styled(format!(" {}", c.title()), Style::new().bold().cyan())
-            }
-            KmDiff::Leader { now, then } | KmDiff::Row { now, then, .. } => {
-                let label = match d {
-                    KmDiff::Row { action, .. } => action.describe(),
-                    _ => "leader".into(),
-                };
-                let label = format!("   {:<w$} ", label.chars().take(w).collect::<String>());
-                let none = |s: &str| {
-                    if s.is_empty() {
-                        "no keys".to_string()
-                    } else {
-                        s.to_string()
-                    }
-                };
-                if now == then {
-                    Line::from(vec![
-                        Span::raw(label),
-                        Span::styled(none(now), Style::new().yellow()),
-                    ])
-                } else {
-                    Line::from(vec![
-                        Span::styled(label, Style::new().black().on_yellow()),
-                        Span::styled(
-                            none(now),
-                            Style::new().dark_gray().add_modifier(Modifier::CROSSED_OUT),
-                        ),
-                        Span::raw(" → "),
-                        Span::styled(none(then), Style::new().yellow().bold()),
-                    ])
-                }
-            }
-        })
+        .map(|d| diff_line(d, w))
         .collect();
     f.render_widget(Paragraph::new(out), body);
+}
+
+/// The keys, or "no keys" when there are none.
+fn keys_or_none(s: &str) -> String {
+    if s.is_empty() {
+        "no keys".to_string()
+    } else {
+        s.to_string()
+    }
+}
+
+/// One line of the difference: a context title, or a label (padded to `w`
+/// columns) with its keys; changed rows show the old keys crossed out.
+fn diff_line(d: &KmDiff, w: usize) -> Line<'static> {
+    let (now, then) = match d {
+        KmDiff::Context(c) => {
+            return Line::styled(format!(" {}", c.title()), Style::new().bold().cyan());
+        }
+        KmDiff::Leader { now, then } | KmDiff::Row { now, then, .. } => (now, then),
+    };
+    let label = match d {
+        KmDiff::Row { action, .. } => action.describe(),
+        _ => "leader".into(),
+    };
+    let label = format!("   {:<w$} ", label.chars().take(w).collect::<String>());
+    let none = keys_or_none;
+    if now == then {
+        Line::from(vec![
+            Span::raw(label),
+            Span::styled(none(now), Style::new().yellow()),
+        ])
+    } else {
+        Line::from(vec![
+            Span::styled(label, Style::new().black().on_yellow()),
+            Span::styled(
+                none(now),
+                Style::new().dark_gray().add_modifier(Modifier::CROSSED_OUT),
+            ),
+            Span::raw(" → "),
+            Span::styled(none(then), Style::new().yellow().bold()),
+        ])
+    }
 }
 
 #[cfg(test)]
@@ -271,6 +327,6 @@ mod tests {
         };
         assert!(!d.contains(&same));
         assert!(keymap_diff(&vim, &emacs, true).contains(&same));
-        assert!(keymap_diff(&vim, &vim, false).is_empty());
+        assert_eq!(keymap_diff(&vim, &vim, false), Vec::new());
     }
 }

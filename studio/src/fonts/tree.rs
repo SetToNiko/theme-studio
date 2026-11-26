@@ -1,5 +1,5 @@
 //! Groups installed font families into a two-level tree for the font list:
-//! design (JetBrains Mono, Noto, TeX Gyre) → variant (Nerd Font, Sans CJK)
+//! design (`JetBrains Mono`, Noto, `TeX Gyre`) → variant (Nerd Font, Sans CJK)
 //! → families. Groups with a single member are flattened into their parent.
 
 use std::collections::BTreeMap;
@@ -29,7 +29,7 @@ impl Node {
 /// Region codes on CJK font names: "Noto Sans CJK JP" → variant "Sans CJK".
 const REGIONS: [&str; 7] = ["HK", "JP", "KR", "SC", "TC", "CN", "TW"];
 
-/// "JetBrainsMono" → "JetBrains Mono", "GeistMono" → "Geist Mono": splits
+/// `JetBrainsMono` → `JetBrains Mono`, `GeistMono` → `Geist Mono`: splits
 /// off the last capitalised word (only used for Nerd Font names, whose base
 /// names are written without spaces).
 fn split_camel(s: &str) -> String {
@@ -75,8 +75,19 @@ fn classify(name: &str) -> (Vec<String>, Vec<String>, bool) {
 /// and whether it is a Nerd Font design.
 type Design = (String, Vec<(usize, Vec<String>)>, bool);
 
+/// Groups the installed fonts into the tree: design → variant → font.
 pub fn build(fonts: &[Installed]) -> Vec<Node> {
-    // design → [(font, variant tokens)]
+    let mut top: Vec<(String, Node)> = Vec::new();
+    for (_, (name, members, nerd)) in group_by_design(fonts) {
+        let key = name.to_lowercase();
+        top.push((key, design_node(name, members, nerd, fonts)));
+    }
+    top.sort_by(|a, b| a.0.cmp(&b.0));
+    top.into_iter().map(|(_, n)| n).collect()
+}
+
+/// Puts each font under its design (the key is the lower-case design name).
+fn group_by_design(fonts: &[Installed]) -> BTreeMap<String, Design> {
     let mut designs: BTreeMap<String, Design> = BTreeMap::new();
     for (i, f) in fonts.iter().enumerate() {
         let (design, variant, nerd) = classify(&f.family);
@@ -87,74 +98,94 @@ pub fn build(fonts: &[Installed]) -> Vec<Node> {
             .1
             .push((i, variant));
     }
+    designs
+}
 
-    let mut top: Vec<(String, Node)> = Vec::new();
-    for (_, (mut name, mut members, nerd)) in designs {
-        // Longer shared names: every "TeX Gyre X" shares "Gyre", so the
-        // design is "TeX Gyre" and the variants are Adventor, Bonum, …
-        while !nerd
-            && members.len() > 1
-            && members.iter().all(|(_, v)| v.len() > 1)
-            && members.iter().all(|(_, v)| v[0] == members[0].1[0])
-        {
-            name = format!("{name} {}", members[0].1[0]);
-            for (_, v) in members.iter_mut() {
-                v.remove(0);
-            }
-        }
-        // variant name → fonts (region codes dropped)
-        let mut variants: BTreeMap<String, (String, Vec<usize>)> = BTreeMap::new();
-        for (i, mut v) in members {
-            if !nerd && v.last().is_some_and(|t| REGIONS.contains(&t.as_str())) {
-                v.pop();
-            }
-            let vname = v.join(" ");
-            variants
-                .entry(vname.to_lowercase())
-                .or_insert_with(|| (vname, Vec::new()))
-                .1
-                .push(i);
-        }
-        let mut children: Vec<(String, Node)> = Vec::new();
-        for (_, (vname, leaves)) in variants {
-            if leaves.len() > 1 && !vname.is_empty() {
-                let mut kids: Vec<Node> = leaves.into_iter().map(Node::Leaf).collect();
-                kids.sort_by_key(|n| leaf_name(n, fonts));
-                children.push((
-                    vname.to_lowercase(),
-                    Node::Group {
-                        name: vname,
-                        children: kids,
-                    },
-                ));
-            } else {
-                for i in leaves {
-                    children.push((fonts[i].family.to_lowercase(), Node::Leaf(i)));
-                }
-            }
-        }
-        children.sort_by(|a, b| a.0.cmp(&b.0));
-        let mut children: Vec<Node> = children.into_iter().map(|(_, n)| n).collect();
-        // A design with a single variant group: its fonts sit directly under it.
-        if children.len() == 1
-            && let Node::Group {
-                children: inner, ..
-            } = &children[0]
-        {
-            children = inner.clone();
-        }
-        let node = if children.len() == 1 {
-            children.remove(0)
-        } else {
-            Node::Group {
-                name: name.clone(),
-                children,
-            }
-        };
-        top.push((name.to_lowercase(), node));
+/// The node of one design: a group of its variants (a single font or a
+/// single variant group is not wrapped again).
+fn design_node(
+    mut name: String,
+    mut members: Vec<(usize, Vec<String>)>,
+    nerd: bool,
+    fonts: &[Installed],
+) -> Node {
+    if !nerd {
+        move_shared_words_to_name(&mut name, &mut members);
     }
-    top.sort_by(|a, b| a.0.cmp(&b.0));
-    top.into_iter().map(|(_, n)| n).collect()
+    let mut children = variant_nodes(members, nerd, fonts);
+    // A design with a single variant group: its fonts sit directly under it.
+    if children.len() == 1
+        && let Node::Group {
+            children: inner, ..
+        } = children[0].clone()
+    {
+        children = inner;
+    }
+    if children.len() == 1 {
+        children.remove(0)
+    } else {
+        Node::Group { name, children }
+    }
+}
+
+/// Longer shared names: every "TeX Gyre X" shares "Gyre", so the design is
+/// "TeX Gyre" and the variants are Adventor, Bonum, …
+fn move_shared_words_to_name(name: &mut String, members: &mut [(usize, Vec<String>)]) {
+    while members.len() > 1
+        && members.iter().all(|(_, v)| v.len() > 1)
+        && members.iter().all(|(_, v)| v[0] == members[0].1[0])
+    {
+        *name = format!("{name} {}", members[0].1[0]);
+        for (_, v) in &mut *members {
+            v.remove(0);
+        }
+    }
+}
+
+/// Puts the fonts of a design under their variant names (region codes
+/// dropped, except for Nerd Fonts). The key is the lower-case variant name.
+fn group_by_variant(
+    members: Vec<(usize, Vec<String>)>,
+    nerd: bool,
+) -> BTreeMap<String, (String, Vec<usize>)> {
+    let mut variants: BTreeMap<String, (String, Vec<usize>)> = BTreeMap::new();
+    for (i, mut v) in members {
+        if !nerd && v.last().is_some_and(|t| REGIONS.contains(&t.as_str())) {
+            v.pop();
+        }
+        let vname = v.join(" ");
+        variants
+            .entry(vname.to_lowercase())
+            .or_insert_with(|| (vname, Vec::new()))
+            .1
+            .push(i);
+    }
+    variants
+}
+
+/// The variant groups of a design, sorted by name. A variant with several
+/// fonts is a group; a single font stays a leaf.
+fn variant_nodes(members: Vec<(usize, Vec<String>)>, nerd: bool, fonts: &[Installed]) -> Vec<Node> {
+    let mut children: Vec<(String, Node)> = Vec::new();
+    for (_, (vname, leaves)) in group_by_variant(members, nerd) {
+        if leaves.len() > 1 && !vname.is_empty() {
+            let mut kids: Vec<Node> = leaves.into_iter().map(Node::Leaf).collect();
+            kids.sort_by_key(|n| leaf_name(n, fonts));
+            children.push((
+                vname.to_lowercase(),
+                Node::Group {
+                    name: vname,
+                    children: kids,
+                },
+            ));
+        } else {
+            for i in leaves {
+                children.push((fonts[i].family.to_lowercase(), Node::Leaf(i)));
+            }
+        }
+    }
+    children.sort_by(|a, b| a.0.cmp(&b.0));
+    children.into_iter().map(|(_, n)| n).collect()
 }
 
 fn leaf_name(n: &Node, fonts: &[Installed]) -> String {
@@ -182,7 +213,6 @@ mod tests {
     }
 
     fn shape(nodes: &[Node], fonts: &[Installed]) -> Vec<String> {
-        let mut out = Vec::new();
         fn walk(n: &Node, depth: usize, fonts: &[Installed], out: &mut Vec<String>) {
             match n {
                 Node::Leaf(i) => out.push(format!("{}{}", "  ".repeat(depth), fonts[*i].family)),
@@ -194,6 +224,7 @@ mod tests {
                 }
             }
         }
+        let mut out = Vec::new();
         for n in nodes {
             walk(n, 0, fonts, &mut out);
         }
@@ -202,6 +233,7 @@ mod tests {
 
     /// The fonts on this machine, grouped as agreed: design → variant → font.
     #[test]
+    // Long function: one table of real font names and the tree expected for them; each line stands alone, so splitting it only hides the table.
     fn groups_real_font_names() {
         let fonts = installed(&[
             "DejaVu Sans",

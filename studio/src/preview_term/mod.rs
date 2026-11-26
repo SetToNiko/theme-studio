@@ -62,27 +62,21 @@ pub struct Preview {
     pub(crate) headless: bool,
 }
 
+/// Counts the previews of this process (tests make several), so each gets its
+/// own draft folder next to the process id.
+static PREVIEW_COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
 impl Preview {
     pub fn new(configs: &Path) -> Preview {
-        let base = std::env::var_os("XDG_RUNTIME_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(std::env::temp_dir);
+        let base =
+            std::env::var_os("XDG_RUNTIME_DIR").map_or_else(std::env::temp_dir, PathBuf::from);
         remove_stale_drafts(&base);
-        // pid, plus a counter so several previews in one process (tests) differ
-        static N: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let n = N.fetch_add(1, Ordering::Relaxed);
+        let n = PREVIEW_COUNTER.fetch_add(1, Ordering::Relaxed);
         let draft_dir = base.join(format!("theme-studio-{}-{n}", std::process::id()));
         let _ = std::fs::create_dir_all(&draft_dir);
         let dirty = Arc::new(AtomicBool::new(true));
         let bar = Arc::new(Mutex::new(None));
-        {
-            let (bar, dirty, configs) = (bar.clone(), dirty.clone(), configs.to_path_buf());
-            std::thread::spawn(move || {
-                let blocks = desktop::read_bar(&configs, Duration::from_secs(3));
-                *bar.lock().unwrap() = Some(blocks);
-                dirty.store(true, Ordering::Relaxed);
-            });
-        }
+        read_bar_in_background(bar.clone(), dirty.clone(), configs.to_path_buf());
         Preview {
             configs: configs.to_path_buf(),
             // the demo shell's `git log`: the checkout, else home
@@ -169,7 +163,7 @@ impl Preview {
         }
         let text: String = KEYS
             .iter()
-            .map(|k| format!("{k}={}\n", p.get(k).hex()))
+            .map(|k| [k, "=", p.get(k).hex().as_str(), "\n"].concat())
             .collect();
         if std::fs::write(&self.draft, text).is_ok() {
             self.written = Some(p.clone());
@@ -215,15 +209,9 @@ impl Preview {
         c
     }
 
-    /// Starts a pane's program the first time it's shown, at the size it's shown at.
-    pub(crate) fn ensure(&mut self, id: PaneId, rows: u16, cols: u16) {
-        if self.headless || self.pane_mut(id).is_some() {
-            if let Some(p) = self.pane_mut(id) {
-                p.resize(rows, cols);
-            }
-            return;
-        }
-        let cmd = match id {
+    /// The command that starts a pane's program (nvim, bash or yazi).
+    fn pane_command(&self, id: PaneId) -> CommandBuilder {
+        match id {
             PaneId::Nvim => {
                 let mut c = self.command("nvim");
                 // read-only, no swap file: it's only there to be looked at
@@ -242,7 +230,18 @@ impl Preview {
                 c.arg(&self.workdir);
                 c
             }
-        };
+        }
+    }
+
+    /// Starts a pane's program the first time it's shown, at the size it's shown at.
+    pub(crate) fn ensure(&mut self, id: PaneId, rows: u16, cols: u16) {
+        if self.headless || self.pane_mut(id).is_some() {
+            if let Some(p) = self.pane_mut(id) {
+                p.resize(rows, cols);
+            }
+            return;
+        }
+        let cmd = self.pane_command(id);
         match Pane::spawn(cmd, rows, cols, self.dirty.clone()) {
             Ok(mut pane) => {
                 if id == PaneId::Shell {
@@ -261,6 +260,20 @@ impl Preview {
             Err(e) => self.errors.push(format!("{id:?}: {e:#}")),
         }
     }
+}
+
+/// Reads the bar's blocks on a thread (the commands can be slow), then
+/// asks for a redraw.
+fn read_bar_in_background(
+    bar: Arc<Mutex<Option<Vec<BarBlock>>>>,
+    dirty: Arc<AtomicBool>,
+    configs: PathBuf,
+) {
+    std::thread::spawn(move || {
+        let blocks = desktop::read_bar(&configs, Duration::from_secs(3));
+        *bar.lock().unwrap() = Some(blocks);
+        dirty.store(true, Ordering::Relaxed);
+    });
 }
 
 impl Drop for Preview {

@@ -13,7 +13,7 @@ use crate::model::color::Rgb;
 use crate::model::palette::{self, Palette};
 
 /// Colour roles: role name -> palette keys (one per column, e.g.
-/// `client.focused` -> [border, background, text, indicator, child_border]).
+/// `client.focused` -> `[border, background, text, indicator, child_border]`).
 #[derive(Clone, Debug, Default)]
 pub struct Roles {
     roles: HashMap<String, Vec<&'static str>>,
@@ -186,8 +186,18 @@ fn run_block(name: &str, command: &str, pango: bool, timeout: Duration) -> Optio
             }
         }
     });
-    // Up to three lines: full_text, short_text, color. Persistent blocks
-    // print a line and keep running, so take what has arrived and move on.
+    let lines = first_lines(&rx, timeout);
+    let _ = Command::new("kill")
+        .args(["-TERM", "--", &format!("-{}", child.id())])
+        .status();
+    let _ = child.kill();
+    let _ = child.wait();
+    block_from_lines(&lines, pango)
+}
+
+/// Up to three lines: `full_text`, `short_text`, `color`. Persistent blocks
+/// print a line and keep running, so this takes what has arrived and moves on.
+fn first_lines(rx: &mpsc::Receiver<String>, timeout: Duration) -> Vec<String> {
     let mut lines = Vec::new();
     if let Ok(l) = rx.recv_timeout(timeout) {
         lines.push(l);
@@ -198,11 +208,12 @@ fn run_block(name: &str, command: &str, pango: bool, timeout: Duration) -> Optio
             }
         }
     }
-    let _ = Command::new("kill")
-        .args(["-TERM", "--", &format!("-{}", child.id())])
-        .status();
-    let _ = child.kill();
-    let _ = child.wait();
+    lines
+}
+
+/// The block that a script's lines describe: the text (Pango tags removed
+/// for markup blocks) and the colour from line 3 or from the markup.
+fn block_from_lines(lines: &[String], pango: bool) -> Option<BarBlock> {
     let full = lines.first()?.trim();
     if full.is_empty() {
         return None;
@@ -291,6 +302,7 @@ mod tests {
     }
 
     #[test]
+    // Long function: one table of scripts and the block expected for each.
     fn blocks_take_first_lines_and_time_out() {
         let dir = std::env::temp_dir().join(format!("theme-studio-bar-{}", std::process::id()));
         std::fs::create_dir_all(dir.join("i3blocks")).unwrap();

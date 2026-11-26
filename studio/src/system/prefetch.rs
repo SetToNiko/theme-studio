@@ -223,21 +223,22 @@ pub fn estimate(cat: &Catalogue, category: &str) -> (usize, u64, u64) {
             continue;
         }
         out.0 += 1;
-        match e.source {
-            Source::Nerd { size, .. } => {
-                out.1 += size;
-                out.2 += NERD_KEPT;
-            }
-            _ => {
-                out.1 += GOOGLE_FILE;
-                out.2 += GOOGLE_FILE;
-            }
+        if let Source::Nerd { size, .. } = e.source {
+            out.1 += size;
+            out.2 += NERD_KEPT;
+        } else {
+            out.1 += GOOGLE_FILE;
+            out.2 += GOOGLE_FILE;
         }
     }
     out
 }
 
 /// Bytes, readably: "850 KB", "7.2 MB", "1.5 GB".
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "the number is only shown with one decimal; a size would need more than 2^52 bytes to lose precision"
+)]
 pub fn size(b: u64) -> String {
     match b {
         b if b >= 1_000_000_000 => format!("{:.1} GB", b as f64 / 1e9),

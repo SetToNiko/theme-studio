@@ -10,16 +10,39 @@ const SPECIAL: [&str; 5] = ["CJK", "Emoji", "Math", "Symbol", "Unifont"];
 
 /// Installed font families, sorted by name.
 pub fn installed_fonts() -> Vec<Installed> {
-    let run = |args: &[&str]| {
-        Command::new("fc-list")
-            .args(args)
-            .output()
-            .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
-            .unwrap_or_default()
-    };
-    // family → (name, monospaced, has a scalable file)
+    let fams = scan_families(&fc_list(&[
+        "--format",
+        "%{family[0]}\t%{spacing}\t%{fontformat}\n",
+    ]));
+    let nerd: HashSet<String> = fc_list(&[":charset=f115", "--format", "%{family[0]}\n"])
+        .lines()
+        .map(|l| l.trim().to_lowercase())
+        .collect();
+    fams.into_iter()
+        .map(|(lower, (family, mono, scalable))| Installed {
+            nerd: nerd.contains(&lower),
+            special: SPECIAL.iter().any(|s| family.contains(s)),
+            bitmap: !scalable,
+            family,
+            mono,
+        })
+        .collect()
+}
+
+/// The output of `fc-list` with these arguments (empty if it fails).
+fn fc_list(args: &[&str]) -> String {
+    Command::new("fc-list")
+        .args(args)
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+        .unwrap_or_default()
+}
+
+/// The families in `fc-list` output (family, spacing and file format, one
+/// font per line): lower-case name → (name, monospaced, has a scalable file).
+fn scan_families(text: &str) -> BTreeMap<String, (String, bool, bool)> {
     let mut fams: BTreeMap<String, (String, bool, bool)> = BTreeMap::new();
-    for line in run(&["--format", "%{family[0]}\t%{spacing}\t%{fontformat}\n"]).lines() {
+    for line in text.lines() {
         let mut parts = line.split('\t');
         let family = parts.next().unwrap_or("").trim();
         let spacing = parts.next().unwrap_or("").trim();
@@ -33,19 +56,7 @@ pub fn installed_fonts() -> Vec<Installed> {
         e.1 |= !spacing.is_empty();
         e.2 |= !matches!(format, "PCF" | "BDF");
     }
-    let nerd: HashSet<String> = run(&[":charset=f115", "--format", "%{family[0]}\n"])
-        .lines()
-        .map(|l| l.trim().to_lowercase())
-        .collect();
-    fams.into_iter()
-        .map(|(lower, (family, mono, scalable))| Installed {
-            nerd: nerd.contains(&lower),
-            special: SPECIAL.iter().any(|s| family.contains(s)),
-            bitmap: !scalable,
-            family,
-            mono,
-        })
-        .collect()
+    fams
 }
 
 #[cfg(test)]

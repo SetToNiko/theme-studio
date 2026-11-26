@@ -56,22 +56,10 @@ impl Pane {
             .context("opening a pty")?;
         let child = pair.slave.spawn_command(cmd)?;
         drop(pair.slave);
-        let mut reader = pair.master.try_clone_reader()?;
+        let reader = pair.master.try_clone_reader()?;
         let writer = pair.master.take_writer()?;
         let parser = Arc::new(Mutex::new(vt100::Parser::new(nz(rows), nz(cols), 0)));
-        let p = parser.clone();
-        std::thread::spawn(move || {
-            let mut buf = [0u8; 16384];
-            loop {
-                match reader.read(&mut buf) {
-                    Ok(0) | Err(_) => break,
-                    Ok(n) => {
-                        p.lock().unwrap().process(&buf[..n]);
-                        dirty.store(true, Ordering::Relaxed);
-                    }
-                }
-            }
-        });
+        feed_in_background(reader, parser.clone(), dirty);
         Ok(Pane {
             parser,
             master: pair.master,
@@ -121,7 +109,7 @@ impl Pane {
         let _ = self
             .writer
             .write_all(bytes)
-            .and_then(|_| self.writer.flush());
+            .and_then(|()| self.writer.flush());
     }
 
     pub(super) fn bracketed_paste(&self) -> bool {
@@ -148,42 +136,72 @@ impl Pane {
                 if cell.is_wide_continuation() {
                     continue;
                 }
-                let mut fg = colors.map(cell.fgcolor(), colors.fg);
-                let mut bg = colors.map(cell.bgcolor(), colors.bg);
-                if cell.inverse() {
-                    std::mem::swap(&mut fg, &mut bg);
-                }
-                if cell.dim() {
-                    fg = blend(fg, bg, 0.4);
-                }
-                let mut style = Style::new().fg(fg.color()).bg(bg.color());
-                if cell.bold() {
-                    style = style.add_modifier(Modifier::BOLD);
-                }
-                if cell.italic() {
-                    style = style.add_modifier(Modifier::ITALIC);
-                }
-                if cell.underline() {
-                    style = style.add_modifier(Modifier::UNDERLINED);
-                }
                 let sym = if cell.has_contents() {
                     cell.contents()
                 } else {
                     " "
                 };
-                out.set_symbol(sym).set_style(style);
+                out.set_symbol(sym).set_style(cell_style(cell, colors));
             }
         }
         if cursor && !screen.hide_cursor() {
-            let (cy, cx) = screen.cursor_position();
-            if cy < area.height
-                && cx < area.width
-                && let Some(out) = buf.cell_mut((area.x + cx, area.y + cy))
-            {
-                out.set_style(Style::new().fg(colors.bg.color()).bg(colors.fg.color()));
-            }
+            draw_cursor(buf, area, screen.cursor_position(), colors);
         }
     }
+}
+
+/// Marks the cursor cell (row, column) by swapping the colours.
+fn draw_cursor(buf: &mut Buffer, area: Rect, (cy, cx): (u16, u16), colors: &TermColors) {
+    if cy < area.height
+        && cx < area.width
+        && let Some(out) = buf.cell_mut((area.x + cx, area.y + cy))
+    {
+        out.set_style(Style::new().fg(colors.bg.color()).bg(colors.fg.color()));
+    }
+}
+
+/// Reads what the program draws, on a thread, into the screen `parser`;
+/// asks for a redraw each time. It ends when the program closes its output.
+fn feed_in_background(
+    mut reader: Box<dyn Read + Send>,
+    parser: Arc<Mutex<vt100::Parser>>,
+    dirty: Arc<AtomicBool>,
+) {
+    std::thread::spawn(move || {
+        let mut buf = [0u8; 16384];
+        loop {
+            match reader.read(&mut buf) {
+                Ok(0) | Err(_) => break,
+                Ok(n) => {
+                    parser.lock().unwrap().process(&buf[..n]);
+                    dirty.store(true, Ordering::Relaxed);
+                }
+            }
+        }
+    });
+}
+
+/// The colours and text modifiers of one screen cell.
+fn cell_style(cell: &vt100::Cell, colors: &TermColors) -> Style {
+    let mut fg = colors.map(cell.fgcolor(), colors.fg);
+    let mut bg = colors.map(cell.bgcolor(), colors.bg);
+    if cell.inverse() {
+        std::mem::swap(&mut fg, &mut bg);
+    }
+    if cell.dim() {
+        fg = blend(fg, bg, 0.4);
+    }
+    let mut style = Style::new().fg(fg.color()).bg(bg.color());
+    if cell.bold() {
+        style = style.add_modifier(Modifier::BOLD);
+    }
+    if cell.italic() {
+        style = style.add_modifier(Modifier::ITALIC);
+    }
+    if cell.underline() {
+        style = style.add_modifier(Modifier::UNDERLINED);
+    }
+    style
 }
 
 impl Drop for Pane {
@@ -192,8 +210,14 @@ impl Drop for Pane {
     }
 }
 
+/// The colour between `a` and `b`: `t` is how far from `a` (0.0 to 1.0).
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "t is between 0 and 1, so each channel lies between its two inputs, 0 to 255"
+)]
 fn blend(a: Rgb, b: Rgb, t: f64) -> Rgb {
-    let ch = |x: u8, y: u8| (x as f64 + (y as f64 - x as f64) * t).round() as u8;
+    let ch = |x: u8, y: u8| (f64::from(x) + (f64::from(y) - f64::from(x)) * t).round() as u8;
     Rgb(ch(a.0, b.0), ch(a.1, b.1), ch(a.2, b.2))
 }
 
@@ -205,19 +229,20 @@ pub struct TermColors {
     pub ansi: [Rgb; 16],
 }
 
+/// The palette keys for the 16 ANSI colours when the terminal map has none.
+const DEFAULT: [&str; 16] = [
+    "bg1", "red", "green", "yellow", "blue", "purple", "aqua", "fg0", "grey0", "red", "green",
+    "yellow", "blue", "purple", "aqua", "fg1",
+];
+
 impl TermColors {
     pub fn new(p: &Palette, map: Option<&TerminalMap>) -> TermColors {
         let k = |name: &str, fallback: &str| p.get(palette::key(name).unwrap_or(fallback));
         let mut ansi = [Rgb(0, 0, 0); 16];
-        const DEFAULT: [&str; 16] = [
-            "bg1", "red", "green", "yellow", "blue", "purple", "aqua", "fg0", "grey0", "red",
-            "green", "yellow", "blue", "purple", "aqua", "fg1",
-        ];
         for (i, slot) in ansi.iter_mut().enumerate() {
             let name = map
                 .and_then(|m| m.ansi.get(i))
-                .map(String::as_str)
-                .unwrap_or(DEFAULT[i]);
+                .map_or(DEFAULT[i], String::as_str);
             *slot = k(name, DEFAULT[i]);
         }
         TermColors {
@@ -338,6 +363,7 @@ mod tests {
 
     /// A real program in a pane: its ANSI colours come out as the palette's.
     #[test]
+    // Long function: one table of ANSI colour numbers and the palette colour expected for each.
     fn pane_maps_ansi_colours_to_the_palette() {
         let dirty = Arc::new(AtomicBool::new(false));
         let mut cmd = CommandBuilder::new("printf");

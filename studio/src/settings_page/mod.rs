@@ -67,6 +67,10 @@ pub enum HistFocus {
     Versions,
 }
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "independent flags of the page (tab strip focus, reloaded config, two difference views); an enum would not fit them"
+)]
 pub struct SettingsPage {
     pub tab: Tab,
     pub km_sel: usize,
@@ -81,7 +85,7 @@ pub struct SettingsPage {
     pub tabs_focused: bool,
     /// Unsaved Keymaps / Behaviour changes.
     pub draft: Option<crate::settings_page::draft::Draft>,
-    /// A config file was reloaded during a draft edit (see with_draft).
+    /// A config file was reloaded during a draft edit (see `with_draft`).
     pub reloaded: bool,
     /// Keymaps tab: closed groups.
     pub km_closed: std::collections::HashSet<Context>,
@@ -104,7 +108,7 @@ pub struct SettingsPage {
     )>,
     pub readme_doc: Option<(u16, crate::settings_page::readme::Doc)>,
     pub readme_scroll: usize,
-    /// Cached until something changes (see history::generation).
+    /// Cached until something changes (see `history::generation`).
     versions: Option<(VersionsKey, Vec<(PathBuf, SnapshotInfo)>)>,
     view: Option<(ViewKey, DiffView)>,
 }
@@ -140,8 +144,8 @@ impl Default for SettingsPage {
             tabs_focused: false,
             draft: None,
             reloaded: false,
-            km_closed: Default::default(),
-            bh_closed: Default::default(),
+            km_closed: std::collections::HashSet::default(),
+            bh_closed: std::collections::HashSet::default(),
             browse: None,
             browse_scroll: 0,
             browse_all: false,
@@ -262,64 +266,77 @@ fn show(v: &Value) -> String {
 /// The selected version against the file now: every entry, with what
 /// differs marked (`all`), or only the differences and the groups they're in.
 pub fn diff_lines(now: &Value, then: &Value, all: bool) -> Vec<DiffLine> {
-    fn walk(
-        now: Option<&Value>,
-        then: Option<&Value>,
-        depth: usize,
-        all: bool,
-        out: &mut Vec<DiffLine>,
-    ) {
-        let (Some(Value::Object(n)), Some(Value::Object(t))) = (now, then) else {
-            return;
-        };
-        let mut keys: Vec<&String> = t.keys().collect();
-        keys.extend(n.keys().filter(|k| !t.contains_key(*k)));
-        for k in keys {
-            let (a, b) = (n.get(k), t.get(k));
-            match (a, b) {
-                (Some(Value::Object(_)), Some(Value::Object(_))) => {
-                    let mut inner = Vec::new();
-                    walk(a, b, depth + 1, all, &mut inner);
-                    if all || !inner.is_empty() {
-                        out.push(DiffLine::Head {
-                            depth,
-                            key: k.clone(),
-                        });
-                        out.extend(inner);
-                    }
-                }
-                (Some(x), Some(y)) if x == y => {
-                    if all {
-                        out.push(DiffLine::Same {
-                            depth,
-                            key: k.clone(),
-                            value: show(x),
-                        })
-                    }
-                }
-                (Some(x), Some(y)) => out.push(DiffLine::Changed {
-                    depth,
-                    key: k.clone(),
-                    now: show(x),
-                    then: show(y),
-                }),
-                (None, Some(y)) => out.push(DiffLine::Added {
-                    depth,
-                    key: k.clone(),
-                    value: show(y),
-                }),
-                (Some(x), None) => out.push(DiffLine::Removed {
-                    depth,
-                    key: k.clone(),
-                    value: show(x),
-                }),
-                (None, None) => {}
+    let mut out = Vec::new();
+    diff_walk(Some(now), Some(then), 0, all, &mut out);
+    out
+}
+
+/// Adds the lines for the entries of two objects (the keys of `then`, then
+/// the keys only `now` has); anything that is not an object adds nothing.
+fn diff_walk(
+    now: Option<&Value>,
+    then: Option<&Value>,
+    depth: usize,
+    all: bool,
+    out: &mut Vec<DiffLine>,
+) {
+    let (Some(Value::Object(now_map)), Some(Value::Object(then_map))) = (now, then) else {
+        return;
+    };
+    let mut keys: Vec<&String> = then_map.keys().collect();
+    keys.extend(now_map.keys().filter(|key| !then_map.contains_key(*key)));
+    for key in keys {
+        diff_entry(key, now_map.get(key), then_map.get(key), depth, all, out);
+    }
+}
+
+/// Adds the line (or, for an object, the lines) for one key.
+// Long function: one match over the cases of a key (two objects, same, changed, added, removed).
+fn diff_entry(
+    key: &str,
+    old: Option<&Value>,
+    new: Option<&Value>,
+    depth: usize,
+    all: bool,
+    out: &mut Vec<DiffLine>,
+) {
+    let key = key.to_string();
+    match (old, new) {
+        (Some(Value::Object(_)), Some(Value::Object(_))) => {
+            let mut inner = Vec::new();
+            diff_walk(old, new, depth + 1, all, &mut inner);
+            if all || !inner.is_empty() {
+                out.push(DiffLine::Head { depth, key });
+                out.extend(inner);
             }
         }
+        (Some(x), Some(y)) if x == y => {
+            if all {
+                out.push(DiffLine::Same {
+                    depth,
+                    key,
+                    value: show(x),
+                });
+            }
+        }
+        (Some(x), Some(y)) => out.push(DiffLine::Changed {
+            depth,
+            key,
+            now: show(x),
+            then: show(y),
+        }),
+        (None, Some(y)) => out.push(DiffLine::Added {
+            depth,
+            key,
+            value: show(y),
+        }),
+        (Some(x), None) => out.push(DiffLine::Removed {
+            depth,
+            key,
+            value: show(x),
+        }),
+        (None, None) => {}
     }
-    let mut out = Vec::new();
-    walk(Some(now), Some(then), 0, all, &mut out);
-    out
 }
 
 /// The first and last rows the cursor can rest on.
@@ -330,28 +347,32 @@ pub(crate) fn ends(ok: &[bool]) -> (usize, usize) {
     )
 }
 
+/// The next row after `from` (up or down) where `ok` is true; `from`
+/// itself if there is none.
+fn next_row(ok: &[bool], from: usize, up: bool) -> usize {
+    let mut i = from;
+    loop {
+        if up {
+            if i == 0 {
+                return from;
+            }
+            i -= 1;
+        } else {
+            if i + 1 >= ok.len() {
+                return from;
+            }
+            i += 1;
+        }
+        if ok[i] {
+            return i;
+        }
+    }
+}
+
 /// Moves `sel` over the rows where `ok` is true (skipping titles and
 /// blank lines); false if `a` isn't a move.
 pub(crate) fn move_over(sel: &mut usize, ok: &[bool], a: Action) -> bool {
-    let next = |from: usize, up: bool| -> usize {
-        let mut i = from;
-        loop {
-            if up {
-                if i == 0 {
-                    return from;
-                }
-                i -= 1;
-            } else {
-                if i + 1 >= ok.len() {
-                    return from;
-                }
-                i += 1;
-            }
-            if ok[i] {
-                return i;
-            }
-        }
-    };
+    let next = |from: usize, up: bool| next_row(ok, from, up);
     let (first, last) = ends(ok);
     let s = (*sel).min(ok.len().saturating_sub(1));
     *sel = match a {
@@ -370,7 +391,9 @@ pub(crate) fn wrap(i: usize, d: i32, n: usize) -> usize {
     if n == 0 {
         0
     } else {
-        (i as i32 + d).rem_euclid(n as i32) as usize
+        let len = i64::try_from(n).unwrap_or(i64::MAX);
+        let from = i64::try_from(i).unwrap_or(0);
+        usize::try_from((from + i64::from(d)).rem_euclid(len)).unwrap_or(0)
     }
 }
 
@@ -380,6 +403,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    // Long function: two JSON documents and the lines expected for them, checked in one table.
     fn difference_view_shows_changes_in_place() {
         let now = json!({"version": 2, "palettes": {"a": {"red": "#111111", "bg0": "#000000"}, "gone": {"x": 1}}});
         let then = json!({"version": 2, "palettes": {"a": {"red": "#222222", "bg0": "#000000"}, "new": {"x": 2}}});
@@ -424,6 +448,6 @@ mod tests {
             key: "version".into(),
             value: "2".into()
         }));
-        assert!(diff_lines(&now, &now, false).is_empty());
+        assert_eq!(diff_lines(&now, &now, false), Vec::new());
     }
 }

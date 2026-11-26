@@ -16,7 +16,10 @@ pub fn read_list(path: &Path) -> Map<String, Value> {
 }
 
 pub fn write_list(path: &Path, fonts: Map<String, Value>) -> Result<()> {
-    crate::model::store::write_json_file(path, &json!({"version": 1, "fonts": fonts}))
+    let mut file = Map::new();
+    file.insert("version".to_string(), json!(1));
+    file.insert("fonts".to_string(), Value::Object(fonts));
+    crate::model::store::write_json_file(path, &Value::Object(file))
 }
 
 #[cfg(test)]
