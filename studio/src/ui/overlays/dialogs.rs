@@ -215,24 +215,34 @@ fn draw_choose_key(f: &mut Frame, app: &mut App, area: Rect, sel: usize, origina
             width: r.width.saturating_sub(2),
             height: 1,
         };
-        let mut line = Line::from(vec![
-            Span::styled(" ██ ", Style::new().fg(app.theme_colour(key))),
-            Span::styled(format!("{key:<20}"), Style::new()),
-            Span::styled(
-                if *key == original { " current" } else { "" },
-                Style::new().dark_gray(),
-            ),
-        ]);
-        if i == sel {
-            // the cursor on the text, not the swatch or padding
-            line = crate::app::state::hit::cursor_line(line, Style::new().reversed());
-        }
-        if app.hits.add(row, Target::OverlayRow(i)) && i != sel {
-            line = crate::app::state::hit::hover_line(line, 1);
-        }
-        lines.push(line);
+        lines.push(key_line(app, row, (i, key), (sel, original)));
     }
     popup(f, r, "Colour from the active theme", lines);
+}
+
+/// One row of the theme-key list: swatch, key name and a "current" note; cursor or hover style on top.
+fn key_line(
+    app: &mut App,
+    row: Rect,
+    (i, key): (usize, &str),
+    (sel, original): (usize, &str),
+) -> Line<'static> {
+    let mut line = Line::from(vec![
+        Span::styled(" ██ ", Style::new().fg(app.theme_colour(key))),
+        Span::styled(format!("{key:<20}"), Style::new()),
+        Span::styled(
+            if key == original { " current" } else { "" },
+            Style::new().dark_gray(),
+        ),
+    ]);
+    if i == sel {
+        // the cursor on the text, not the swatch or padding
+        line = crate::app::state::hit::cursor_line(line, Style::new().reversed());
+    }
+    if app.hits.add(row, Target::OverlayRow(i)) && i != sel {
+        line = crate::app::state::hit::hover_line(line, 1);
+    }
+    line
 }
 
 /// The "Name" box on the settings page.

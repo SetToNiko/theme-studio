@@ -17,10 +17,10 @@ use crate::ui::widgets::to_u16;
 /// Width of one column of the key list: wide enough to read.
 const COL_W: u16 = 52;
 
-/// The key list, in columns, generated from the keymap (`!90`/`!92` page through them).
+/// The key list, in columns, generated from the keymap (`←`/`→` page through them).
 pub(super) fn draw_help(f: &mut Frame, app: &App, area: Rect, page: usize) {
     let lines = help_lines(app);
-    // when the columns don't all fit, !90/!92 page
+    // when the columns do not all fit, ←/→ page
     let r = centered(
         area,
         area.width.saturating_sub(4).min(4 * COL_W + 2),
@@ -54,7 +54,7 @@ pub(super) fn draw_help(f: &mut Frame, app: &App, area: Rect, page: usize) {
 fn more_text(page: usize, fit: usize, total: usize) -> String {
     if total > fit {
         format!(
-            " columns {} 13{} of {} (!90/!92 for more) ",
+            " columns {}–{} of {} (←/→ for more) ",
             page + 1,
             (page + fit).min(total),
             total
@@ -119,4 +119,20 @@ fn context_rows(app: &App, ctx: Context) -> Vec<(Action, Vec<String>)> {
         }
     }
     rows
+}
+
+#[cfg(test)]
+mod tests {
+    use super::more_text;
+
+    #[test]
+    fn more_text_shows_the_visible_column_range() {
+        assert_eq!(more_text(0, 3, 7), " columns 1–3 of 7 (←/→ for more) ");
+        assert_eq!(more_text(5, 3, 7), " columns 6–7 of 7 (←/→ for more) ");
+    }
+
+    #[test]
+    fn more_text_is_empty_when_all_columns_fit() {
+        assert_eq!(more_text(0, 3, 3), "");
+    }
 }

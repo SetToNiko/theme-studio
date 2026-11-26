@@ -57,9 +57,34 @@ fn past_line(t: &Tournament) -> Line<'static> {
     ])
 }
 
+/// The "Pool size" row with its blank line before it, and the "Past tournaments" title when `has_past`.
+fn size_items(index: usize, size: usize, has_past: bool) -> Vec<SetupItem> {
+    let mut items: Vec<SetupItem> = Vec::new();
+    items.push((Line::raw(""), None));
+    let value = if size == 0 {
+        "all of them".to_string()
+    } else {
+        format!("{size} at random")
+    };
+    items.push((
+        Line::from(vec![
+            Span::raw(format!("   {:<26}", "Pool size")),
+            Span::styled(format!("‹ {value} ›"), Style::new().yellow()),
+        ]),
+        Some(index),
+    ));
+    if has_past {
+        items.push((Line::raw(""), None));
+        items.push((
+            Line::styled(" Past tournaments (d deletes)", Style::new().bold()),
+            None,
+        ));
+    }
+    items
+}
+
 /// All lines of the setup list (pools, pool size, past tournaments) and the
 /// number of clickable rows.
-// Long function: one match over the three setup row kinds, each kind adding its own lines in on-screen order.
 fn setup_items(app: &mut App) -> (Vec<SetupItem>, usize) {
     let rows = app.tour_setup_rows();
     let catalogue = app.dl.catalogue.is_some();
@@ -84,28 +109,7 @@ fn setup_items(app: &mut App) -> (Vec<SetupItem>, usize) {
                     Some(index),
                 ));
             }
-            SetupRow::Size => {
-                items.push((Line::raw(""), None));
-                let value = if size == 0 {
-                    "all of them".to_string()
-                } else {
-                    format!("{size} at random")
-                };
-                items.push((
-                    Line::from(vec![
-                        Span::raw(format!("   {:<26}", "Pool size")),
-                        Span::styled(format!("‹ {value} ›"), Style::new().yellow()),
-                    ]),
-                    Some(index),
-                ));
-                if !past.is_empty() {
-                    items.push((Line::raw(""), None));
-                    items.push((
-                        Line::styled(" Past tournaments (d deletes)", Style::new().bold()),
-                        None,
-                    ));
-                }
-            }
+            SetupRow::Size => items.extend(size_items(index, size, !past.is_empty())),
             SetupRow::Past(k) => items.push((past_line(&past[*k].1), Some(index))),
         }
     }
