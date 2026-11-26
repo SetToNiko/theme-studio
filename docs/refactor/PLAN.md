@@ -174,15 +174,26 @@ Completes: criteria 1, 2, project rule 2
 - [x] P3.9 Saving and opening: save, save_as, apply, open, guard, run_pending, save_before, the palette preview sync → `app/persist.rs` (second impl block). The fonts save helpers (fonts_save, fonts_save_as, fonts_open_overlay) and notify_saved, reset_history stay beside them in persist.rs (they use App overlay and messages state, and show the repeated save pattern) | Files: `app/mod.rs`, `app/persist.rs` | Target: T1, limits | Check: tests, behavior unchanged
 - [x] P3.10 Pane focus: focus_pane, move_pane, current_pane, picker enter/leave → `app/focus.rs`. run_resize stays with focus (it needs settings and current_pane) | Files: `app/mod.rs`, `app/focus.rs`, `app/tests.rs` (imports only) | Target: T1, limits | Check: tests
 - [x] P3.11 Colour rows and text input: colour_rows, group_of, move_row, sync_row, set_group_open, list_action, on_hex_key, on_paste, cycle_focus → `app/colours.rs` | Files: `app/mod.rs`, `app/colours.rs`, `app/tests.rs` (imports only) | Target: T1, limits | Check: tests
-- [x] P3.12 Nav enums: Page, Overlay, For, Side, Focus, Pending, ColourRow → `app/nav.rs` (replaces P4.1). Other modules import them from `app::nav` | Files: `app/mod.rs`, `app/nav.rs`, `app/tests.rs` (+ access-path edits in 16 files: app/{actions,colours,focus,mouse,overlay,persist}.rs, behaviour, fonts_dl, fonts_preview, fonts_ui, hit, prefetch, presets, settings, theme, tour_page, ui) | Target: T5 | Check: tests, `app/mod.rs` under 500 production lines, fewer cycles
+- [x] P3.12 Nav enums: Page, Overlay, For, Side, Focus, Pending, ColourRow → `app/nav.rs` (replaces P4.1). Other modules import them from `app::nav` | Files: `app/mod.rs`, `app/nav.rs`, `app/tests.rs` (+ access-path edits in 16 files: app/{actions,colours,focus,mouse,overlay,persist}.rs, behaviour, fonts_dl, fonts_preview, fonts_ui, hit, prefetch, presets, settings, theme, tour_page, ui) | Target: T5 | Check: tests, `app/mod.rs` under 500 production lines, fewer cycles (check "fewer cycles" not met: 2 groups, 22 modules; carried over to Phase 4)
 Inherited long functions in app/mod.rs (with_config, run, focus_pane, list_action, run_resize, on_hex_key) get their reason comments, or are divided, in the step that moves them.
 Completes: none (prepares criterion 5)
 
 ### Phase 4: Dependency direction
 - [x] P4.1 (replaced by P3.12, Phase 3 revision) Nav enums into `app/nav.rs`: Page, Overlay, For, Side, Pending, Focus | Files: `app/mod.rs`, `app/nav.rs`, `hit.rs`, `prefetch.rs`, `presets.rs` | Target: T5 | Check: tests, fewer cycles
-- [ ] P4.2 `base64` out of app into `encoding.rs` | Files: `app/mod.rs`, `encoding.rs`, `download.rs`, `main.rs` | Target: T5 | Check: download no longer imports app
-- [ ] P4.3 Theme data separate from theme actions: `theme.rs` keeps data, `app/theme_actions.rs` gets the App methods | Files: `theme.rs`, `app/theme_actions.rs`, `app/mod.rs` | Target: T1, T5 | Check: theme no longer imports app
-- [ ] P4.4 Cycle check: cargo-modules acyclic check in the flake checks, with the current cycle count as a ratchet | Files: `flake.nix`, `scripts/dev/lint-counts.sh`, `docs/refactor/lint-baseline.txt` | Target: T5 | Check: `nix flake check`
+- [ ] P4.2 nav.rs as a leaf: move `Capture`, `Naming`, `Deferred` (settings.rs) and `BhRow` (behaviour.rs) into app/nav.rs as plain enums, so nav imports nothing from the cycle | Files: `app/nav.rs`, `settings.rs`, `behaviour.rs` (+ access-path edits) | Target: T5 | Check: tests; module-cycles: nav, hit, prefetch leave the big group
+- [ ] P4.3 The run loop gets the draw function: App no longer calls `crate::ui::draw` (pass it in, or move the event loop to main.rs) | Files: `app/mod.rs`, `main.rs` | Target: T5 (direction ui -> app) | Check: tests; the drawing modules leave the big group
+- [ ] P4.4 `base64` out of app into a leaf module (or into download.rs, its only user) | Files: `app/mod.rs`, `download.rs` (+ new file) | Target: T5 | Check: download no longer imports app
+- [ ] P4.5 prefetch: its `impl App` block moves to `app/prefetch_actions.rs` | Files: `prefetch.rs`, new app file, `app/mod.rs` | Target: T5 | Check: prefetch no longer imports App
+- [ ] P4.6 presets: `impl App` block into app/ | Target: T5 | Check: presets no longer imports App
+- [ ] P4.7 draft: `impl App` block into app/ | Target: T5 | Check: draft no longer imports App
+- [ ] P4.8 theme: theme data stays in theme.rs, the `impl App` block (theme actions) moves into app/ | Target: T1, T5 | Check: theme no longer imports App
+- [ ] P4.9 behaviour: `impl App` block into app/ | Target: T5
+- [ ] P4.10 fonts_dl: `impl App` block into app/ | Target: T5
+- [ ] P4.11 fonts_preview: `impl App` block into app/ | Target: T5
+- [ ] P4.12 tour_page: `impl App` block into app/ | Target: T5
+- [ ] P4.13 settings: `impl App` block into app/ | Target: T5 | Check: no feature module imports App; the big group is gone
+- [ ] P4.14 Cycle ratchet: `scripts/dev/module-cycles.py` in the flake checks, with the count after P4.13 as the baseline (it must never go up) | Files: `flake.nix`, `scripts/dev/module-cycles.py`, `docs/refactor/lint-baseline.txt` | Target: T5 | Check: `nix flake check`
+For P4.5 to P4.13: one module per step; the app/mod.rs map (its `//!`) is updated in each step. Each step reports module-cycles before and after.
 Completes: none (cycle count decreases, measured)
 
 ### Phase 5: Large files and folders
@@ -253,6 +264,7 @@ Completes: criterion 6
 | 3 | Divide the rest of app/mod.rs (1,294 lines) by concern | ACCEPT: P3.9 to P3.12; P4.1 replaced by P3.12 | Reviewer: right division for a junior developer; the nav enums step is required to reach 500 lines. |
 | 3 | Action::group() in keymap.rs | DEFER to P5.4 | The flat match fixes the audience problem now; keymap.rs changes in P5.4 anyway. |
 | 3 | TopFocus enum for the two top-row focus flags | DEFER to Phase 6 | Small; check first that both are never true. |
+| 3 | Break the big cycle group: nav as a leaf, draw function passed in, impl App blocks of the feature modules into app/ | ACCEPT: Phase 4 replaced (P4.2 to P4.14) | P3.12 moved the nav enums but the cycles did not shrink (2 groups, 22 modules): Overlay names settings and behaviour types, and the feature modules impl App. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
