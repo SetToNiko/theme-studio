@@ -145,34 +145,7 @@ fn preview_file(dir: &Path) -> Option<PathBuf> {
 pub fn fetch_preview(e: Entry, tx: Sender<Msg>) {
     std::thread::spawn(move || {
         let dir = preview_cache_dir().join(&e.id);
-        let result = (|| -> Result<String> {
-            if let Some(f) = preview_file(&dir) {
-                return family_of(&f).ok_or_else(|| anyhow!("no family name in {}", f.display()));
-            }
-            std::fs::create_dir_all(&dir)?;
-            match &e.source {
-                Source::Nerd { .. } => {
-                    install_nerd(&e, &dir, &tx)?;
-                    keep_regular_only(&dir);
-                }
-                _ => {
-                    // the regular weight, else the nearest
-                    let w = e
-                        .weights
-                        .iter()
-                        .min_by_key(|w| (**w as i64 - 400).abs())
-                        .copied()
-                        .unwrap_or(400);
-                    let url = format!(
-                        "https://cdn.jsdelivr.net/fontsource/fonts/{}@latest/{}-{w}-normal.ttf",
-                        e.id, e.subset
-                    );
-                    fetch(&url, &dir.join(format!("{}-{w}.ttf", e.id)), |_| {})?;
-                }
-            }
-            let f = preview_file(&dir).ok_or_else(|| anyhow!("no font file came with it"))?;
-            family_of(&f).ok_or_else(|| anyhow!("no family name in {}", f.display()))
-        })();
+        let result = fetch_preview_family(&e, &dir, &tx);
         if result.is_err() {
             let _ = std::fs::remove_dir_all(&dir);
         }
@@ -181,6 +154,34 @@ pub fn fetch_preview(e: Entry, tx: Sender<Msg>) {
             result: result.map_err(|e| format!("{e:#}")),
         });
     });
+}
+
+/// Gets the preview font into `dir` (unless it is there) and returns its
+/// family name.
+fn fetch_preview_family(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<String> {
+    if let Some(f) = preview_file(dir) {
+        return family_of(&f).ok_or_else(|| anyhow!("no family name in {}", f.display()));
+    }
+    std::fs::create_dir_all(dir)?;
+    if let Source::Nerd { .. } = &e.source {
+        install_nerd(e, dir, tx)?;
+        keep_regular_only(dir);
+    } else {
+        // the regular weight, else the nearest
+        let w = e
+            .weights
+            .iter()
+            .min_by_key(|w| w.abs_diff(400))
+            .copied()
+            .unwrap_or(400);
+        let url = format!(
+            "https://cdn.jsdelivr.net/fontsource/fonts/{}@latest/{}-{w}-normal.ttf",
+            e.id, e.subset
+        );
+        fetch(&url, &dir.join(format!("{}-{w}.ttf", e.id)), |_| {})?;
+    }
+    let f = preview_file(dir).ok_or_else(|| anyhow!("no font file came with it"))?;
+    family_of(&f).ok_or_else(|| anyhow!("no family name in {}", f.display()))
 }
 
 /// An installed font's family name, read from its files in the background

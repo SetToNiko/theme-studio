@@ -130,6 +130,10 @@ impl DlPage {
 }
 
 /// Bytes as megabytes.
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "only shown with one decimal; a file would need more than 2^52 bytes to lose precision"
+)]
 pub fn mb(b: u64) -> String {
     format!("{:.1} MB", b as f64 / 1_000_000.0)
 }

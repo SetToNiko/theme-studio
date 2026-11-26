@@ -20,7 +20,7 @@ pub const ROLE_USE: [&str; 3] = [
 ];
 
 /// A role's entry in a preset or an offset file: the new key, else the old.
-fn role_entry<'a>(obj: &'a Map<String, Value>, role: usize) -> Option<&'a Value> {
+fn role_entry(obj: &Map<String, Value>, role: usize) -> Option<&Value> {
     obj.get(ROLES[role]).or_else(|| obj.get(OLD_ROLES[role]))
 }
 
@@ -83,7 +83,9 @@ impl Preset {
                 size: f
                     .get("size")
                     .and_then(Value::as_u64)
-                    .map_or(DEFAULT_SIZES[role], |s| s as u32),
+                    .map_or(DEFAULT_SIZES[role], |s| {
+                        u32::try_from(s).unwrap_or(DEFAULT_SIZES[role])
+                    }),
             })
         };
         let mono = font(0).ok_or_else(|| anyhow!("no monospace font"))?;
@@ -269,6 +271,10 @@ impl FontStore {
     }
 
     /// The preset font-switch.sh last applied.
+    #[expect(
+        clippy::unused_self,
+        reason = "the store is the one handle for fonts.json and its sibling files; main.rs calls this on it"
+    )]
     pub fn active_name(&self) -> Option<String> {
         let s = std::fs::read_to_string(crate::model::paths::fonts_dir().join("current")).ok()?;
         Some(s.trim().to_string()).filter(|s| !s.is_empty())
@@ -286,7 +292,7 @@ impl FontStore {
         let get = |r: usize| {
             role_entry(&obj, r)
                 .and_then(Value::as_i64)
-                .map(|n| n as i32)
+                .and_then(|n| i32::try_from(n).ok())
         };
         let ui = get(1).unwrap_or(0);
         [get(0).unwrap_or(0), ui, get(2).unwrap_or(ui)]
@@ -318,7 +324,7 @@ mod tests {
             ["monospace", "proportional", "icons", "note"]
         );
         // written without sizes (they're the theme's): the same fonts
-        assert!(out.values().filter_map(|v| v.get("size")).next().is_none());
+        assert!(out.values().all(|v| v.get("size").is_none()));
         assert!(Preset::from_json(&out).unwrap().same_fonts(&p));
     }
 
@@ -356,6 +362,7 @@ mod tests {
     }
 
     #[test]
+    // Long function: one scenario in order (write version 2 files, migrate, check, migrate again); each step needs the files of the step before.
     fn version_2_migrates_presets_and_host_offsets_once() {
         let dir =
             std::env::temp_dir().join(format!("theme-studio-fonts-v3-{}", std::process::id()));

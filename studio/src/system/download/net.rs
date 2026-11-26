@@ -51,10 +51,10 @@ pub(super) fn fetch(url: &str, out: &Path, mut progress: impl FnMut(u64)) -> Res
                 }
                 bail!("{url}: {}", err.trim());
             }
-            progress(std::fs::metadata(out).map(|m| m.len()).unwrap_or(0));
+            progress(std::fs::metadata(out).map_or(0, |m| m.len()));
             return Ok(());
         }
-        progress(std::fs::metadata(out).map(|m| m.len()).unwrap_or(0));
+        progress(std::fs::metadata(out).map_or(0, |m| m.len()));
         std::thread::sleep(Duration::from_millis(150));
     }
 }
@@ -66,7 +66,7 @@ pub(super) fn cached(name: &str, url: &str) -> Result<Value> {
         .and_then(|m| m.modified())
         .ok()
         .and_then(|t| SystemTime::now().duration_since(t).ok())
-        .is_some_and(|age| age < Duration::from_secs(7 * 24 * 3600));
+        .is_some_and(|age| age < Duration::from_hours(7 * 24));
     let read =
         || -> Option<Value> { serde_json::from_str(&std::fs::read_to_string(&path).ok()?).ok() };
     if fresh && let Some(v) = read() {

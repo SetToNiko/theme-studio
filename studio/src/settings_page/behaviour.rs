@@ -45,6 +45,7 @@ fn look_rows(id: LookId) -> [BhRow; 7] {
     ]
 }
 
+// Long function: the rows of the Behaviour tab in screen order, as one flat list; splitting it would hide the order.
 pub fn behaviour_rows() -> Vec<BhRow> {
     use BhRow as R;
     let mut v = vec![R::Header("Keys"), R::Leader];
@@ -365,6 +366,7 @@ mod tests {
     }
 
     #[test]
+    // Long function: one scenario in order on one page; each step needs the state of the step before.
     fn choose_key_navigation_clamps_at_both_ends() {
         let mut app = test_app("choose-clamp");
         let keys = theme_keys();

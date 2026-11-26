@@ -1,7 +1,7 @@
 //! The fonts column of the Main page: font presets (fonts.json, the data folder;
 //! applied by font-switch) with their Monospace, Proportional and Icons
 //! roles, the installed fonts (fontconfig), and the sample image
-//! (ImageMagick + Pango, shown with the kitty graphics protocol).
+//! (`ImageMagick` + `Pango`, shown with the kitty graphics protocol).
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
@@ -43,7 +43,7 @@ pub struct FontsTab {
     pub focus: FontFocus,
     pub installed: Vec<Installed>,
     pub tree: Vec<Node>,
-    /// Open groups, by path ("JetBrains Mono", "JetBrains Mono/Nerd Font").
+    /// Open groups, by path (`JetBrains Mono`, `JetBrains Mono/Nerd Font`).
     pub expanded: HashSet<String>,
     pub search: String,
     pub filters: Filters,
@@ -66,23 +66,14 @@ pub struct FontsTab {
 }
 
 impl FontsTab {
+    // Long function: one struct literal that sets every field of the tab.
     pub fn new(data: &Path, share: &Path, draft_dir: &Path, dirty: Arc<AtomicBool>) -> FontsTab {
         let store = FontStore {
             dir: data.to_path_buf(),
             share: share.to_path_buf(),
         };
         let active = store.active_name();
-        let (name, preset, is_new, load_error) = match active.as_deref().map(|n| (n, store.load(n)))
-        {
-            Some((n, Ok(p))) => (n.to_string(), p, false, None),
-            Some((n, Err(e))) => (
-                n.to_string(),
-                Preset::default_preset(),
-                true,
-                Some(format!("{e:#}")),
-            ),
-            None => ("untitled".to_string(), Preset::default_preset(), true, None),
-        };
+        let (name, preset, is_new, load_error) = load_active(&store, active.as_deref());
         FontsTab {
             store,
             name,
@@ -130,7 +121,7 @@ impl FontsTab {
 
     /// Size actually used on this machine (base + host offset).
     pub fn effective_size(&self, role: usize, base: u32) -> u32 {
-        (base as i32 + self.offsets[role]).max(1) as u32
+        u32::try_from((i64::from(base) + i64::from(self.offsets[role])).max(1)).unwrap_or(u32::MAX)
     }
 
     /// The rows the list shows: the grouped tree (open groups expanded) when
@@ -145,55 +136,8 @@ impl FontsTab {
                 .map(|index| Row::Font { depth: 0, index })
                 .collect();
         }
-        fn walk(t: &FontsTab, nodes: &[Node], depth: usize, parent: &str, out: &mut Vec<Row>) {
-            for n in nodes {
-                match n {
-                    Node::Leaf(i) => {
-                        if t.filters.allows(&t.installed[*i]) {
-                            out.push(Row::Font { depth, index: *i });
-                        }
-                    }
-                    Node::Group { name, children } => {
-                        let count = n
-                            .leaves()
-                            .into_iter()
-                            .filter(|&i| t.filters.allows(&t.installed[i]))
-                            .count();
-                        if count == 0 {
-                            continue;
-                        }
-                        // one font left by the filters: the font, not a group
-                        if count == 1
-                            && let Some(i) = n
-                                .leaves()
-                                .into_iter()
-                                .find(|&i| t.filters.allows(&t.installed[i]))
-                        {
-                            out.push(Row::Font { depth, index: i });
-                            continue;
-                        }
-                        let path = if parent.is_empty() {
-                            name.clone()
-                        } else {
-                            format!("{parent}/{name}")
-                        };
-                        let expanded = t.expanded.contains(&path);
-                        out.push(Row::Group {
-                            depth,
-                            path: path.clone(),
-                            name: name.clone(),
-                            expanded,
-                            count,
-                        });
-                        if expanded {
-                            walk(t, children, depth + 1, &path, out);
-                        }
-                    }
-                }
-            }
-        }
         let mut out = Vec::new();
-        walk(self, &self.tree, 0, "", &mut out);
+        walk_rows(self, &self.tree, 0, "", &mut out);
         out
     }
 
@@ -212,7 +156,9 @@ impl FontsTab {
         if matches!(self.focus, FontFocus::List | FontFocus::Search)
             && let Some(i) = self.highlighted()
         {
-            fonts[self.slot].family = self.installed[i].family.clone();
+            fonts[self.slot]
+                .family
+                .clone_from(&self.installed[i].family);
         }
         fonts
     }
@@ -319,7 +265,9 @@ impl FontsTab {
 
     pub fn scroll(&mut self, d: i32) {
         let n = self.rows().len();
-        self.list_sel = (self.list_sel as i32 + d).clamp(0, n.saturating_sub(1) as i32) as usize;
+        let current = i64::try_from(self.list_sel).unwrap_or(0);
+        let last = i64::try_from(n.saturating_sub(1)).unwrap_or(0);
+        self.list_sel = usize::try_from((current + i64::from(d)).clamp(0, last)).unwrap_or(0);
         self.focus = FontFocus::List;
     }
 
@@ -381,7 +329,9 @@ impl FontsTab {
 
     fn pick(&mut self) {
         if let Some(i) = self.highlighted() {
-            self.preset.fonts[self.slot].family = self.installed[i].family.clone();
+            self.preset.fonts[self.slot]
+                .family
+                .clone_from(&self.installed[i].family);
             self.focus = FontFocus::Slots;
             // the app saves and applies it (fonts/pick.rs)
             self.end_pick();
@@ -393,7 +343,7 @@ impl FontsTab {
     /// it once the keys have been still for a moment (`sized_at`).
     pub fn resize(&mut self, d: i32) {
         let f = &mut self.preset.fonts[self.slot];
-        f.size = (f.size as i32 + d).clamp(4, 72) as u32;
+        f.size = u32::try_from((i64::from(f.size) + i64::from(d)).clamp(4, 72)).unwrap_or(72);
         self.sized_at = Some(std::time::Instant::now());
     }
 
@@ -443,52 +393,136 @@ impl FontsTab {
     /// Runs an action in the roles or the font list; returns false if it
     /// means nothing there.
     pub fn act(&mut self, a: Action) -> bool {
-        let n = self.rows().len();
-        let last = n.saturating_sub(1);
         match self.focus {
-            FontFocus::Search | FontFocus::Sample => return false,
-            FontFocus::List => match a {
-                Action::Down => self.list_sel = (self.list_sel + 1).min(last),
-                Action::Up => self.list_sel = self.list_sel.saturating_sub(1),
-                Action::Top => self.list_sel = 0,
-                Action::Bottom => self.list_sel = last,
-                Action::PageDown => self.list_sel = (self.list_sel + 10).min(last),
-                Action::PageUp => self.list_sel = self.list_sel.saturating_sub(10),
-                Action::Search => self.focus = FontFocus::Search,
-                Action::Right => match self.rows().get(self.list_sel) {
-                    Some(Row::Group {
-                        expanded: false, ..
-                    }) => self.set_expanded(true),
-                    // already open: step into it
-                    Some(Row::Group { expanded: true, .. }) => {
-                        self.list_sel = (self.list_sel + 1).min(last)
-                    }
-                    _ => {}
-                },
-                Action::Left => self.go_up(),
-                Action::Confirm => self.activate(),
-                Action::Back => {
-                    self.end_pick();
-                    self.focus = FontFocus::Slots
+            FontFocus::Search | FontFocus::Sample => false,
+            FontFocus::List => self.act_in_list(a),
+            FontFocus::Slots => self.act_in_slots(a),
+        }
+    }
+
+    /// An action in the font list; returns false if it means nothing there.
+    // Long function: one match over the list actions, which share the row count and the cursor.
+    fn act_in_list(&mut self, a: Action) -> bool {
+        let last = self.rows().len().saturating_sub(1);
+        match a {
+            Action::Down => self.list_sel = (self.list_sel + 1).min(last),
+            Action::Up => self.list_sel = self.list_sel.saturating_sub(1),
+            Action::Top => self.list_sel = 0,
+            Action::Bottom => self.list_sel = last,
+            Action::PageDown => self.list_sel = (self.list_sel + 10).min(last),
+            Action::PageUp => self.list_sel = self.list_sel.saturating_sub(10),
+            Action::Search => self.focus = FontFocus::Search,
+            Action::Right => match self.rows().get(self.list_sel) {
+                Some(Row::Group {
+                    expanded: false, ..
+                }) => self.set_expanded(true),
+                // already open: step into it
+                Some(Row::Group { expanded: true, .. }) => {
+                    self.list_sel = (self.list_sel + 1).min(last);
                 }
-                Action::Filter(c) => {
-                    self.filters.toggle(c);
-                    self.clamp_sel();
-                }
-                _ => return false,
+                _ => {}
             },
-            FontFocus::Slots => match a {
-                Action::Down => self.slot = (self.slot + 1).min(2),
-                Action::Up => self.slot = self.slot.saturating_sub(1),
-                Action::Right | Action::SizeUp => self.resize(1),
-                Action::Left | Action::SizeDown => self.resize(-1),
-                Action::RightBig => self.resize(4),
-                Action::LeftBig => self.resize(-4),
-                Action::Confirm | Action::PickFont => self.start_pick(),
-                _ => return false,
-            },
+            Action::Left => self.go_up(),
+            Action::Confirm => self.activate(),
+            Action::Back => {
+                self.end_pick();
+                self.focus = FontFocus::Slots;
+            }
+            Action::Filter(c) => {
+                self.filters.toggle(c);
+                self.clamp_sel();
+            }
+            _ => return false,
         }
         true
+    }
+
+    /// An action on the roles; returns false if it means nothing there.
+    fn act_in_slots(&mut self, a: Action) -> bool {
+        match a {
+            Action::Down => self.slot = (self.slot + 1).min(2),
+            Action::Up => self.slot = self.slot.saturating_sub(1),
+            Action::Right | Action::SizeUp => self.resize(1),
+            Action::Left | Action::SizeDown => self.resize(-1),
+            Action::RightBig => self.resize(4),
+            Action::LeftBig => self.resize(-4),
+            Action::Confirm | Action::PickFont => self.start_pick(),
+            _ => return false,
+        }
+        true
+    }
+}
+
+/// The active preset from the store: its name, its fonts, whether it is
+/// new (not saved yet), and why it could not be loaded, if so. Without an
+/// active preset, or when it fails to load, the default one stands in.
+fn load_active(store: &FontStore, active: Option<&str>) -> (String, Preset, bool, Option<String>) {
+    match active.map(|n| (n, store.load(n))) {
+        Some((n, Ok(p))) => (n.to_string(), p, false, None),
+        Some((n, Err(e))) => (
+            n.to_string(),
+            Preset::default_preset(),
+            true,
+            Some(format!("{e:#}")),
+        ),
+        None => ("untitled".to_string(), Preset::default_preset(), true, None),
+    }
+}
+
+/// Adds the rows of `nodes` (and of their open groups) to `out`.
+fn walk_rows(t: &FontsTab, nodes: &[Node], depth: usize, parent: &str, out: &mut Vec<Row>) {
+    for n in nodes {
+        match n {
+            Node::Leaf(i) => {
+                if t.filters.allows(&t.installed[*i]) {
+                    out.push(Row::Font { depth, index: *i });
+                }
+            }
+            Node::Group { .. } => group_rows(t, n, depth, parent, out),
+        }
+    }
+}
+
+/// The path of a group: its name under the path of its parent.
+fn group_path(parent: &str, name: &str) -> String {
+    if parent.is_empty() {
+        name.to_string()
+    } else {
+        format!("{parent}/{name}")
+    }
+}
+
+/// Adds the rows of one group: nothing when the filters leave no font, the
+/// font itself when they leave one, else the group's row and (if it is
+/// open) the rows inside it.
+fn group_rows(t: &FontsTab, group: &Node, depth: usize, parent: &str, out: &mut Vec<Row>) {
+    let Node::Group { name, children } = group else {
+        return;
+    };
+    let allowed: Vec<usize> = group
+        .leaves()
+        .into_iter()
+        .filter(|&i| t.filters.allows(&t.installed[i]))
+        .collect();
+    // one font left by the filters: the font, not a group
+    if let [index] = allowed[..] {
+        out.push(Row::Font { depth, index });
+        return;
+    }
+    if allowed.is_empty() {
+        return;
+    }
+    let path = group_path(parent, name);
+    let expanded = t.expanded.contains(&path);
+    out.push(Row::Group {
+        depth,
+        path: path.clone(),
+        name: name.clone(),
+        expanded,
+        count: allowed.len(),
+    });
+    if expanded {
+        walk_rows(t, children, depth + 1, &path, out);
     }
 }
 
@@ -576,6 +610,7 @@ mod tests {
     }
 
     #[test]
+    // Long function: one scenario in order (open, filter, search, pick) on one tab; each step needs the state of the step before.
     fn grouped_list_opens_filters_searches_and_picks() {
         let mut t = tab_with(vec![
             font("DejaVu Sans", false, false),

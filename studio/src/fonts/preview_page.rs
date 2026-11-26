@@ -1,7 +1,7 @@
 //! The Fonts page's preview: the highlighted font drawn before installing
 //! it. Google / Fontsource fonts are fetched (one small file) after a short
 //! pause on them; Nerd Fonts on request (`p`), since they come as archives.
-//! Drawn by ImageMagick + Pango with a fontconfig setup that includes the
+//! Drawn by `ImageMagick` + `Pango` with a fontconfig setup that includes the
 //! preview cache (system/download.rs), in the theme's colours.
 
 use std::collections::{HashMap, HashSet};
@@ -67,7 +67,7 @@ impl FontPreview {
             last: None,
             since: Instant::now(),
             area: (60, 20),
-            settle: Default::default(),
+            settle: crate::model::settle::Settle::default(),
         }
     }
 

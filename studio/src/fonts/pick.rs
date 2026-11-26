@@ -7,6 +7,7 @@
 //! straight away.
 
 use crate::fonts::FontsTab;
+use crate::fonts::filters::{NerdKind, Spacing};
 use crate::fonts::types::{FontFocus, Installed, ROLE_NAMES, ROLE_NEEDS, Row, fits};
 
 /// Letters and digits only, lower case: how family names are compared.
@@ -17,14 +18,13 @@ pub fn norm(s: &str) -> String {
         .to_lowercase()
 }
 
-/// A family's name without a Nerd Font suffix ("GeistMono Nerd Font Mono"
-/// → "GeistMono").
+/// A family's name without a Nerd Font suffix (`GeistMono Nerd Font Mono`
+/// → `GeistMono`).
 pub fn base_family(family: &str) -> &str {
     ["Nerd Font Mono", "Nerd Font Propo", "Nerd Font"]
         .iter()
         .find_map(|s| family.strip_suffix(s))
-        .map(str::trim_end)
-        .unwrap_or(family)
+        .map_or(family, str::trim_end)
 }
 
 /// The faces roles need, for messages: "Nerd Font Mono or proportional face".
@@ -61,8 +61,8 @@ impl FontsTab {
             self.saved_filters = Some(self.filters);
         }
         let mut f = self.saved_filters.unwrap_or(self.filters);
-        f.spacing = Default::default();
-        f.nerd = Default::default();
+        f.spacing = Spacing::default();
+        f.nerd = NerdKind::default();
         f.need = Some(self.slot);
         self.filters = f;
         self.picking = Some(self.slot);
@@ -122,21 +122,26 @@ impl FontsTab {
         Ok(self.fill_roles(&group, &[role]))
     }
 
-    /// Fills `roles` from a family (a font tree group or a family name),
-    /// each with its fitting face (the shortest name of those, the plain
-    /// one); a role it has none for keeps its font.
-    pub fn fill_roles(&mut self, group: &str, roles: &[usize]) -> Fill {
-        // the group, and fonts named like it (the font tree can put a
-        // family's Nerd Font variants in a group of their own)
+    /// The installed fonts of a family: the group, and fonts named like it
+    /// (the font tree can put a family's Nerd Font variants in a group of
+    /// their own). Bitmap fonts are left out.
+    fn family_members(&self, group: &str) -> Vec<Installed> {
         let key = norm(base_family(group));
-        let members: Vec<&Installed> = (0..self.installed.len())
+        (0..self.installed.len())
             .filter(|&i| {
                 self.path_to(i).first().map(String::as_str) == Some(group)
                     || (!key.is_empty() && norm(&self.installed[i].family).starts_with(&key))
             })
-            .map(|i| &self.installed[i])
+            .map(|i| self.installed[i].clone())
             .filter(|f| !f.bitmap)
-            .collect();
+            .collect()
+    }
+
+    /// Fills `roles` from a family (a font tree group or a family name),
+    /// each with its fitting face (the shortest name of those, the plain
+    /// one); a role it has none for keeps its font.
+    pub fn fill_roles(&mut self, group: &str, roles: &[usize]) -> Fill {
+        let members = self.family_members(group);
         let mut fill = Fill {
             group: group.to_string(),
             ..Default::default()
@@ -148,34 +153,37 @@ impl FontsTab {
                 .iter()
                 .filter(|f| fits(role, f))
                 .map(|f| f.family.clone())
-                .min_by_key(|n| n.len());
-            match pick {
-                Some(family) => {
-                    if self.preset.fonts[role].family != family {
-                        fill.changed = true;
-                    }
-                    self.preset.fonts[role].family = family.clone();
-                    done.push(format!("{}: {family}", ROLE_NAMES[role]));
+                .min_by_key(String::len);
+            if let Some(family) = pick {
+                if self.preset.fonts[role].family != family {
+                    fill.changed = true;
                 }
-                None => {
-                    kept.push(ROLE_NAMES[role]);
-                    fill.missing.push(role);
-                }
+                self.preset.fonts[role].family.clone_from(&family);
+                done.push(format!("{}: {family}", ROLE_NAMES[role]));
+            } else {
+                kept.push(ROLE_NAMES[role]);
+                fill.missing.push(role);
             }
         }
         self.end_pick();
         self.focus = FontFocus::Slots;
         self.picked = fill.changed;
-        let needs = faces(&fill.missing);
-        fill.msg = match (done.is_empty(), kept.is_empty()) {
-            (_, true) => format!("From {group}: {}", done.join(", ")),
-            (true, false) => format!("{group} has no {needs} ({} kept)", kept.join(", ")),
-            (false, false) => format!(
-                "From {group}: {} ({} kept: no {needs})",
-                done.join(", "),
-                kept.join(", ")
-            ),
-        };
+        fill.msg = fill_message(group, &done, &kept, &fill.missing);
         fill
+    }
+}
+
+/// The message after a fill: what came from the family, and which roles
+/// kept their font because the family has no fitting face.
+fn fill_message(group: &str, done: &[String], kept: &[&str], missing: &[usize]) -> String {
+    let needs = faces(missing);
+    match (done.is_empty(), kept.is_empty()) {
+        (_, true) => format!("From {group}: {}", done.join(", ")),
+        (true, false) => format!("{group} has no {needs} ({} kept)", kept.join(", ")),
+        (false, false) => format!(
+            "From {group}: {} ({} kept: no {needs})",
+            done.join(", "),
+            kept.join(", ")
+        ),
     }
 }

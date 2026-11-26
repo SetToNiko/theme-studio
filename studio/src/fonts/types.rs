@@ -6,10 +6,14 @@ pub const ROLES: [&str; 3] = ["monospace", "proportional", "icons"];
 
 /// The roles on screen.
 pub const ROLE_NAMES: [&str; 3] = ["Monospace", "Proportional", "Icons"];
-/// What each role's font has to be (fits() below checks it).
+/// What each role's font has to be (`fits()` below checks it).
 pub const ROLE_NEEDS: [&str; 3] = ["a Nerd Font Mono", "proportional", "a Nerd Font Propo"];
 
 /// An installed font family, as fontconfig reports it.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "four independent yes/no facts that fontconfig reports about one family"
+)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct Installed {
     pub family: String,

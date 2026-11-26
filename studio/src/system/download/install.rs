@@ -68,6 +68,35 @@ fn fetch_all(
     Ok(())
 }
 
+/// The .ttf files of a GitHub folder listing: name, download URL, size.
+fn ttf_files(list: &Value) -> Vec<(String, String, u64)> {
+    let mut files = Vec::new();
+    for f in list.as_array().into_iter().flatten() {
+        let Some(name) = f.get("name").and_then(Value::as_str) else {
+            continue;
+        };
+        if !is_ttf(name) {
+            continue;
+        }
+        let Some(url) = f.get("download_url").and_then(Value::as_str) else {
+            continue;
+        };
+        let size = f.get("size").and_then(Value::as_u64).unwrap_or(0);
+        files.push((name.to_string(), url.to_string(), size));
+    }
+    files
+}
+
+/// Whether a file name ends in `.ttf`, exactly in lower case (as the font
+/// repositories name their files).
+#[expect(
+    clippy::case_sensitive_file_extension_comparisons,
+    reason = "the repositories use lower-case .ttf names; an exact match keeps what is installed the same"
+)]
+fn is_ttf(name: &str) -> bool {
+    name.ends_with(".ttf")
+}
+
 /// Google: every .ttf of the font's folder in the google/fonts repo.
 fn install_google(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<Value> {
     for repo_dir in google_dirs(e) {
@@ -77,23 +106,7 @@ fn install_google(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<Value> {
             continue;
         };
         let list: Value = serde_json::from_str(&text)?;
-        let files: Vec<(String, String, u64)> = list
-            .as_array()
-            .map(|a| {
-                a.iter()
-                    .filter_map(|f| {
-                        let name = f.get("name")?.as_str()?;
-                        name.ends_with(".ttf").then(|| {
-                            Some((
-                                name.to_string(),
-                                f.get("download_url")?.as_str()?.to_string(),
-                                f.get("size").and_then(Value::as_u64).unwrap_or(0),
-                            ))
-                        })?
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
+        let files = ttf_files(&list);
         if files.is_empty() {
             continue;
         }
@@ -110,6 +123,22 @@ fn install_fontsource(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<Value> 
         "https://api.fontsource.org/v1/fonts/{}",
         e.id
     ))?)?;
+    let files = fontsource_files(e, &v);
+    if files.is_empty() {
+        bail!("Fontsource has no files for {}", e.family);
+    }
+    fetch_all(&e.id, &files, dir, tx)?;
+    let mut list = Vec::new();
+    for (name, url, _) in &files {
+        list.push(json!({"name": name, "url": url, "hash": sri(&dir.join(name))?}));
+    }
+    Ok(json!({"source": "fontsource", "id": e.id, "files": list}))
+}
+
+/// The files of a Fontsource answer: name, download URL, size (unknown: 0).
+/// One file per weight and style, in the latin and latin-ext subsets (or
+/// the first subset when it has neither).
+fn fontsource_files(e: &Entry, v: &Value) -> Vec<(String, String, u64)> {
     let mut files = Vec::new();
     for (weight, styles) in v
         .get("variants")
@@ -139,15 +168,7 @@ fn install_fontsource(e: &Entry, dir: &Path, tx: &Sender<Msg>) -> Result<Value> 
             }
         }
     }
-    if files.is_empty() {
-        bail!("Fontsource has no files for {}", e.family);
-    }
-    fetch_all(&e.id, &files, dir, tx)?;
-    let mut list = Vec::new();
-    for (name, url, _) in &files {
-        list.push(json!({"name": name, "url": url, "hash": sri(&dir.join(name))?}));
-    }
-    Ok(json!({"source": "fontsource", "id": e.id, "files": list}))
+    files
 }
 
 /// Nerd Fonts: the release's `<asset>.tar.xz`, unpacked.
@@ -254,7 +275,8 @@ mod tests {
 
     /// Real downloads (network): `cargo test -- --ignored live_installs`.
     #[test]
-    #[ignore]
+    #[ignore = "downloads from the network"]
+    // Long function: an ignored test that installs from the network in order (download, check, remove); each step needs the files of the step before.
     fn live_installs() {
         let root = std::env::temp_dir().join(format!("theme-studio-live-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);

@@ -36,21 +36,22 @@ pub struct Filters {
 
 impl Filters {
     pub fn allows(&self, f: &Installed) -> bool {
-        let spacing = match self.spacing {
+        let spacing_ok = match self.spacing {
             Spacing::Any => true,
             Spacing::Mono => f.mono,
             Spacing::Propo => !f.mono,
         };
-        let nerd = match self.nerd {
+        let nerd_ok = match self.nerd {
             NerdKind::Any => true,
             NerdKind::Nerd => f.nerd,
             NerdKind::NerdMono => f.family.ends_with("Nerd Font Mono"),
             NerdKind::NerdPropo => f.family.ends_with("Nerd Font Propo"),
             NerdKind::NotNerd => !f.nerd,
         };
-        let need = self.need.is_none_or(|r| crate::fonts::types::fits(r, f));
-        need && spacing
-            && nerd
+        let fits_role = self.need.is_none_or(|r| crate::fonts::types::fits(r, f));
+        fits_role
+            && spacing_ok
+            && nerd_ok
             && (self.show_bitmap || !f.bitmap)
             && (self.show_special || !f.special)
     }

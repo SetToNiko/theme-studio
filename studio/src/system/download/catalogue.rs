@@ -13,36 +13,37 @@ pub fn parse_fontsource(v: &Value) -> Vec<Entry> {
     let Some(list) = v.as_array() else {
         return Vec::new();
     };
-    list.iter()
-        .filter_map(|f| {
-            let s = |k: &str| f.get(k).and_then(Value::as_str).unwrap_or("").to_string();
-            Some(Entry {
-                id: f.get("id")?.as_str()?.to_string(),
-                family: s("family"),
-                category: s("category"),
-                license: s("license"),
-                weights: f
-                    .get("weights")
-                    .and_then(Value::as_array)
-                    .map_or(Vec::new(), |w| w.iter().filter_map(Value::as_u64).collect()),
-                italic: f
-                    .get("styles")
-                    .and_then(Value::as_array)
-                    .is_some_and(|s| s.iter().any(|x| x == "italic")),
-                variable: f
-                    .get("variable")
-                    .is_some_and(|x| x.as_bool() == Some(true) || x.is_object()),
-                source: if s("type") == "google" {
-                    Source::Google
-                } else {
-                    Source::Fontsource
-                },
-                subset: Some(s("defSubset"))
-                    .filter(|x| !x.is_empty())
-                    .unwrap_or_else(|| "latin".into()),
-            })
-        })
-        .collect()
+    list.iter().filter_map(fontsource_entry).collect()
+}
+
+/// One font of Fontsource's list (none without an `id`).
+fn fontsource_entry(f: &Value) -> Option<Entry> {
+    let s = |k: &str| f.get(k).and_then(Value::as_str).unwrap_or("").to_string();
+    Some(Entry {
+        id: f.get("id")?.as_str()?.to_string(),
+        family: s("family"),
+        category: s("category"),
+        license: s("license"),
+        weights: f
+            .get("weights")
+            .and_then(Value::as_array)
+            .map_or(Vec::new(), |w| w.iter().filter_map(Value::as_u64).collect()),
+        italic: f
+            .get("styles")
+            .and_then(Value::as_array)
+            .is_some_and(|s| s.iter().any(|x| x == "italic")),
+        variable: f
+            .get("variable")
+            .is_some_and(|x| x.as_bool() == Some(true) || x.is_object()),
+        source: if s("type") == "google" {
+            Source::Google
+        } else {
+            Source::Fontsource
+        },
+        subset: Some(s("defSubset"))
+            .filter(|x| !x.is_empty())
+            .unwrap_or_else(|| "latin".into()),
+    })
 }
 
 /// The Nerd Fonts release's `.tar.xz` assets.
@@ -55,34 +56,33 @@ pub fn parse_nerd(v: &Value) -> (String, Vec<Entry>) {
     let entries = v
         .get("assets")
         .and_then(Value::as_array)
-        .map(|a| {
-            a.iter()
-                .filter_map(|x| {
-                    let name = x
-                        .get("name")?
-                        .as_str()?
-                        .strip_suffix(".tar.xz")?
-                        .to_string();
-                    Some(Entry {
-                        id: format!("nerd-{}", name.to_lowercase()),
-                        family: format!("{name} Nerd Font"),
-                        category: "nerd font".into(),
-                        license: String::new(),
-                        weights: Vec::new(),
-                        italic: false,
-                        variable: false,
-                        source: Source::Nerd {
-                            url: x.get("browser_download_url")?.as_str()?.to_string(),
-                            size: x.get("size").and_then(Value::as_u64).unwrap_or(0),
-                            asset: name,
-                        },
-                        subset: String::new(),
-                    })
-                })
-                .collect()
-        })
+        .map(|a| a.iter().filter_map(nerd_entry).collect())
         .unwrap_or_default();
     (tag, entries)
+}
+
+/// One asset of the release (none unless it is a `.tar.xz` with a URL).
+fn nerd_entry(x: &Value) -> Option<Entry> {
+    let name = x
+        .get("name")?
+        .as_str()?
+        .strip_suffix(".tar.xz")?
+        .to_string();
+    Some(Entry {
+        id: format!("nerd-{}", name.to_lowercase()),
+        family: format!("{name} Nerd Font"),
+        category: "nerd font".into(),
+        license: String::new(),
+        weights: Vec::new(),
+        italic: false,
+        variable: false,
+        source: Source::Nerd {
+            url: x.get("browser_download_url")?.as_str()?.to_string(),
+            size: x.get("size").and_then(Value::as_u64).unwrap_or(0),
+            asset: name,
+        },
+        subset: String::new(),
+    })
 }
 
 /// Fetches both catalogues in the background.

@@ -1,5 +1,5 @@
 //! The sample image: Pango markup for the palette and fonts, and the
-//! background jobs that draw it with ImageMagick.
+//! background jobs that draw it with `ImageMagick`.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -14,7 +14,7 @@ use super::presets::Font;
 
 /// The X server's DPI (Xft.dpi), so the sample is the size the fonts really are.
 pub fn screen_dpi() -> u32 {
-    Command::new("xrdb")
+    let dpi: Option<f64> = Command::new("xrdb")
         .arg("-query")
         .output()
         .ok()
@@ -24,8 +24,14 @@ pub fn screen_dpi() -> u32 {
                 .find_map(|l| l.strip_prefix("Xft.dpi:").map(|v| v.trim().to_string()))
         })
         .and_then(|v| v.parse::<f64>().ok())
-        .map(|d| d.round() as u32)
-        .unwrap_or(96)
+        .map(f64::round);
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a DPI is a small positive number; `as` saturates any other value into the u32 range"
+    )]
+    let dpi = dpi.map(|d| d as u32);
+    dpi.unwrap_or(96)
 }
 
 fn esc(s: &str) -> String {
@@ -39,13 +45,35 @@ fn esc(s: &str) -> String {
 /// used on this machine.
 /// `name` is the palette being edited (shown as the selected rofi row).
 pub fn sample_markup(fonts: &[Font; 3], sizes: [u32; 3], p: &Palette, name: &str) -> String {
-    let c = |k: &str| p.get(k).hex();
-    let span = |k: &str, t: &str| format!("<span foreground=\"{}\">{}</span>", c(k), esc(t));
     let font = |role: usize| format!("{} {}", esc(&fonts[role].family), sizes[role]);
-    let mut m = String::new();
-    // mono: code, as nvim shows it
-    m += &format!("<span font=\"{}\" foreground=\"{}\">", font(0), c("fg0"));
-    m += &format!(
+    let code = code_block(&font(0), p);
+    let menu = menu_block(&font(1), p, name);
+    let bar = bar_block(&font(2), p);
+    format!("{code}\n{menu}\n{bar}")
+}
+
+/// A span of `text` in the palette colour `key`.
+fn colour_span(p: &Palette, key: &str, text: &str) -> String {
+    format!(
+        "<span foreground=\"{}\">{}</span>",
+        p.get(key).hex(),
+        esc(text)
+    )
+}
+
+/// The mono part of the sample: code, as nvim shows it.
+fn code_block(font: &str, p: &Palette) -> String {
+    format!(
+        "<span font=\"{font}\" foreground=\"{}\">{}</span>\n",
+        p.get("fg0").hex(),
+        code_lines(p)
+    )
+}
+
+/// The four lines of sample code, in the palette's colours.
+fn code_lines(p: &Palette) -> String {
+    let span = |k: &str, t: &str| colour_span(p, k, t);
+    let line1 = format!(
         "{} {}{}{}{}\n",
         span("purple", "local function"),
         span("blue", "apply"),
@@ -53,7 +81,7 @@ pub fn sample_markup(fonts: &[Font; 3], sizes: [u32; 3], p: &Palette, name: &str
         span("red", "path, opts"),
         span("grey2", ")")
     );
-    m += &format!(
+    let line2 = format!(
         "  {} {} {} {} {}\n",
         span("purple", "if"),
         span("red", "count"),
@@ -61,43 +89,47 @@ pub fn sample_markup(fonts: &[Font; 3], sizes: [u32; 3], p: &Palette, name: &str
         span("orange", "0x2A"),
         span("purple", "then")
     );
-    m += &format!(
+    let line3 = format!(
         "    {}{}{}{}\n",
         span("red", "vim"),
         span("grey2", ".notify("),
         span("green", "\"theme applied 0O 1lI\""),
         span("grey2", ")")
     );
-    m += &format!(
+    let line4 = format!(
         "  {} {}\n",
         span("purple", "end"),
         span("grey1", "-- icons: \u{e0a0} \u{f07b} \u{f1d3} \u{f00af} ⇡2")
     );
-    m += "</span>\n";
-    // ui: the rofi theme menu
-    m += "\n";
-    m += &format!("<span font=\"{}\" foreground=\"{}\">", font(1), c("fg0"));
-    m += &format!("Theme: {}\n", span("grey1", "type to search"));
-    m += &format!(
+    [line1, line2, line3, line4].concat()
+}
+
+/// The proportional part of the sample: the rofi theme menu.
+/// `name` is the palette being edited (shown as the selected rofi row).
+fn menu_block(font: &str, p: &Palette, name: &str) -> String {
+    let title = format!("Theme: {}\n", colour_span(p, "grey1", "type to search"));
+    let selected = format!(
         "<span background=\"{}\" foreground=\"{}\"> {}  </span>  Gruvbox Dark   Tokyo Night\n",
-        c("yellow"),
-        c("bg0"),
+        p.get("yellow").hex(),
+        p.get("bg0").hex(),
         esc(name)
     );
-    m += "</span>\n";
-    // bar: workspaces and blocks on the bar background
-    m += "\n";
-    m += &format!(
-        "<span font=\"{}\" background=\"{}\" foreground=\"{}\"><span background=\"{}\" foreground=\"{}\"> 1 </span> 2  3        vol 73% {} 󰂯 HelixBrigitte {} 18:41 </span>",
-        font(2),
-        c("bg0"),
-        c("fg0"),
-        c("yellow"),
-        c("bg0"),
-        span("bg3", "│"),
-        span("bg3", "│"),
-    );
-    m
+    format!(
+        "<span font=\"{font}\" foreground=\"{}\">{title}{selected}</span>\n",
+        p.get("fg0").hex()
+    )
+}
+
+/// The icons part of the sample: workspaces and blocks on the bar background.
+fn bar_block(font: &str, p: &Palette) -> String {
+    let divider = colour_span(p, "bg3", "│");
+    format!(
+        "<span font=\"{font}\" background=\"{}\" foreground=\"{}\"><span background=\"{}\" foreground=\"{}\"> 1 </span> 2  3        vol 73% {divider} 󰂯 HelixBrigitte {divider} 18:41 </span>",
+        p.get("bg0").hex(),
+        p.get("fg0").hex(),
+        p.get("yellow").hex(),
+        p.get("bg0").hex(),
+    )
 }
 
 /// A rendered sample, decoded (on the renderer's thread), or why it failed.
@@ -116,7 +148,7 @@ struct Job {
     fontconfig: Option<PathBuf>,
     /// Wrap lines at this many pixels.
     width: Option<u32>,
-    /// When it was asked for (for THEME_STUDIO_TIMING).
+    /// When it was asked for (for `THEME_STUDIO_TIMING`).
     asked: std::time::Instant,
 }
 
@@ -147,26 +179,8 @@ impl SampleRenderer {
     pub fn named(dir: &Path, dirty: Arc<AtomicBool>, prefix: &'static str) -> SampleRenderer {
         let (tx, rx): (Sender<Job>, Receiver<Job>) = channel();
         let done = Arc::new(Mutex::new(None));
-        let d = done.clone();
         let timing = std::env::var_os("THEME_STUDIO_TIMING").is_some();
-        std::thread::spawn(move || {
-            while let Ok(mut job) = rx.recv() {
-                // skip to the newest request
-                while let Ok(newer) = rx.try_recv() {
-                    job = newer;
-                }
-                let started = std::time::Instant::now();
-                let result = render_sample(&job).and_then(|p| {
-                    image::open(&p).map_err(|e| format!("reading {}: {e}", p.display()))
-                });
-                if timing {
-                    log_timing(prefix, &job, started, &result);
-                }
-                let key = job_key(&job.markup, &job.fontconfig, job.width);
-                *d.lock().unwrap() = Some((job.id, key, result));
-                dirty.store(true, Ordering::Relaxed);
-            }
-        });
+        render_in_background(rx, done.clone(), dirty, prefix, timing);
         SampleRenderer {
             tx,
             done,
@@ -175,14 +189,14 @@ impl SampleRenderer {
             shown: 0,
             dir: dir.to_path_buf(),
             prefix,
-            kept: Default::default(),
+            kept: std::collections::VecDeque::default(),
             ready: None,
         }
     }
 
     /// Asks for a new sample if the markup changed.
     pub fn request(&mut self, markup: String, bg: Rgb, dpi: u32) {
-        self.request_with(markup, bg, dpi, None, None)
+        self.request_with(markup, bg, dpi, None, None);
     }
 
     /// The same, with a fontconfig setup and a wrap width.
@@ -194,22 +208,17 @@ impl SampleRenderer {
         fontconfig: Option<PathBuf>,
         width: Option<u32>,
     ) {
-        let key = job_key(&markup, &fontconfig, width);
+        let key = job_key(&markup, fontconfig.as_deref(), width);
         if self.last_markup.as_deref() == Some(key.as_str()) {
             return;
         }
         self.next += 1;
         // drawn before: no need to render it again
-        if let Some((_, img)) = self.kept.iter().find(|(k, _)| *k == key) {
-            self.ready = Some(img.clone());
-            self.shown = self.next;
-            self.last_markup = Some(key);
+        if self.show_kept(&key) {
             return;
         }
         self.ready = None;
-        let out = self
-            .dir
-            .join(format!("{}-{}.bmp", self.prefix, self.next % 2));
+        let out = self.image_path();
         let _ = self.tx.send(Job {
             id: self.next,
             markup,
@@ -221,6 +230,24 @@ impl SampleRenderer {
             asked: std::time::Instant::now(),
         });
         self.last_markup = Some(key);
+    }
+
+    /// Where the next image goes: two files take turns, so the one on screen
+    /// is not overwritten while it is read.
+    fn image_path(&self) -> PathBuf {
+        self.dir
+            .join(format!("{}-{}.bmp", self.prefix, self.next % 2))
+    }
+
+    /// Shows the kept image for `key`, if there is one (it was drawn before).
+    fn show_kept(&mut self, key: &str) -> bool {
+        let Some((_, img)) = self.kept.iter().find(|(k, _)| k == key) else {
+            return false;
+        };
+        self.ready = Some(img.clone());
+        self.shown = self.next;
+        self.last_markup = Some(key.to_string());
+        true
     }
 
     /// A finished sample newer than the one shown.
@@ -250,12 +277,40 @@ impl SampleRenderer {
     }
 }
 
+/// Renders the jobs from `rx` on a thread (newest first, older ones are
+/// skipped), and puts each result in `done`.
+fn render_in_background(
+    rx: Receiver<Job>,
+    done: Arc<Mutex<Option<(u64, String, SampleResult)>>>,
+    dirty: Arc<AtomicBool>,
+    prefix: &'static str,
+    timing: bool,
+) {
+    std::thread::spawn(move || {
+        while let Ok(mut job) = rx.recv() {
+            // skip to the newest request
+            while let Ok(newer) = rx.try_recv() {
+                job = newer;
+            }
+            let started = std::time::Instant::now();
+            let result = render_sample(&job)
+                .and_then(|p| image::open(&p).map_err(|e| format!("reading {}: {e}", p.display())));
+            if timing {
+                log_timing(prefix, &job, started, &result);
+            }
+            let key = job_key(&job.markup, job.fontconfig.as_deref(), job.width);
+            *done.lock().unwrap() = Some((job.id, key, result));
+            dirty.store(true, Ordering::Relaxed);
+        }
+    });
+}
+
 /// What makes two requests the same image.
-fn job_key(markup: &str, fontconfig: &Option<PathBuf>, width: Option<u32>) -> String {
+fn job_key(markup: &str, fontconfig: Option<&Path>, width: Option<u32>) -> String {
     format!("{markup}{fontconfig:?}{width:?}")
 }
 
-/// THEME_STUDIO_TIMING: one line per render in
+/// `THEME_STUDIO_TIMING`: one line per render in
 /// `~/.local/state/theme-studio/timing.log`: waiting, rendering and
 /// decoding, and the size.
 fn log_timing(prefix: &str, job: &Job, started: std::time::Instant, r: &SampleResult) {
@@ -280,9 +335,9 @@ fn log_timing(prefix: &str, job: &Job, started: std::time::Instant, r: &SampleRe
     }
 }
 
-fn render_sample(job: &Job) -> std::result::Result<PathBuf, String> {
-    let markup_file = job.out.with_extension("markup");
-    std::fs::write(&markup_file, &job.markup).map_err(|e| e.to_string())?;
+/// The `magick` command (without its input and output) for a job: density,
+/// background, and the wrap width.
+fn magick_command(job: &Job) -> Command {
     // at a lower priority than the studio, nvim and the shell
     let mut cmd = Command::new("nice");
     cmd.args(["-n", "5", "magick"]);
@@ -298,7 +353,13 @@ fn render_sample(job: &Job) -> std::result::Result<PathBuf, String> {
     if let Some(w) = job.width {
         cmd.args(["-size", &format!("{w}x")]);
     }
-    let out = cmd
+    cmd
+}
+
+fn render_sample(job: &Job) -> std::result::Result<PathBuf, String> {
+    let markup_file = job.out.with_extension("markup");
+    std::fs::write(&markup_file, &job.markup).map_err(|e| e.to_string())?;
+    let out = magick_command(job)
         .arg(format!("pango:@{}", markup_file.display()))
         .args(["-bordercolor", &job.bg.hex(), "-border", "12"])
         // 8-bit BMP: much quicker to write and read than 16-bit PNG
@@ -354,8 +415,9 @@ mod tests {
     /// How long a preview takes, stage by stage (run by hand:
     /// `cargo test preview_timing -- --ignored --nocapture`).
     #[test]
-    #[ignore]
+    #[ignore = "needs ImageMagick; slow"]
     #[allow(deprecated)] // a picker without a terminal to ask
+    // Long function: a benchmark that is only run by hand: it times render, decode and encode in one loop.
     fn preview_timing() {
         use std::time::Instant;
         let p = crate::model::palette::Palette::blank();
@@ -406,7 +468,7 @@ mod tests {
                             .resize(ratatui_image::Resize::Crop(None)),
                         f.area(),
                         &mut proto,
-                    )
+                    );
                 })
                 .unwrap();
                 let encode = t.elapsed();
@@ -425,7 +487,7 @@ mod tests {
     }
 
     /// Going back to an image drawn before is instant (skipped without
-    /// ImageMagick).
+    /// `ImageMagick`).
     #[test]
     fn renderer_keeps_recent_images() {
         if Command::new("magick").arg("-version").output().is_err() {
