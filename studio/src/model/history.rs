@@ -6,7 +6,6 @@
 //! purpose) are never pruned.
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -91,14 +90,11 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
+/// Returns the current local time as `YYYY-MM-DD HH:MM:SS`.
+///
+/// The time zone is the one of the computer (local time, not UTC).
 pub(crate) fn local_time() -> String {
-    Command::new("date")
-        .arg("+%Y-%m-%d %H:%M:%S")
-        .output()
-        .ok()
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| format!("{}", now_ms() / 1000))
+    chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
 /// Unique file names even for several snapshots in one millisecond.
@@ -350,6 +346,19 @@ pub fn summarize(before: &Value, after: &Value) -> String {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn local_time_has_the_date_and_time_pattern() {
+        let t = local_time();
+        let ok = t.len() == 19
+            && t.chars().enumerate().all(|(i, c)| match i {
+                4 | 7 => c == '-',
+                10 => c == ' ',
+                13 | 16 => c == ':',
+                _ => c.is_ascii_digit(),
+            });
+        assert!(ok, "unexpected time text: {t}");
+    }
 
     fn temp(tag: &str) -> PathBuf {
         let d =
