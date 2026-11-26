@@ -1,10 +1,11 @@
 //! App's methods for the Settings page's unsaved changes (the draft).
 //!
 //! This is a second `impl App { ... }` block (see `persist.rs` for the same
-//! style). The draft data (`Draft`, `keymaps_value`) stays in `draft.rs`, and
-//! so do the tests of these methods; this file only holds the methods that
-//! need the whole `App`: running an edit on the draft, showing it, counting
-//! its changes, save and discard.
+//! style). The draft data (`Draft`, `keymaps_value`) stays in `draft.rs`. The
+//! tests of these methods are in the test module of `draft.rs` too (it builds
+//! an `App`); this file only holds the methods that need the whole `App`:
+//! running an edit on the draft, showing it, counting its changes, save and
+//! discard.
 
 use super::App;
 use crate::draft::{Draft, keymaps_value};
@@ -94,7 +95,27 @@ impl App {
         let before = self.live_as_draft().files();
         self.swap_draft(&mut d);
         let after = self.live_as_draft().files();
-        // only the files that changed (so <leader>u undoes the right one)
+        let errors = self.write_changed_files(&before, &after);
+        // new default pane sizes apply now too
+        if self.settings.layout.sizes != old_sizes {
+            self.layout.sizes = self.settings.layout.sizes.clone();
+        }
+        if errors.is_empty() {
+            self.notify_saved("Saved");
+        } else {
+            self.messages
+                .error(format!("Saving: {}", errors.join("; ")));
+        }
+    }
+
+    /// Writes the files whose contents differ between `before` and `after`
+    /// (so <leader>u undoes the right one). Returns what failed, one text
+    /// per file.
+    fn write_changed_files(
+        &self,
+        before: &serde_json::Value,
+        after: &serde_json::Value,
+    ) -> Vec<String> {
         let mut errors = Vec::new();
         if before["keymaps"] != after["keymaps"] {
             let keymaps = keymaps_value(&self.presets, &self.keymap.name);
@@ -109,16 +130,7 @@ impl App {
         {
             errors.push(format!("settings.json: {e:#}"));
         }
-        // new default pane sizes apply now too
-        if self.settings.layout.sizes != old_sizes {
-            self.layout.sizes = self.settings.layout.sizes.clone();
-        }
-        if errors.is_empty() {
-            self.notify_saved("Saved");
-        } else {
-            self.messages
-                .error(format!("Saving: {}", errors.join("; ")));
-        }
+        errors
     }
 
     /// Drops the unsaved changes.

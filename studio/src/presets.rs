@@ -80,11 +80,25 @@ pub(crate) fn is_shipped(name: &str) -> bool {
 
 // ----- drawing ---------------------------------------------------------------
 
+/// What the preset browser draws from, and where it records click areas.
+pub struct BrowseParts<'a> {
+    /// Where the rows' click areas are added.
+    pub hits: &'a mut HitMap,
+    /// All presets, in list order.
+    pub presets: &'a [Keymap],
+    /// The active keymap (its preset is marked "active").
+    pub keymap: &'a Keymap,
+}
+
 /// The browser: the difference on the left (`diff`), the list on the right
 /// (`list`).
 pub fn draw_browse(
     f: &mut Frame,
-    (hits, presets, keymap): (&mut HitMap, &[Keymap], &Keymap),
+    BrowseParts {
+        hits,
+        presets,
+        keymap,
+    }: BrowseParts,
     page: &mut SettingsPage,
     diff: Rect,
     list: Rect,

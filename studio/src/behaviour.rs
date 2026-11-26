@@ -1,5 +1,8 @@
 //! The Settings page's Behaviour tab: settings.json's values, in groups
 //! (Keys, Layout, Messages, Hover, Palette pane, Derived colours, Fonts pane).
+//!
+//! The test module below also tests the `App` methods of
+//! `app/behaviour_actions.rs` (it builds an `App`).
 
 use crate::app::nav::{BhRow, LookId};
 use crate::palette::GROUPS;

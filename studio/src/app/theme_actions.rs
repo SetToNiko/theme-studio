@@ -42,9 +42,7 @@ impl App {
         {
             let (n, t) = (n.clone(), t.clone());
             self.load_theme_parts(&t);
-            self.theme = n;
-            self.theme_new = false;
-            self.theme_saved = Some(t);
+            self.set_saved_theme(n, t);
             return;
         }
         let now = self.theme_now();
@@ -53,9 +51,7 @@ impl App {
             if let Some(s) = t.sizes {
                 self.fonts.preset.set_sizes(s);
             }
-            self.theme = n;
-            self.theme_new = false;
-            self.theme_saved = Some(t);
+            self.set_saved_theme(n, t);
             return;
         }
         self.theme = self.name.clone();
@@ -63,18 +59,31 @@ impl App {
         self.theme_saved = None;
         // the first start: the active palette and fonts become a theme
         if !self.themes.exists() && !self.is_new && !self.fonts.is_new {
-            match self.themes.save(&self.name, &now) {
-                Ok(()) => {
-                    self.theme_new = false;
-                    self.theme_saved = Some(now);
-                    let _ = ThemeStore::set_active(&self.theme);
-                    self.messages.info(format!(
-                        "Made the theme \"{}\" from the active palette and fonts",
-                        self.theme
-                    ));
-                }
-                Err(e) => self.messages.error(format!("themes.json: {e:#}")),
+            self.save_first_theme(now);
+        }
+    }
+
+    /// `t` (saved as `name`) is now the open theme, with nothing unsaved.
+    fn set_saved_theme(&mut self, name: String, t: Theme) {
+        self.theme = name;
+        self.theme_new = false;
+        self.theme_saved = Some(t);
+    }
+
+    /// The first start: saves `now` (the active palette and fonts) as a
+    /// theme named like the palette, and makes it the active theme.
+    fn save_first_theme(&mut self, now: Theme) {
+        match self.themes.save(&self.name, &now) {
+            Ok(()) => {
+                self.theme_new = false;
+                self.theme_saved = Some(now);
+                let _ = ThemeStore::set_active(&self.theme);
+                self.messages.info(format!(
+                    "Made the theme \"{}\" from the active palette and fonts",
+                    self.theme
+                ));
             }
+            Err(e) => self.messages.error(format!("themes.json: {e:#}")),
         }
     }
 
@@ -179,36 +188,7 @@ impl App {
     /// (other themes using them keep theirs); unedited parts stay shared.
     pub fn theme_save_as(&mut self, name: &str, then_apply: bool) {
         let fork = !self.theme_new && name != self.theme;
-        let palettes = self.store.load_all().unwrap_or_default();
-        let presets = self.fonts.store.load_all().unwrap_or_default();
-        if self.is_new || (fork && self.dirty()) {
-            if palettes.contains_key(name) && name != self.name {
-                return self.messages.error(format!(
-                    "There's a palette \"{name}\" already: pick another theme name"
-                ));
-            }
-            self.save_as(name, false);
-        } else if self.dirty() {
-            let n = self.name.clone();
-            self.save_as(&n, false);
-        }
-        if self.fonts.is_new || self.fonts.dirty() {
-            let n = if self.fonts.is_new || fork {
-                name.to_string()
-            } else {
-                self.fonts.name.clone()
-            };
-            if n != self.fonts.name && presets.contains_key(&n) {
-                return self.messages.error(format!(
-                    "There's a font preset \"{n}\" already: pick another theme name"
-                ));
-            }
-            if let Err(e) = self.fonts.save_as(&n) {
-                return self.messages.error(format!("Saving the fonts: {e:#}"));
-            }
-        }
-        if self.dirty() || self.fonts.dirty() {
-            // a part's save failed (its message says why)
+        if !self.save_theme_parts(name, fork) {
             return;
         }
         let t = self.theme_now();
@@ -223,6 +203,46 @@ impl App {
         } else {
             self.notify_saved(format!("Saved \"{name}\""));
         }
+    }
+
+    // Long function: the palette and the font preset are saved one after the other, each with its own name check and error.
+    /// Saves the palette and the font preset when they changed (under
+    /// `name` when new or forked, see [`Self::theme_save_as`]). False when a
+    /// part could not be saved; its message says why.
+    fn save_theme_parts(&mut self, name: &str, fork: bool) -> bool {
+        let palettes = self.store.load_all().unwrap_or_default();
+        let presets = self.fonts.store.load_all().unwrap_or_default();
+        if self.is_new || (fork && self.dirty()) {
+            if palettes.contains_key(name) && name != self.name {
+                self.messages.error(format!(
+                    "There's a palette \"{name}\" already: pick another theme name"
+                ));
+                return false;
+            }
+            self.save_as(name, false);
+        } else if self.dirty() {
+            let n = self.name.clone();
+            self.save_as(&n, false);
+        }
+        if self.fonts.is_new || self.fonts.dirty() {
+            let n = if self.fonts.is_new || fork {
+                name.to_string()
+            } else {
+                self.fonts.name.clone()
+            };
+            if n != self.fonts.name && presets.contains_key(&n) {
+                self.messages.error(format!(
+                    "There's a font preset \"{n}\" already: pick another theme name"
+                ));
+                return false;
+            }
+            if let Err(e) = self.fonts.save_as(&n) {
+                self.messages.error(format!("Saving the fonts: {e:#}"));
+                return false;
+            }
+        }
+        // a part's save can have failed (its message says why)
+        !(self.dirty() || self.fonts.dirty())
     }
 
     /// Apply (a): saves if needed, then applies fonts and palette (one i3
@@ -259,18 +279,7 @@ impl App {
             .load_all()
             .into_iter()
             .map(|(n, t)| {
-                let sw = palettes
-                    .get(&t.palette)
-                    .map(|v| {
-                        [
-                            "bg0", "fg0", "red", "orange", "yellow", "green", "aqua", "blue",
-                            "purple",
-                        ]
-                        .iter()
-                        .filter_map(|k| v.get(*k).and_then(|x| x.as_str()).and_then(Rgb::parse))
-                        .collect()
-                    })
-                    .unwrap_or_default();
+                let sw = palettes.get(&t.palette).map(swatches).unwrap_or_default();
                 (n, sw)
             })
             .collect();
@@ -288,4 +297,20 @@ impl App {
             entries,
         };
     }
+}
+
+/// The colours the open list shows for a theme's palette (`palette` is the
+/// palette's file contents): the keys that exist and parse, in a fixed order.
+fn swatches(palette: &serde_json::Value) -> Vec<Rgb> {
+    [
+        "bg0", "fg0", "red", "orange", "yellow", "green", "aqua", "blue", "purple",
+    ]
+    .iter()
+    .filter_map(|k| {
+        palette
+            .get(*k)
+            .and_then(|x| x.as_str())
+            .and_then(Rgb::parse)
+    })
+    .collect()
 }
