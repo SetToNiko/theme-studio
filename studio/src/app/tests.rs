@@ -2,7 +2,7 @@
 
 use super::*;
 
-use crate::keymap::Context;
+use crate::keymap::{Action, Context};
 use crate::preview::PaneId;
 use crate::store::to_jq_string;
 use ratatui::Terminal;
