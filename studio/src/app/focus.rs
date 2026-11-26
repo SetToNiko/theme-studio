@@ -54,7 +54,7 @@ impl App {
     /// (or yazi). 6 and 7 give that preview window the keyboard; F12 hands it
     /// back. A hidden picker or sample is shown.
     pub fn focus_pane(&mut self, n: u8) {
-        use crate::fonts::FontFocus;
+        use crate::fonts::types::FontFocus;
         self.page = Page::Main;
         match n {
             1..=3 => {
@@ -118,7 +118,7 @@ impl App {
 
     /// The number of the pane with the keyboard.
     pub fn current_pane(&self) -> u8 {
-        use crate::fonts::FontFocus;
+        use crate::fonts::types::FontFocus;
         match (self.preview.focus, self.side) {
             (Some(PaneId::Nvim), _) => 6,
             (Some(_), _) => 7,
@@ -183,7 +183,7 @@ impl App {
 
     /// The keymap contexts for the pane with the keyboard, most specific first.
     pub fn contexts(&self) -> [Context; 3] {
-        use crate::fonts::FontFocus;
+        use crate::fonts::types::FontFocus;
         if self.layout.resize_mode {
             return [Context::Resize; 3];
         }

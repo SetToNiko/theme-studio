@@ -467,7 +467,7 @@ fn migrate(mut v: Value) -> Value {
                             .strip_prefix("use-for-")
                             .and_then(|r| crate::fonts::OLD_ROLES.iter().position(|o| *o == r));
                         match role {
-                            Some(r) => (format!("use-for-{}", crate::fonts::ROLES[r]), keys),
+                            Some(r) => (format!("use-for-{}", crate::fonts::types::ROLES[r]), keys),
                             None => (k, keys),
                         }
                     })

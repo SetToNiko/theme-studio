@@ -248,7 +248,7 @@ impl App {
 
     /// A click on the fonts tab: a role, a font row, the search box, or a filter chip.
     fn click_fonts(&mut self, t: T) {
-        use crate::fonts::FontFocus;
+        use crate::fonts::types::FontFocus;
         self.side = Side::Fonts;
         match t {
             T::FontRole(i) => self.fonts.click_role(i),
@@ -258,7 +258,7 @@ impl App {
                 if self.fonts.picked {
                     let what = format!(
                         "{}: {}",
-                        crate::fonts::ROLE_NAMES[role],
+                        crate::fonts::types::ROLE_NAMES[role],
                         self.fonts.preset.fonts[role].family
                     );
                     self.apply_picked_fonts(what);

@@ -234,7 +234,7 @@ impl App {
     /// Bracketed paste (Ctrl+Shift+V): a hex colour sets the selected key.
     pub(super) fn on_paste(&mut self, s: &str) {
         if self.side == Side::Fonts && matches!(self.overlay, Overlay::None) {
-            if self.fonts.focus == crate::fonts::FontFocus::Search {
+            if self.fonts.focus == crate::fonts::types::FontFocus::Search {
                 self.fonts.search.push_str(s.trim());
                 self.fonts.list_sel = 0;
             }

@@ -274,12 +274,12 @@ fn number_keys_jump_between_panels() {
     press(&mut app, " 1");
     assert_eq!(
         (app.side, app.fonts.focus),
-        (Side::Fonts, crate::fonts::FontFocus::Slots)
+        (Side::Fonts, crate::fonts::types::FontFocus::Slots)
     );
     press(&mut app, " 2");
-    assert_eq!(app.fonts.focus, crate::fonts::FontFocus::List);
+    assert_eq!(app.fonts.focus, crate::fonts::types::FontFocus::List);
     press(&mut app, " 3");
-    assert_eq!(app.fonts.focus, crate::fonts::FontFocus::Sample);
+    assert_eq!(app.fonts.focus, crate::fonts::types::FontFocus::Sample);
     press(&mut app, " 6");
     assert_eq!(app.preview.focus, Some(PaneId::Nvim));
     // inside a preview window digits are typed into it, F12 comes back out
@@ -335,28 +335,28 @@ fn fonts_tab_edits_saves_and_opens_presets() {
     press(&mut app, " 1"); // the font roles
     assert_eq!(app.side, Side::Fonts);
     app.fonts.set_installed(vec![
-        crate::fonts::Installed {
+        crate::fonts::types::Installed {
             family: "A".into(),
             mono: true,
             nerd: true,
             bitmap: false,
             special: false,
         },
-        crate::fonts::Installed {
+        crate::fonts::types::Installed {
             family: "B".into(),
             mono: false,
             nerd: false,
             bitmap: false,
             special: false,
         },
-        crate::fonts::Installed {
+        crate::fonts::types::Installed {
             family: "C Mono".into(),
             mono: true,
             nerd: false,
             bitmap: false,
             special: false,
         },
-        crate::fonts::Installed {
+        crate::fonts::types::Installed {
             family: "C Nerd Font Propo".into(),
             mono: false,
             nerd: true,
@@ -394,7 +394,7 @@ fn fonts_tab_edits_saves_and_opens_presets() {
     assert_eq!(app.fonts.preset.fonts[2].size, 13);
     // number keys: 2 opens the list, 1 goes back
     press(&mut app, " 2");
-    assert_eq!(app.fonts.focus, crate::fonts::FontFocus::List);
+    assert_eq!(app.fonts.focus, crate::fonts::types::FontFocus::List);
     press(&mut app, " 1");
     // a size isn't the preset's: it stays saved, and opening the preset
     // again doesn't ask, and keeps the sizes
@@ -1691,7 +1691,7 @@ fn download_page_lists_searches_and_removes() {
 
 #[test]
 fn a_family_fills_every_role() {
-    use crate::fonts::{Installed, Row};
+    use crate::fonts::types::{Installed, Row};
     let store = temp_store("family");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
@@ -1758,7 +1758,7 @@ fn a_family_fills_every_role() {
         .iter()
         .position(|r| matches!(r, Row::Font { index, .. } if *index == i))
         .unwrap();
-    app.fonts.focus = crate::fonts::FontFocus::List;
+    app.fonts.focus = crate::fonts::types::FontFocus::List;
     app.fonts.list_sel = inter;
     press(&mut app, "F");
     let fams: Vec<&str> = app
@@ -1793,7 +1793,7 @@ fn a_family_fills_every_role() {
 #[test]
 fn a_family_without_fitting_faces_offers_its_nerd_font() {
     use crate::download::{Catalogue, Entry, Source};
-    use crate::fonts::{Installed, Row};
+    use crate::fonts::types::{Installed, Row};
     let store = temp_store("offer");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
@@ -2418,7 +2418,7 @@ fn a_tournament_of_installed_fonts_from_setup_to_results() {
     let mut app = test_app(store, Start::Named("One".into()));
     let _ = std::fs::remove_dir_all(crate::tournament::dir());
     app.fonts.installed = (0..5)
-        .map(|i| crate::fonts::Installed {
+        .map(|i| crate::fonts::types::Installed {
             family: format!("Test Mono {i}"),
             mono: true,
             nerd: false,
@@ -2496,7 +2496,7 @@ fn studio_applies_fonts_like_font_switch() {
     let key = |app: &mut App, c: KeyCode| app.on_key(KeyEvent::new(c, KeyModifiers::NONE));
     for role in 0..3 {
         app.focus_pane(1);
-        app.fonts.focus = crate::fonts::FontFocus::Slots;
+        app.fonts.focus = crate::fonts::types::FontFocus::Slots;
         app.fonts.slot = role;
         let before = app.fonts.preset.fonts[role].clone();
         key(&mut app, KeyCode::Enter); // the list, at the current font

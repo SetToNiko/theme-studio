@@ -42,7 +42,7 @@ impl App {
     /// Ctrl+C, pop-ups, text fields, and last the keymap with its pending keys.
     // Long function (reason verified, phase 3): one early return per special case, in a fixed order.
     fn handle_key(&mut self, k: KeyEvent) {
-        use crate::fonts::FontFocus;
+        use crate::fonts::types::FontFocus;
         let key = Key::from_event(k);
         // A save confirmation box: any key closes it (Ctrl+C still goes on
         // to quit).
@@ -196,7 +196,7 @@ impl App {
                 Page::Settings => self.messages.info("This page has no preview"),
             },
             Action::ToggleSample => {
-                use crate::fonts::FontFocus;
+                use crate::fonts::types::FontFocus;
                 self.layout.sample_visible = !self.layout.sample_visible;
                 if !self.layout.sample_visible && self.fonts.focus == FontFocus::Sample {
                     self.fonts.focus = FontFocus::Slots;
@@ -246,7 +246,7 @@ impl App {
     /// the Downloads page, and the rest for the fonts tab itself.
     // Long function (reason verified, phase 3): one match with one arm per fonts-column action; the guards keep the original order.
     fn run_fonts(&mut self, a: Action) {
-        use crate::fonts::FontFocus;
+        use crate::fonts::types::FontFocus;
 
         match a {
             Action::FocusNext | Action::FocusPrev => self.fonts_cycle_panes(a),
@@ -297,7 +297,7 @@ impl App {
 
     /// Tab in the fonts column: roles, then list, then sample, then roles.
     fn fonts_cycle_panes(&mut self, a: Action) {
-        use crate::fonts::FontFocus;
+        use crate::fonts::types::FontFocus;
         let order: Vec<u8> = [1, 2, 3]
             .into_iter()
             .filter(|&p| p != 3 || (self.layout.sample_visible && self.layout.wide))
@@ -326,7 +326,7 @@ impl App {
         if self.fonts.picked {
             let what = format!(
                 "{}: {}",
-                crate::fonts::ROLE_NAMES[role],
+                crate::fonts::types::ROLE_NAMES[role],
                 self.fonts.preset.fonts[role].family
             );
             self.apply_picked_fonts(what);

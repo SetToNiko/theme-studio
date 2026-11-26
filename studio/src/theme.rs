@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use serde_json::{Map, Value, json};
 
-use crate::fonts::ROLES;
+use crate::fonts::types::ROLES;
 
 /// themes.json's version. 2: each theme has its fonts' sizes.
 pub const THEMES_VERSION: u64 = 2;

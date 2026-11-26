@@ -6,7 +6,8 @@
 //! its fitting face. A pick sets `picked`, so the app saves and applies it
 //! straight away.
 
-use crate::fonts::{FontFocus, FontsTab, Installed, ROLE_NAMES, ROLE_NEEDS, Row};
+use crate::fonts::FontsTab;
+use crate::fonts::types::{FontFocus, Installed, ROLE_NAMES, ROLE_NEEDS, Row};
 
 fn kind(f: &Installed) -> &'static str {
     if f.family.ends_with("Nerd Font Mono") {
@@ -205,7 +206,7 @@ impl FontsTab {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fonts::Installed;
+    use crate::fonts::types::Installed;
 
     fn font(family: &str, mono: bool, nerd: bool) -> Installed {
         Installed {

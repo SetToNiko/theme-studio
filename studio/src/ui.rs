@@ -1324,7 +1324,7 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
             (!keys.is_empty()).then(|| format!("{} {label}", keys.join("/")))
         };
         // picking for a role: only the chips that aren.t locked
-        let chips: Vec<Action> = crate::fonts::CHIPS
+        let chips: Vec<Action> = crate::fonts::types::CHIPS
             .iter()
             .filter(|(c, _)| app.fonts.filters.chip_free(*c))
             .map(|(c, _)| A::Filter(*c))
@@ -1473,7 +1473,7 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
             let mut v: Vec<String> = rows.into_iter().filter_map(|(a, l)| hint(a, l)).collect();
             v.extend(hint(&[A::TabPrev, A::TabNext], "tabs"));
             v
-        } else if fonts && app.fonts.focus == crate::fonts::FontFocus::Search {
+        } else if fonts && app.fonts.focus == crate::fonts::types::FontFocus::Search {
             vec!["type to search".into(), "Enter/Esc done".into()]
         } else if app.preview.focus.is_some() {
             let out = app
@@ -1493,11 +1493,11 @@ fn draw_status(f: &mut Frame, app: &mut App, area: Rect) {
         } else {
             let rows: Vec<(&[Action], &str)> = if fonts {
                 match app.fonts.focus {
-                    crate::fonts::FontFocus::Sample => vec![
+                    crate::fonts::types::FontFocus::Sample => vec![
                         (&[A::ToggleSample], "hide sample"),
                         (&[A::FocusNext], "next pane"),
                     ],
-                    crate::fonts::FontFocus::Slots => {
+                    crate::fonts::types::FontFocus::Slots => {
                         let mut v: Vec<(&[Action], &str)> = vec![
                             (&[A::Down, A::Up], "role"),
                             (&[A::Left, A::Right], "size"),
@@ -1770,9 +1770,9 @@ fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {
                 }
                 // what each role's font has to be (the list shows only those)
                 if ctx == Context::FontRoles {
-                    for (name, need) in crate::fonts::ROLE_NAMES
+                    for (name, need) in crate::fonts::types::ROLE_NAMES
                         .iter()
-                        .zip(crate::fonts::ROLE_NEEDS)
+                        .zip(crate::fonts::types::ROLE_NEEDS)
                     {
                         lines.push(Line::from(vec![
                             Span::styled(format!("   {name:<20}"), Style::new().dark_gray()),

@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::fonts::Installed;
+use crate::fonts::types::Installed;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Node {
