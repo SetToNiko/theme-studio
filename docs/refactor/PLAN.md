@@ -236,7 +236,7 @@ Wave 1 (parallel, one folder group each; no two steps change the same file). Eac
 - [x] P6.4 ui/ (126) | Files: ui/ | Target: goal 7, limits | Check: same
 - [x] P6.6 Shellcheck to zero | Files: `scripts/*.sh`, `scripts/lib/*.sh` | Target: rule 3 | Check: count = 0
 Wave 2:
-- [ ] P6.5 Errors in system/download/: handle or report the 18 ignored results | Files: `system/download/*` | Target: T7 | Check: tests, each `let _ =` has a reason or is gone
+- [x] P6.5 Errors in system/download/: handle or report the 18 ignored results | Files: `system/download/*` | Target: T7 | Check: tests, each `let _ =` has a reason or is gone
 - [x] P6.7 Gate: `-D warnings` in the clippy flake check; shellcheck fails on any finding (also scripts/dev and tests/scripts); the baselines stay at 0 for lint-counts.sh | Files: `flake.nix`, `scripts/dev/lint-counts.sh`, `docs/refactor/lint-baseline.txt` | Target: goal 7 | Check: `nix flake check` fails on any warning
 Completes: criterion 7
 
