@@ -129,7 +129,7 @@ pub struct SampleRenderer {
     pub last_markup: Option<String>,
     pub shown: u64,
     dir: PathBuf,
-    /// File names: <prefix>-0.bmp, <prefix>-1.bmp.
+    /// File names: `<prefix>-0.bmp`, `<prefix>-1.bmp`.
     prefix: &'static str,
     /// Recent images by request, newest last.
     kept: std::collections::VecDeque<(String, image::DynamicImage)>,
@@ -142,7 +142,7 @@ impl SampleRenderer {
         Self::named(dir, dirty, "sample")
     }
 
-    /// A renderer whose images are named <prefix>-N.bmp (several can share
+    /// A renderer whose images are named `<prefix>-N.bmp` (several can share
     /// a folder).
     pub fn named(dir: &Path, dirty: Arc<AtomicBool>, prefix: &'static str) -> SampleRenderer {
         let (tx, rx): (Sender<Job>, Receiver<Job>) = channel();

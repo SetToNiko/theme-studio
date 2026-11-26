@@ -116,7 +116,7 @@ impl App {
     }
 
     /// Writes the files whose contents differ between `before` and `after`
-    /// (so <leader>u undoes the right one). Returns what failed, one text
+    /// (so `<leader>u` undoes the right one). Returns what failed, one text
     /// per file.
     fn write_changed_files(
         &self,

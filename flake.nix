@@ -47,6 +47,19 @@
           installPhase = "touch $out";
         });
 
+        # Rustdoc: the doc comments build without a warning (broken links, HTML-like
+        # tags such as <leader> outside backticks). Same build setup as clippy.
+        doc = theme-studio.bin.overrideAttrs (old: {
+          pname = "theme-studio-doc";
+          buildPhase = ''
+            runHook preBuild
+            RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --document-private-items
+            runHook postBuild
+          '';
+          doCheck = false;
+          installPhase = "touch $out";
+        });
+
         # Shellcheck ratchet, the same way.
         shellcheck = pkgs.runCommand "theme-studio-shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
           count=$( (shellcheck -f gcc ${./scripts}/*.sh ${./scripts}/lib/*.sh || true) | wc -l)
