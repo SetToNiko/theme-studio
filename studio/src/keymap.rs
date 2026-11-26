@@ -436,7 +436,11 @@ pub fn all_actions() -> Vec<Action> {
         A::PickFont,
         A::Search,
     ]);
-    v.extend(crate::fonts::CHIPS.iter().map(|(c, _)| A::Filter(*c)));
+    v.extend(
+        crate::fonts::types::CHIPS
+            .iter()
+            .map(|(c, _)| A::Filter(*c)),
+    );
     v
 }
 
@@ -485,7 +489,9 @@ impl Action {
             A::TourNames => "tournament-names",
             A::TourBracket => "tournament-bracket",
             A::TourUndo => "tournament-undo",
-            A::UseFor(r) => return format!("use-for-{}", crate::fonts::ROLES[r as usize % 3]),
+            A::UseFor(r) => {
+                return format!("use-for-{}", crate::fonts::types::ROLES[r as usize % 3]);
+            }
             A::OpenPalette => "open-palette",
             A::OpenFonts => "open-font-preset",
             A::NewPalette => "new-palette",
@@ -595,7 +601,7 @@ impl Action {
             Action::UseFor(r) => {
                 format!(
                     "use the font for {}",
-                    crate::fonts::ROLE_NAMES[r as usize % 3]
+                    crate::fonts::types::ROLE_NAMES[r as usize % 3]
                 )
             }
             Action::OpenPalette => "another palette for this theme".into(),
@@ -653,7 +659,7 @@ impl Action {
             Action::PickFont => "pick a font from the list".into(),
             Action::Search => "search".into(),
             Action::Filter(c) => {
-                let label = crate::fonts::CHIPS
+                let label = crate::fonts::types::CHIPS
                     .iter()
                     .find(|(k, _)| *k == c)
                     .map(|(_, l)| *l)
@@ -1352,7 +1358,7 @@ impl Keymap {
             (C::Downloads, A::UseFor(2), &["3"]),
         ];
         const CHIP_KEYS: [&str; 8] = ["m", "p", "n", "M", "P", "x", "b", "c"];
-        for (i, (c, _)) in crate::fonts::CHIPS.iter().enumerate() {
+        for (i, (c, _)) in crate::fonts::types::CHIPS.iter().enumerate() {
             rows.push((
                 C::FontList,
                 A::Filter(*c),
