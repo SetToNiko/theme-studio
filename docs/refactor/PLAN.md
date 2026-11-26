@@ -244,6 +244,7 @@ Completes: criterion 6
   - Configured terminals: after Phase 2, a terminal is one entry in `share/integrations.json` plus a generator. Check that nothing outside the list names Ghostty: `share/terminal-colors.json` (shared by the scripts and the preview, built around Ghostty's 16 colours and theme names), the Ghostty theme-folder check (`share/integrations/ghostty-colors.sh`), and the `pkill -USR2 ghostty` reload (P2.6 moves it into the list).
   - The terminal that the studio runs in: the studio uses the kitty graphics protocol for font previews (half blocks otherwise) and the terminal's own colours. Put this behind one small interface, so the studio does not assume the terminal that it runs in.
   - The preview draws a Ghostty-style terminal: part of the "preview per app" feature.
+  - The preview terminal is one module since P5.11: `studio/src/preview_term/`. Ghostty-specific places there: `TermColors` in pane.rs (colours as Ghostty sets them, from terminal-colors.json); mod.rs sets TERM, COLORTERM and THEME_COLORS for the shell and uses the `colors.sh` draft file.
 
 **Handover** (goal change, Phase R). After the removals, the dotfiles must provide these. No dotfiles change in this refactor.
 - Wallpaper border colour (R.1): run `wallpaper-rotate refresh` after a theme switch, for example in a dotfiles wrapper around `theme-switch`, or a watch on `~/.config/colors/current`.
