@@ -18,7 +18,10 @@ use crate::keymap::Context;
 use crate::keymap::action::Action;
 use crate::palette::{self, GROUPS, TEXT_KEYS};
 use crate::preview::Mode as PreviewMode;
-use crate::widgets::panel_number;
+pub mod pane_chrome;
+pub mod widgets;
+use pane_chrome::{pane_border, pane_title};
+use widgets::{friendly, panel_number};
 
 /// Narrowest the fonts column, the colour column and the preview can be.
 const FONTS_W: u16 = 46;
@@ -490,33 +493,6 @@ fn focused_block(app: &App, area: Rect, title: Line<'static>, focused: bool) -> 
     Block::bordered()
         .title(title)
         .border_style(pane_border(app, area, focused))
-}
-
-/// A pane's border: yellow when it has the keyboard, the hover colour when
-/// the mouse is over it, else grey.
-pub fn pane_border(app: &App, area: Rect, focused: bool) -> Style {
-    if focused {
-        Style::new().yellow()
-    } else if app.pane_hovered(area) {
-        Style::new().fg(crate::hit::looks().pane)
-    } else {
-        Style::new().dark_gray()
-    }
-}
-
-/// A pane title that focuses the pane when clicked (hover-highlighted).
-pub fn pane_title(app: &mut App, area: Rect, title: Line<'static>, pane: u8) -> Line<'static> {
-    let r = Rect {
-        x: area.x + 1,
-        y: area.y,
-        width: (title.width() as u16).min(area.width.saturating_sub(2)),
-        height: 1,
-    };
-    if app.hits.add(r, Target::PaneTitle(pane)) {
-        title.patch_style(hover(Style::new()))
-    } else {
-        title
-    }
 }
 
 /// A swatch with a thin frame, visible even when it matches the background.
@@ -1640,39 +1616,6 @@ fn fit_hints(context: &[String], general: &[String], last: &str, room: usize) ->
     }
 }
 
-/// Key text for hints: `<CR>` → `Enter`, `<leader>sp` → `Space s p`,
-/// `<C-r>` → `C-r`; plain characters stay as they are.
-pub fn friendly(seq: &str) -> String {
-    let mut parts: Vec<String> = Vec::new();
-    let mut rest = seq;
-    while !rest.is_empty() {
-        if rest.starts_with('<')
-            && let Some(end) = rest.find('>')
-            && end > 1
-        {
-            let name = &rest[1..end];
-            parts.push(
-                match name {
-                    "CR" => "Enter",
-                    "leader" => "Space",
-                    "Up" => "↑",
-                    "Down" => "↓",
-                    "Left" => "←",
-                    "Right" => "→",
-                    other => other,
-                }
-                .to_string(),
-            );
-            rest = &rest[end + 1..];
-        } else {
-            let c = rest.chars().next().unwrap();
-            parts.push(c.to_string());
-            rest = &rest[c.len_utf8()..];
-        }
-    }
-    parts.join(if parts.len() > 1 { " " } else { "" })
-}
-
 // ----- pop-ups ------------------------------------------------------------
 
 fn centered(area: Rect, w: u16, h: u16) -> Rect {
@@ -2157,7 +2100,7 @@ fn truncate(s: &str, n: usize) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{fit_hints, friendly};
+    use super::fit_hints;
 
     #[test]
     fn hints_shorten_to_fit_and_keep_help_last() {
@@ -2180,14 +2123,5 @@ mod tests {
         for room in 0..120 {
             assert!(fit_hints(&ctx, &general, "? keys", room).chars().count() <= room);
         }
-    }
-
-    #[test]
-    fn friendly_key_names() {
-        assert_eq!(friendly("<CR>"), "Enter");
-        assert_eq!(friendly("<leader>sp"), "Space s p");
-        assert_eq!(friendly("<C-r>"), "C-r");
-        assert_eq!(friendly("j"), "j");
-        assert_eq!(friendly("<lt>"), "lt");
     }
 }
