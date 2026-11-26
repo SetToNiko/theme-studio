@@ -74,6 +74,13 @@ pub fn data_file(field: &str, map: Map<String, Value>) -> Value {
     Value::Object(m)
 }
 
+/// The name in a small state file like `current` (trimmed); `None` if the
+/// file is missing or empty.
+pub fn read_name_file(path: &std::path::Path) -> Option<String> {
+    let s = std::fs::read_to_string(path).ok()?;
+    Some(s.trim().to_string()).filter(|s| !s.is_empty())
+}
+
 /// Writes a JSON file in jq's format, first keeping what it held in the
 /// history (labelled with the file's name).
 pub fn write_json_file(path: &std::path::Path, value: &Value) -> Result<()> {
@@ -174,11 +181,10 @@ impl Store {
     /// The palette theme-switch.sh last applied.
     #[expect(
         clippy::unused_self,
-        reason = "a method like the other Store functions, and like `FontPresets::active_name`, so callers use the one Store handle"
+        reason = "NEEDS app/ change: the caller in app/mod.rs uses `store.active_name()`; make it an associated function once they change"
     )]
     pub fn active_name(&self) -> Option<String> {
-        let s = std::fs::read_to_string(crate::model::paths::colors_dir().join("current")).ok()?;
-        Some(s.trim().to_string()).filter(|s| !s.is_empty())
+        read_name_file(&crate::model::paths::colors_dir().join("current"))
     }
 
     /// Writes one palette into palettes.json (re-read first, so changes made

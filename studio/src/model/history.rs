@@ -209,7 +209,7 @@ impl History {
 
     #[expect(
         clippy::unused_self,
-        reason = "a public method like `record`/`list_info`, so callers use the one History handle"
+        reason = "NEEDS app/ change: the caller in app/pages/settings/settings_actions.rs uses `h.delete(&path)`; make it an associated function once it changes"
     )]
     pub fn delete(&self, path: &Path) -> Result<()> {
         bump();

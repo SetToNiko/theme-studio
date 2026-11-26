@@ -69,7 +69,7 @@ pub enum HistFocus {
 
 #[expect(
     clippy::struct_excessive_bools,
-    reason = "independent flags of the page (tab strip focus, reloaded config, two difference views); an enum would not fit them"
+    reason = "independent flags of the page (tab strip focus, reloaded config, two difference views); an enum would not fit them, because any mix can be true together: the tab strip can be focused while a draft is reloaded, and `browse_all` (Keymaps tab) and `show_all` (History tab) stay set when you change tabs"
 )]
 pub struct SettingsPage {
     pub tab: Tab,
