@@ -127,7 +127,7 @@ Step format (one line for each step):
 Completes: criterion 4 (the check command exists)
 
 ### Phase R: Removals (goal change, 2026-11-26)
-- [ ] R.1 [removal] Wallpaper hook: theme-switch.sh no longer runs `wallpaper-rotate refresh` | Files: `scripts/theme-switch.sh`, `tests/scripts/run.sh` (stub list) | Target: goal (only fonts and palettes) | Check: golden files lose only the wallpaper-rotate call
+- [ ] R.1 [removal] Wallpaper hook: theme-switch.sh no longer runs `wallpaper-rotate refresh` | Files: `scripts/theme-switch.sh`, `tests/scripts/run.sh` (stub list) | Target: goal (colours, themes, configured programs) | Check: golden files lose only the wallpaper-rotate call
 - [ ] R.2 [removal] Login screen in font-switch.sh: remove the greeter part. Remove the namespace protection from `tests/scripts/run.sh` (nothing writes to /var/lib/ascii-boot any more) | Files: `scripts/font-switch.sh`, `tests/scripts/run.sh` | Target: goal | Check: golden files unchanged (the part was skipped), `grep ascii-boot scripts/` = 0
 - [ ] R.3 [removal] NixOS module: remove `packaging/nix/nixos-module.nix` and the `nixosModules` output, and its documentation | Files: `packaging/nix/nixos-module.nix`, `flake.nix`, `README.md`, `docs/theme-studio.md` | Target: goal | Check: `nix flake check`
 - [ ] R.4 Shared data reader: move `json_data` from `rofi-picker.sh` into `scripts/lib/data.sh` (no behavior change) | Files: `scripts/lib/rofi-picker.sh`, `scripts/lib/data.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: T1 | Check: golden files unchanged
@@ -221,7 +221,8 @@ Completes: criterion 6
 ## 10. Plan changelog
 | Phase | Note | Decision | Reason |
 |---|---|---|---|
-| Goal | Theme Studio configures only fonts and colour palettes: remove the wallpaper hook, the login screen (font-switch part, NixOS module), and the rofi picker menus | ACCEPT: new Phase R (R.1 to R.6), P1.3 without the login-screen paths, P2.5 removed | The user changed the goal on 2026-11-26. Removals first make Phases 1 and 2 smaller. |
+| Goal | Theme Studio configures colours and themes for the system and the programs it is set up to configure: remove the wallpaper hook, the login screen (font-switch part, NixOS module), and the rofi picker menus | ACCEPT: new Phase R (R.1 to R.6), P1.3 without the login-screen paths, P2.5 removed | The user changed the goal on 2026-11-26. Removals first make Phases 1 and 2 smaller. |
+| Goal | Wording: "colours and themes for the system, and the programs that it is set up to configure" (was "only fonts and colour palettes"). The three removals stay. | ACCEPT: no step changes | The user corrected the wording on 2026-11-26. The login screen goes because users of a future release can use different login tools. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->

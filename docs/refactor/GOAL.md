@@ -6,7 +6,7 @@ Draft pack: junior-readable-maintainability
 
 ## Goal
 After the refactor, a junior developer can read the codebase, quickly find the purpose of each module, and understand the architecture of the project. The code is as easy as possible to maintain and to extend.
-Theme Studio configures only fonts and colour palettes for the system.
+Theme Studio configures colours and themes (palettes and font presets) for the system, and the programs that it is set up to configure.
 
 ## Reason
 The codebase is disorganized and has much coupling. Thus, it is difficult to maintain and to add functionality. Example: `studio/src/app.rs` has 4,948 lines and changed in 46 of 96 commits.
@@ -32,7 +32,7 @@ The codebase is disorganized and has much coupling. Thus, it is difficult to mai
 ## New behavior and removals
 Removals (Phase R, directly after Phase 0). Each removal changes its documentation and has a handover entry in the plan (section 7):
 1. The wallpaper hook: theme-switch.sh no longer runs `wallpaper-rotate refresh`.
-2. The login screen: font-switch.sh no longer writes the LightDM greeter font (`/var/lib/ascii-boot`, `/etc/ascii-boot`). `packaging/nix/nixos-module.nix` and the `nixosModules` flake output are removed.
+2. The login screen: font-switch.sh no longer writes the LightDM greeter font (`/var/lib/ascii-boot`, `/etc/ascii-boot`). `packaging/nix/nixos-module.nix` and the `nixosModules` flake output are removed. Reason: users of a future public release can use different login tools.
 3. The rofi picker menus: `scripts/lib/rofi-picker.sh` is removed. The switch scripts need a name (no name: a usage message, exit 2).
 Kept: rofi and the lock screen as themed apps (colours and fonts).
 
