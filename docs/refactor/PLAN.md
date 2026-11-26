@@ -230,7 +230,7 @@ Wave 1 (parallel, one folder group each; no two steps change the same file). Eac
 - [x] P6.1 model/, config/, keymap/ (87 warnings) | Files: those folders | Target: goal 7, limits | Check: 0 warnings in those files; long-function scan clean
 - [x] P6.2 fonts/, settings_page/, system/, preview_term/ (114) | Files: those folders | Target: goal 7, limits | Check: same
 - [x] P6.3 app/ (144), and TopFocus if both flags are never true at once (not done: palette_menu_action keeps the menu focused while it focuses the page tabs; a test checks that state) | Files: app/ | Target: goal 7, limits | Check: same
-- [ ] P6.4 ui/ (126) | Files: ui/ | Target: goal 7, limits | Check: same
+- [x] P6.4 ui/ (126) | Files: ui/ | Target: goal 7, limits | Check: same
 - [x] P6.6 Shellcheck to zero | Files: `scripts/*.sh`, `scripts/lib/*.sh` | Target: rule 3 | Check: count = 0
 Wave 2:
 - [ ] P6.5 Errors in system/download/: handle or report the 18 ignored results | Files: `system/download/*` | Target: T7 | Check: tests, each `let _ =` has a reason or is gone
@@ -239,7 +239,7 @@ Completes: criterion 7
 
 ### Phase 7: [feature] Install without Nix
 - [ ] P7.1 [feature] Install script: `install.sh` with PREFIX: cargo build, scripts, share files, desktop entry | Files: `install.sh`, `packaging/theme-studio.desktop` | Target: goal 6 | Check: install into `$(mktemp -d)`, `command -v` finds each command
-- [ ] P7.2 [feature] Dependencies and docs: README section with the install command and each runtime dependency | Files: `README.md`, `docs/theme-studio.md` | Target: goal 6 | Check: each program that the code starts is listed
+- [x] P7.2 [feature] Dependencies and docs: README section with the install command and each runtime dependency | Files: `README.md`, `docs/theme-studio.md` | Target: goal 6 | Check: each program that the code starts is listed
 - [ ] P7.3 [feature] Install test: golden tests against the installed commands, without THEME_STUDIO_SHARE, in flake checks | Files: `tests/scripts/run.sh`, `flake.nix` | Target: goal 6 | Check: `nix flake check`; `nix build` still passes
 Completes: criterion 6
 
