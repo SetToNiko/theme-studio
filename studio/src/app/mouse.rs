@@ -39,7 +39,7 @@ impl App {
     /// Sends a mouse event to the scroll, click, drag, or button-up handler.
     ///
     /// A notice box or an open pop-up takes the event first.
-    // Long function: one match over the mouse event kinds, after the notice and pop-up checks.
+    // Long function (reason verified, phase 3): one match over the mouse event kinds, after the notice and pop-up checks.
     fn handle_mouse(&mut self, m: MouseEvent) {
         let (x, y) = (m.column, m.row);
         self.hits.mouse = Some((x, y));
@@ -129,7 +129,7 @@ impl App {
     /// A click (or a drag step) on a target at `r`.
     ///
     /// Picks the method for the kind of target. Short targets are done here.
-    // Long function: one match with one arm per click target kind.
+    // Long function (reason verified, phase 3): one match with one arm per click target kind.
     fn click(&mut self, r: Rect, t: T, x: u16, y: u16, drag: bool) {
         match t {
             T::PageTab(p) => self.page = p,
@@ -203,7 +203,7 @@ impl App {
     /// A click or drag step on a picker control: the square, the hue bar, a slider, or the hex box.
     ///
     /// The position inside the control at `r` sets the colour. `drag` is true for a drag step.
-    // Long function: one match over the five picker controls, which share the focus and colour update.
+    // Long function (reason verified, phase 3): one match over the five picker controls, which share the focus and colour update.
     fn click_picker_control(&mut self, r: Rect, t: T, x: u16, y: u16, drag: bool) {
         self.side = Side::Colours;
         match t {

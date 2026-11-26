@@ -39,7 +39,7 @@ impl App {
     ///
     /// The order of the checks matters: notice box, focused preview window,
     /// Ctrl+C, pop-ups, text fields, and last the keymap with its pending keys.
-    // Long function: one early return per special case, in a fixed order.
+    // Long function (reason verified, phase 3): one early return per special case, in a fixed order.
     fn handle_key(&mut self, k: KeyEvent) {
         use crate::fonts::FontFocus;
         let key = Key::from_event(k);
@@ -160,7 +160,7 @@ impl App {
 
     /// Actions for the window: quit, help, page switch, the toggles, resize
     /// mode and the pane focus. Other actions do nothing.
-    // Long function: one match with one arm per window action.
+    // Long function (reason verified, phase 3): one match with one arm per window action.
     fn run_view_action(&mut self, a: Action) {
         match a {
             Action::Quit => self.guard(Pending::Quit),
@@ -243,7 +243,7 @@ impl App {
 
     /// Fonts-column actions: the focus order, filling the roles, the jump to
     /// the Downloads page, and the rest for the fonts tab itself.
-    // Long function: one match with one arm per fonts-column action; the guards keep the original order.
+    // Long function (reason verified, phase 3): one match with one arm per fonts-column action; the guards keep the original order.
     fn run_fonts(&mut self, a: Action) {
         use crate::fonts::FontFocus;
 

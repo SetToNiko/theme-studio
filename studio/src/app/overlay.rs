@@ -56,7 +56,7 @@ impl App {
     /// The rule for each per-kind method: it returns `Some(overlay)` to show
     /// that overlay next, and `None` when it already set `self.overlay`
     /// itself (it opened something else). Never both.
-    // Long function: one match over all 11 overlay kinds, one short arm each.
+    // Long function (reason verified, phase 3): one match over all 11 overlay kinds, one short arm each.
     pub(super) fn on_overlay_key(&mut self, k: KeyEvent) {
         let overlay = std::mem::replace(&mut self.overlay, Overlay::None);
         let next = match overlay {
@@ -188,7 +188,7 @@ impl App {
     }
 
     /// Keys in the "save as" name box: type, Backspace, Enter to save, Esc to close.
-    // Long function: one match over the keys of the box; Enter hands over to two methods.
+    // Long function (reason verified, phase 3): one match over the keys of the box; Enter hands over to two methods.
     fn save_as_key(
         &mut self,
         mut input: String,
@@ -256,7 +256,7 @@ impl App {
     ///
     /// Same rules as for a theme: an empty name keeps the box open, an
     /// existing name needs a second Enter. Returns the overlay to show next.
-    // Long function: the fonts and palette checks share one set of "exists" values.
+    // Long function (reason verified, phase 3): the fonts and palette checks share one set of "exists" values.
     fn save_as_enter(&mut self, input: String, overwrite: bool, then_apply: bool) -> Overlay {
         let name = input.trim().to_string();
         let (exists, current) = if self.overlay_for == For::Fonts {
