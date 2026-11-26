@@ -133,25 +133,16 @@ impl App {
         }
     }
 
-    // Long function: one match over the keys while a round is played.
     fn run_tour_playing(&mut self, a: Action) -> bool {
-        let t = self.tour();
-        if t.t.is_none() {
+        if self.tour().t.is_none() {
             return false;
         }
+        if self.tour_view_key(a) {
+            return true;
+        }
+        let t = self.tour();
         match a {
-            Action::Left | Action::Right => {
-                if t.pick(a == Action::Left) {
-                    t.stage = Stage::Results;
-                    t.sel = 0;
-                    t.names = true;
-                }
-                t.past = None;
-                self.tour_save();
-                if self.tour().stage == Stage::Results {
-                    self.messages.info("The tournament is over: the top 10");
-                }
-            }
+            Action::Left | Action::Right => self.tour_pick(a == Action::Left),
             Action::TourUndo => {
                 if t.t.as_mut().is_some_and(Tournament::undo) {
                     self.tour_save();
@@ -160,20 +151,6 @@ impl App {
                 }
             }
             Action::TourNames => t.names = !t.names,
-            Action::TourBracket => {
-                t.bracket = true;
-                t.bracket_scroll = 0;
-            }
-            Action::PreviewText => {
-                t.kind = if t.kind == Kind::Prose {
-                    Kind::Code
-                } else {
-                    Kind::Prose
-                }
-            }
-            Action::PreviewLang => t.lang = (t.lang + 1) % samples::langs::LANGS.len(),
-            Action::SizeUp => t.pt = (t.pt + 1).min(48),
-            Action::SizeDown => t.pt = t.pt.saturating_sub(1).max(6),
             Action::Back => {
                 t.stage = Stage::Setup;
                 t.past = None;
@@ -184,30 +161,31 @@ impl App {
         true
     }
 
-    // Long function: one match over the keys on the results page.
-    fn run_tour_results(&mut self, a: Action) -> bool {
+    /// Picks the left (`left`) or right font. After the last pick the results
+    /// page opens.
+    fn tour_pick(&mut self, left: bool) {
         let t = self.tour();
-        let Some(x) = t.t.as_ref() else {
-            return false;
-        };
-        let top: Vec<usize> = x.top().into_iter().flat_map(|(_, v)| v).collect();
-        let last = top.len().saturating_sub(1);
-        let who = top.get(t.sel).copied();
+        if t.pick(left) {
+            t.stage = Stage::Results;
+            t.sel = 0;
+            t.names = true;
+        }
+        t.past = None;
+        self.tour_save();
+        if self.tour().stage == Stage::Results {
+            self.messages.info("The tournament is over: the top 10");
+        }
+    }
+
+    /// Keys that change how the fonts are shown, while playing and on the
+    /// results page: the bracket, text kind, language and size. True when `a`
+    /// was one of them.
+    fn tour_view_key(&mut self, a: Action) -> bool {
+        let t = self.tour();
         match a {
-            Action::Up => t.sel = t.sel.saturating_sub(1),
-            Action::Down => t.sel = (t.sel + 1).min(last),
             Action::TourBracket => {
                 t.bracket = true;
                 t.bracket_scroll = 0;
-            }
-            Action::TourUndo => {
-                // back into the final
-                if let Some(x) = t.t.as_mut()
-                    && x.undo()
-                {
-                    t.stage = Stage::Playing;
-                    self.tour_save();
-                }
             }
             Action::PreviewText => {
                 t.kind = if t.kind == Kind::Prose {
@@ -219,10 +197,55 @@ impl App {
             Action::PreviewLang => t.lang = (t.lang + 1) % samples::langs::LANGS.len(),
             Action::SizeUp => t.pt = (t.pt + 1).min(48),
             Action::SizeDown => t.pt = t.pt.saturating_sub(1).max(6),
+            _ => return false,
+        }
+        true
+    }
+
+    fn run_tour_results(&mut self, a: Action) -> bool {
+        if self.tour().t.is_none() {
+            return false;
+        }
+        if self.tour_view_key(a) || self.results_pick_key(a) {
+            return true;
+        }
+        let last = self.results_top().len().saturating_sub(1);
+        let t = self.tour();
+        match a {
+            Action::Up => t.sel = t.sel.saturating_sub(1),
+            Action::Down => t.sel = (t.sel + 1).min(last),
+            Action::TourUndo => {
+                // back into the final
+                if let Some(x) = t.t.as_mut()
+                    && x.undo()
+                {
+                    t.stage = Stage::Playing;
+                    self.tour_save();
+                }
+            }
             Action::Back => {
                 t.stage = Stage::Setup;
                 t.past = None;
             }
+            _ => return false,
+        }
+        true
+    }
+
+    /// The entrants of the results list (the top 10), best first.
+    fn results_top(&mut self) -> Vec<usize> {
+        let Some(x) = self.tour().t.as_ref() else {
+            return Vec::new();
+        };
+        x.top().into_iter().flat_map(|(_, v)| v).collect()
+    }
+
+    /// Keys that act on the highlighted result: install it, use it for a
+    /// role, or fill the family roles. True when `a` was one of them.
+    fn results_pick_key(&mut self, a: Action) -> bool {
+        let top = self.results_top();
+        let who = top.get(self.tour().sel).copied();
+        match a {
             Action::Confirm => {
                 if let Some(w) = who {
                     self.tour_install(w);

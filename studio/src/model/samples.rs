@@ -303,9 +303,8 @@ pub fn default_kind(category: &str, nerd: bool) -> Kind {
 mod tests {
     use super::*;
 
-    // Long function: one check of the markup of every sample text, in one loop over the languages.
     #[test]
-    fn texts_are_valid_markup() {
+    fn code_markup_is_balanced() {
         let p = Palette::blank();
         let st = Style {
             family: "Inter <Bold>",
@@ -330,12 +329,26 @@ mod tests {
         for m in [icons(&st), readme(&st)] {
             assert_eq!(m.matches("<span").count(), m.matches("</span>").count());
         }
+    }
+
+    #[test]
+    fn prose_pages_stay_in_range() {
+        let p = Palette::blank();
+        let st = Style {
+            family: "Inter <Bold>",
+            size: 12,
+            palette: &p,
+        };
         let paras = prose();
         assert!(paras[1] == "Chapter 1" && paras[2].starts_with("I am by birth a Genevese"));
         let (page, next) = prose_page(&st, 0, 1500);
         assert!(page.contains("Genevese") && next > 2 && next < paras.len());
         let (_, last) = prose_page(&st, paras.len() - 1, 1500);
         assert_eq!(last, paras.len() - 1, "the last page stays");
+    }
+
+    #[test]
+    fn default_kind_by_category() {
         assert_eq!(default_kind("monospace", false), Kind::Code);
         assert_eq!(default_kind("serif", false), Kind::Prose);
         assert_eq!(default_kind("nerd font", true), Kind::Icons);

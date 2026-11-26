@@ -264,7 +264,6 @@ impl App {
         }
     }
 
-    // Long function: one match over every key the list reacts to, one arm per key.
     /// Keys while the list of palette keys is open. Moving shows each key on
     /// the setting (in the draft); Enter keeps it, Esc puts `original` back.
     pub fn choose_colour_key_press(

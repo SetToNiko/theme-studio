@@ -116,7 +116,6 @@ impl App {
 
     /// Background results: the catalogue, progress, finished installs. True
     /// when something changed (redraw).
-    // Long function: one match over every kind of background message (catalogue, progress, preview, prefetch, install).
     pub fn poll_downloads(&mut self) -> bool {
         if self.page == Page::Downloads && self.dl.catalogue.is_none() && !self.dl.loading {
             self.dl.start_catalogue_load();
@@ -124,75 +123,89 @@ impl App {
         let mut changed = false;
         // only what shows on screen asks for a redraw (prefetching sends a lot)
         while let Ok(m) = self.dl.try_recv() {
-            match m {
-                Msg::Catalogue(Ok(c)) => {
-                    self.dl.loading = false;
-                    changed = true;
-                    self.dl.catalogue = Some(c);
-                }
-                Msg::Catalogue(Err(e)) => {
-                    self.dl.loading = false;
-                    changed = true;
-                    self.dl.catalogue = Some(Catalogue::default());
-                    self.dl.load_error = Some(e);
-                }
-                Msg::Progress { id, done, total } => {
-                    let Some(job) = self.dl.jobs.get_mut(&id) else {
-                        continue;
-                    };
-                    changed = true;
-                    (job.1, job.2) = (done, total);
-                    let pct = if total > 0 {
-                        format!("{}%", done * 100 / total.max(1))
-                    } else {
-                        mb(done)
-                    };
-                    let family = job.0.clone();
-                    self.messages.info(format!("Downloading {family}: {pct}"));
-                }
-                Msg::Preview { id, result } => {
-                    // the font on screen, or one the page asked for
-                    let ours = self.prefetch.finished(&id);
-                    let pv = self.pv();
-                    changed |= !ours || pv.last.as_deref() == Some(id.as_str());
-                    pv.fetching.remove(&id);
-                    pv.families.insert(id, result);
-                }
-                Msg::PrefetchQueue {
-                    categories,
-                    queue,
-                    total,
-                } => {
-                    self.prefetch.queued(categories, queue, total);
-                    changed = true;
-                }
-                Msg::PreviewsSize(bytes) => {
-                    self.prefetch.measured(bytes);
-                    changed = true;
-                }
-                Msg::Installed {
-                    id,
-                    result,
-                    warning,
-                } => {
-                    changed = true;
-                    let installed = result.is_ok();
-                    let family = self
-                        .dl
-                        .jobs
-                        .get(&id)
-                        .map_or_else(|| id.clone(), |job| job.0.clone());
-                    self.finish_install(id, result);
-                    if let (true, Some(w)) = (installed, warning) {
-                        self.messages.error(format!(
-                            "Installed {family}, but the font cache refresh failed, so the font may show up late. Details: {w}"
-                        ));
-                    }
-                }
-            }
+            changed |= self.handle_dl_message(m);
         }
         // the preview: fetch, draw, pick up a finished image
         self.poll_preview() || changed
+    }
+
+    /// Handles one background message. True when the screen must be redrawn.
+    fn handle_dl_message(&mut self, m: Msg) -> bool {
+        match m {
+            Msg::Catalogue(Ok(c)) => {
+                self.dl.loading = false;
+                self.dl.catalogue = Some(c);
+            }
+            Msg::Catalogue(Err(e)) => {
+                self.dl.loading = false;
+                self.dl.catalogue = Some(Catalogue::default());
+                self.dl.load_error = Some(e);
+            }
+            Msg::Progress { id, done, total } => return self.on_progress(&id, done, total),
+            Msg::Preview { id, result } => return self.on_preview(id, result),
+            Msg::PrefetchQueue {
+                categories,
+                queue,
+                total,
+            } => self.prefetch.queued(categories, queue, total),
+            Msg::PreviewsSize(bytes) => self.prefetch.measured(bytes),
+            Msg::Installed {
+                id,
+                result,
+                warning,
+            } => self.on_installed(id, result, warning),
+        }
+        true
+    }
+
+    /// A preview family of font `id` came (or failed). True when it is the
+    /// font on screen, or one that the user asked for (not a prefetch).
+    fn on_preview(&mut self, id: String, result: Result<String, String>) -> bool {
+        let ours = self.prefetch.finished(&id);
+        let pv = self.pv();
+        let shown = !ours || pv.last.as_deref() == Some(id.as_str());
+        pv.fetching.remove(&id);
+        pv.families.insert(id, result);
+        shown
+    }
+
+    /// Download progress of job `id`: `done` of `total` bytes (0 if unknown).
+    /// True when the job exists (the screen must be redrawn).
+    fn on_progress(&mut self, id: &str, done: u64, total: u64) -> bool {
+        let Some(job) = self.dl.jobs.get_mut(id) else {
+            return false;
+        };
+        (job.1, job.2) = (done, total);
+        let pct = if total > 0 {
+            format!("{}%", done * 100 / total.max(1))
+        } else {
+            mb(done)
+        };
+        let family = job.0.clone();
+        self.messages.info(format!("Downloading {family}: {pct}"));
+        true
+    }
+
+    /// An install of job `id` ended. Records it, and tells the user when the
+    /// font cache refresh failed (`warning`).
+    fn on_installed(
+        &mut self,
+        id: String,
+        result: Result<(String, Value), String>,
+        warning: Option<String>,
+    ) {
+        let installed = result.is_ok();
+        let family = self
+            .dl
+            .jobs
+            .get(&id)
+            .map_or_else(|| id.clone(), |job| job.0.clone());
+        self.finish_install(id, result);
+        if let (true, Some(w)) = (installed, warning) {
+            self.messages.error(format!(
+                "Installed {family}, but the font cache refresh failed, so the font may show up late. Details: {w}"
+            ));
+        }
     }
 
     /// An install finished: record it (and fill the roles that asked for it),
@@ -401,25 +414,10 @@ impl App {
     }
 
     /// Keys on the page (not while typing in the search box).
-    // Long function: one match over the page's keys, after the tab-strip and Tournament cases.
     pub fn run_downloads(&mut self, a: Action) {
         let top = self.settings.layout.inner_tabs_on_top();
         if self.dl.tabs_focused {
-            match a {
-                Action::Left | Action::TabPrev => self.dl_switch(-1),
-                Action::Right | Action::TabNext => self.dl_switch(1),
-                Action::Down if top => self.dl.tabs_focused = false,
-                Action::Up if !top => self.dl.tabs_focused = false,
-                Action::Up if top => {
-                    self.focus_page_tabs(true);
-                }
-                Action::Down if !top => {
-                    self.focus_page_tabs(false);
-                }
-                Action::Confirm | Action::Back => self.dl.tabs_focused = false,
-                _ => {}
-            }
-            return;
+            return self.run_dl_tab_strip(a, top);
         }
         // the Tournament tab has its own keys (what it doesn't use goes on)
         if self.dl.tab == DlTab::Tournament {
@@ -437,6 +435,32 @@ impl App {
         if self.preview_action(a) {
             return;
         }
+        self.run_dl_list(a, top);
+    }
+
+    /// Keys while the keyboard is on the tab strip: left/right change tabs;
+    /// moving back towards the page, Enter or Esc return to it. `top` is
+    /// whether the strip is above the page.
+    fn run_dl_tab_strip(&mut self, a: Action, top: bool) {
+        match a {
+            Action::Left | Action::TabPrev => self.dl_switch(-1),
+            Action::Right | Action::TabNext => self.dl_switch(1),
+            Action::Down if top => self.dl.tabs_focused = false,
+            Action::Up if !top => self.dl.tabs_focused = false,
+            Action::Up if top => {
+                self.focus_page_tabs(true);
+            }
+            Action::Down if !top => {
+                self.focus_page_tabs(false);
+            }
+            Action::Confirm | Action::Back => self.dl.tabs_focused = false,
+            _ => {}
+        }
+    }
+
+    /// Keys on the font list itself: move, change tab or category, search,
+    /// install, remove, leave. `top` is whether the tab strip is above the page.
+    fn run_dl_list(&mut self, a: Action, top: bool) {
         let n = self.dl_rows().len();
         let ok = vec![true; n];
         let edge = |sel: usize, up: bool| if up { sel == 0 } else { sel + 1 >= n };

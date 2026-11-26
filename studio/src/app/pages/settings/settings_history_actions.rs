@@ -86,13 +86,24 @@ impl App {
         }
     }
 
-    // Long function: one ordered list of early-return key cases for the History tab.
     pub(crate) fn run_history_tab(&mut self, a: Action) {
+        if self.history_nav_key(a) {
+            return;
+        }
+        if self.settings_page.hist_focus == HistFocus::Files {
+            return self.run_history_files(a);
+        }
+        self.run_history_versions(a);
+    }
+
+    /// Keys that work on both lists: show all, change the focused list, scroll
+    /// the diff. True when `a` was one of them.
+    fn history_nav_key(&mut self, a: Action) -> bool {
         let p = &mut self.settings_page;
         if a == Action::ToggleAll {
             p.show_all = !p.show_all;
             p.diff_scroll = 0;
-            return;
+            return true;
         }
         if matches!(
             a,
@@ -107,16 +118,19 @@ impl App {
                 }
                 (f, _) => f,
             };
-            return;
+            return true;
         }
         if matches!(a, Action::PageUp | Action::PageDown) {
             let d: i32 = if a == Action::PageUp { -10 } else { 10 };
             p.diff_scroll = offset(p.diff_scroll, d);
-            return;
+            return true;
         }
-        if p.hist_focus == HistFocus::Files {
-            return self.run_history_files(a);
-        }
+        false
+    }
+
+    /// Keys while the version list has the focus: move over the versions,
+    /// restore, save a named version, or delete one.
+    fn run_history_versions(&mut self, a: Action) {
         let versions = self.versions();
         let p = &mut self.settings_page;
         let before = p.hist_sel;
@@ -129,26 +143,47 @@ impl App {
         let file = FILES[p.hist_file];
         let selected = versions.get(p.hist_sel).cloned();
         match a {
-            Action::Restore | Action::Confirm => match selected {
-                Some((path, s)) => self.ask(
-                    format!(
-                        "Restore {file} to the version from {} ({})? What you have now goes to the history.",
-                        s.when,
-                        s.name.unwrap_or(s.summary)
-                    ),
-                    Deferred::Restore { file, version: path },
-                ),
-                None => self.messages.info(format!("{file} has no saved versions yet")),
-            },
-            Action::SaveNamed => self.prompt(&format!("Name for the current {file}"), Naming::Version(file), ""),
-            Action::Delete => match selected {
-                Some((path, s)) if s.name.is_some() => {
-                    self.ask(format!("Delete the version \"{}\"?", s.name.unwrap()), Deferred::DeleteVersion(path));
-                }
-                Some(_) => self.messages.info("Only named versions can be deleted (snapshots are pruned on their own)"),
-                None => {}
-            },
+            Action::Restore | Action::Confirm => self.ask_restore(file, selected),
+            Action::SaveNamed => self.prompt(
+                &format!("Name for the current {file}"),
+                Naming::Version(file),
+                "",
+            ),
+            Action::Delete => self.ask_delete(selected),
             _ => {}
+        }
+    }
+
+    /// Asks before `file` goes back to the `selected` version. Says so when
+    /// the file has no version.
+    fn ask_restore(&mut self, file: &'static str, selected: Option<(PathBuf, SnapshotInfo)>) {
+        match selected {
+            Some((path, s)) => self.ask(
+                format!(
+                    "Restore {file} to the version from {} ({})? What you have now goes to the history.",
+                    s.when,
+                    s.name.unwrap_or(s.summary)
+                ),
+                Deferred::Restore { file, version: path },
+            ),
+            None => self.messages.info(format!("{file} has no saved versions yet")),
+        }
+    }
+
+    /// Asks before the `selected` version is deleted. Only named versions can
+    /// be deleted.
+    fn ask_delete(&mut self, selected: Option<(PathBuf, SnapshotInfo)>) {
+        match selected {
+            Some((path, s)) if s.name.is_some() => {
+                self.ask(
+                    format!("Delete the version \"{}\"?", s.name.unwrap()),
+                    Deferred::DeleteVersion(path),
+                );
+            }
+            Some(_) => self
+                .messages
+                .info("Only named versions can be deleted (snapshots are pruned on their own)"),
+            None => {}
         }
     }
 

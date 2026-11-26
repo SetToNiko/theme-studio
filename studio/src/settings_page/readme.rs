@@ -78,7 +78,6 @@ fn wrap(
 }
 
 /// Puts the words on lines, as many as fit in `width` columns on each.
-// Long function: one loop that keeps the line, its used width and its start column together; splitting it would pass five shared values.
 fn fill_lines(
     words: &[Vec<Piece>],
     width: usize,
