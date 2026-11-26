@@ -23,27 +23,42 @@ pub struct Installed {
     pub special: bool,
 }
 
-/// Which kind of font a family is, by its name and flags: `nf-mono`, `nf-propo`, `nf`, `mono` or `propo`.
-fn kind(f: &Installed) -> &'static str {
+/// Which kind of font a family is, decided by its name and flags (see [`kind`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FontKind {
+    /// A Nerd Font family whose name ends in "Nerd Font Mono".
+    NerdMono,
+    /// A Nerd Font family whose name ends in "Nerd Font Propo".
+    NerdPropo,
+    /// Any other family that has Nerd Font icons.
+    Nerd,
+    /// A plain monospaced family without Nerd Font icons.
+    Mono,
+    /// A plain proportional family without Nerd Font icons.
+    Propo,
+}
+
+/// Which kind of font a family is, by its name and flags.
+fn kind(f: &Installed) -> FontKind {
     if f.family.ends_with("Nerd Font Mono") {
-        "nf-mono"
+        FontKind::NerdMono
     } else if f.family.ends_with("Nerd Font Propo") {
-        "nf-propo"
+        FontKind::NerdPropo
     } else if f.nerd {
-        "nf"
+        FontKind::Nerd
     } else if f.mono {
-        "mono"
+        FontKind::Mono
     } else {
-        "propo"
+        FontKind::Propo
     }
 }
 
 /// Whether a font meets a role's requirement.
 pub fn fits(role: usize, f: &Installed) -> bool {
     match role {
-        0 => kind(f) == "nf-mono",
+        0 => kind(f) == FontKind::NerdMono,
         1 => !f.mono,
-        _ => kind(f) == "nf-propo",
+        _ => kind(f) == FontKind::NerdPropo,
     }
 }
 
@@ -115,14 +130,17 @@ mod tests {
     fn kinds() {
         assert_eq!(
             kind(&font("JetBrainsMono Nerd Font Mono", true, true)),
-            "nf-mono"
+            FontKind::NerdMono
         );
         assert_eq!(
             kind(&font("JetBrainsMono Nerd Font Propo", false, true)),
-            "nf-propo"
+            FontKind::NerdPropo
         );
-        assert_eq!(kind(&font("JetBrainsMono Nerd Font", true, true)), "nf");
-        assert_eq!(kind(&font("JetBrains Mono", true, false)), "mono");
-        assert_eq!(kind(&font("Inter", false, false)), "propo");
+        assert_eq!(
+            kind(&font("JetBrainsMono Nerd Font", true, true)),
+            FontKind::Nerd
+        );
+        assert_eq!(kind(&font("JetBrains Mono", true, false)), FontKind::Mono);
+        assert_eq!(kind(&font("Inter", false, false)), FontKind::Propo);
     }
 }
