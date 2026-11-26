@@ -1,0 +1,6 @@
+fc-list -q :family=JetBrainsMono Nerd Font
+fc-list -q :family=DejaVu Sans
+fc-list -q :family=DejaVu Sans
+fc-list :family=DejaVu Sans spacing
+pkill -USR2 -f ^ghostty( |$)
+i3-msg restart

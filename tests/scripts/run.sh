@@ -23,7 +23,31 @@
 #
 # Not covered: the rofi picker (no name given), and the login-screen part of
 # font-switch.sh (it needs a writable /var/lib/ascii-boot, so it skips itself).
+# Stub assumption: fc-list calls each family with "Mono" in its name
+# monospaced (also "... Nerd Font Propo"). The golden files record the
+# script under that assumption.
 set -euo pipefail
+
+# Safety: font-switch.sh copies a font into /var/lib/ascii-boot and rewrites
+# the login screen's config when it can write there. The path is fixed in the
+# script until plan step P1.3. On a machine where the folder is writable, the
+# tests run in a private mount namespace with an empty READ-ONLY folder over
+# it. Then the script skips the login-screen part, and the real folder stays
+# unchanged. If that is not possible, the tests stop.
+login_dir=/var/lib/ascii-boot
+if [ -w "$login_dir" ]; then
+  if [ -n "${IN_TEST_NAMESPACE:-}" ]; then
+    echo "run.sh: $login_dir is still writable in the namespace. Stopped." >&2
+    exit 1
+  fi
+  if ! unshare --user --map-root-user --mount true 2> /dev/null; then
+    echo "run.sh: $login_dir is writable, and no private namespace is possible. Stopped," >&2
+    echo "        so the tests do not change the real login screen." >&2
+    exit 1
+  fi
+  exec env IN_TEST_NAMESPACE=1 unshare --user --map-root-user --mount \
+    bash -c 'mount -t tmpfs -o ro tmpfs "$0" && exec "$@"' "$login_dir" "$0" "$@"
+fi
 
 here=$(dirname "$(readlink -f "$0")")
 project=$(readlink -f "$here/../..")
@@ -131,6 +155,40 @@ cases_theme_switch() {
   run_case theme-switch-unknown bash "$scripts/theme-switch.sh" "No Such Palette"
 }
 
+# Setup functions: setup_<case> runs with HOME set to the case's home folder.
+
+# The active theme gives the sizes (themes.json: CRT Amber, 14 9 9).
+setup_font_switch_theme_sizes() {
+  mkdir -p "$HOME/.config/colors"
+  echo "CRT Amber" > "$HOME/.config/colors/theme"
+}
+
+# Per-host offsets. icons has no offset, so it takes the proportional one.
+setup_font_switch_host_offsets() {
+  mkdir -p "$HOME/.config/host"
+  echo '{"monospace": 1, "proportional": 2}' > "$HOME/.config/host/fonts.json"
+}
+
+# GTK 3: other settings stay. GTK 4: a link is left alone, with a warning.
+setup_font_switch_gtk_settings() {
+  mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0" "$HOME/elsewhere"
+  printf '[Settings]\ngtk-theme-name=Adwaita\ngtk-font-name=Old Font 10\ngtk-cursor-theme-size=24\n' \
+    > "$HOME/.config/gtk-3.0/settings.ini"
+  printf '[Settings]\ngtk-font-name=Managed 12\n' > "$HOME/elsewhere/settings.ini"
+  ln -s ../../elsewhere/settings.ini "$HOME/.config/gtk-4.0/settings.ini"
+}
+
+cases_font_switch() {
+  run_case font-switch-preset bash "$scripts/font-switch.sh" "JetBrains Mono"
+  run_case font-switch-proportional bash "$scripts/font-switch.sh" "JetBrains + DejaVu Sans"
+  run_case font-switch-sizes env FONT_SIZES="16 10 11" bash "$scripts/font-switch.sh" "JetBrains Mono"
+  run_case font-switch-theme-sizes bash "$scripts/font-switch.sh" "JetBrains Mono"
+  run_case font-switch-host-offsets bash "$scripts/font-switch.sh" "JetBrains + DejaVu Sans"
+  run_case font-switch-gtk-settings bash "$scripts/font-switch.sh" "JetBrains Mono"
+  run_case font-switch-no-restart env NO_RESTART=1 bash "$scripts/font-switch.sh" "JetBrains Mono"
+  run_case font-switch-unknown bash "$scripts/font-switch.sh" "No Such Preset"
+}
+
 # ---- Main -------------------------------------------------------------------
 
 make_tools_dir
@@ -138,6 +196,7 @@ make_stubs_dir
 
 all_cases() {
   cases_theme_switch
+  cases_font_switch
 }
 
 all_cases

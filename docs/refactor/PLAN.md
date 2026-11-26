@@ -105,6 +105,7 @@ Advanced techniques that the refactor adds:
 - Rust: 119 tests in 25 modules (115 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
 - No tests: `behaviour`, `draft`, `fonts_dl`, `fonts_dl_ui`, `fonts_preview`, `fonts_ui`, `settings_ui`, `tour_page`, `tour_ui`, `main`.
 - Scripts: no tests → golden-file tests in Phase 0.
+- Scripts: golden-file tests in `tests/scripts/run.sh` (P0.6 to P0.8). Not covered: the rofi picker, and the login-screen part of font-switch.sh (skipped: /var/lib/ascii-boot is read-only in the test namespace until P1.3 makes the path configurable).
 - Nix sandbox: data tests use `studio/tests/fixtures/data` (P0.5). Sandbox skips: 13 before, 10 after. The remaining skips need jq, ImageMagick, fontconfig, a pty, or the checkout (docs, share).
 - Before Phase 5 changes a module without tests, the revise action adds a safety-net step for it.
 
@@ -120,7 +121,7 @@ Step format (one line for each step):
 - [x] P0.4 Flake checks: `checks.x86_64-linux` with build, tests, fmt, and ratchet counts for clippy (490) and shellcheck (14) | Files: `flake.nix`, `scripts/dev/lint-counts.sh`, `docs/refactor/lint-baseline.txt` | Target: goal 4, 7 | Check: `nix flake check` passes
 - [x] P0.5 Test fixtures: small palettes.json, fonts.json, themes.json, configs, so the data tests run in the sandbox | Files: `studio/tests/fixtures/`, `studio/src/store.rs`, `studio/src/palette.rs`, `studio/src/paths.rs` | Target: goal 4 | Check: skip count does not increase, sandbox runs the data tests
 - [x] P0.6 Golden tests, theme-switch: test runner with stub commands (pkill, i3-msg, rofi, fc-cache, pywalfox, ghostty), fixture data, golden files | Files: `tests/scripts/run.sh`, `tests/scripts/fixtures/`, `tests/scripts/golden/theme-switch/` | Target: goal 4 | Check: golden test passes on unchanged code
-- [ ] P0.7 Golden tests, font-switch: fonts, sizes, offsets. The login-screen part skips, and the skip is recorded | Files: `tests/scripts/run.sh`, `tests/scripts/golden/font-switch/`, `tests/scripts/fixtures/` | Target: goal 4 | Check: golden test passes on unchanged code
+- [x] P0.7 Golden tests, font-switch: fonts, sizes, offsets. The login-screen part skips, and the skip is recorded | Files: `tests/scripts/run.sh`, `tests/scripts/golden/font-switch/`, `tests/scripts/fixtures/` | Target: goal 4 | Check: golden test passes on unchanged code
 - [ ] P0.8 Golden tests, themes-switch, and the scripts in flake checks | Files: `tests/scripts/run.sh`, `tests/scripts/golden/themes-switch/`, `flake.nix` | Target: goal 4 | Check: `nix flake check` runs the golden tests
 Completes: criterion 4 (the check command exists)
 

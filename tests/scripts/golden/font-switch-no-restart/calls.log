@@ -1,0 +1,4 @@
+fc-list -q :family=JetBrainsMono Nerd Font Mono
+fc-list -q :family=JetBrainsMono Nerd Font Propo
+fc-list -q :family=JetBrainsMono Nerd Font Propo
+fc-list :family=JetBrainsMono Nerd Font Propo spacing
