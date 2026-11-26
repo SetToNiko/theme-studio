@@ -103,13 +103,17 @@ impl App {
         self.swap_draft(&mut d);
         let after = self.live_as_draft().files();
         let errors = self.write_changed_files(&before, &after);
-        // new default pane sizes apply now too
-        if self.settings.layout.sizes != old_sizes {
-            self.layout.sizes = self.settings.layout.sizes.clone();
-        }
         if errors.is_empty() {
+            // new default pane sizes apply now too
+            if self.settings.layout.sizes != old_sizes {
+                self.layout.sizes = self.settings.layout.sizes.clone();
+            }
             self.notify_saved("Saved");
         } else {
+            // nothing (or not everything) was written: put the old live values
+            // back and keep the draft, so the user can retry or discard it
+            self.swap_draft(&mut d);
+            self.settings_page.draft = Some(d);
             self.messages
                 .error(format!("Saving: {}", errors.join("; ")));
         }

@@ -265,20 +265,19 @@ mod tests {
     }
 
     #[test]
-    fn save_reports_a_write_error_and_still_uses_the_draft() {
+    fn save_reports_a_write_error_and_keeps_the_draft() {
         let (mut app, dir) = test_app("save-error");
         // a file where the config folder should be: the write fails
         std::fs::create_dir_all(dir.parent().unwrap()).unwrap();
         std::fs::write(&dir, "not a folder").unwrap();
         flip_hide_bitmap(&mut app);
-        let want = app.show_draft(|a| a.settings.font_list.hide_bitmap);
+        let live = app.settings.font_list.hide_bitmap;
         app.settings_save();
         let (m, is_error) = app.messages.message.clone().unwrap();
         assert!(is_error && m.starts_with("Saving: settings.json:"), "{m}");
-        // behaviour as it is: the draft is gone and its values are live
-        // although nothing was written
-        assert!(app.settings_page.draft.is_none());
-        assert_eq!(app.settings.font_list.hide_bitmap, want);
+        // a failed save keeps the draft (finding 24, fixed in F1)
+        assert!(app.settings_page.draft.is_some());
+        assert_eq!(app.settings.font_list.hide_bitmap, live);
     }
 
     #[test]

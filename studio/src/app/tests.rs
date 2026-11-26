@@ -2569,3 +2569,31 @@ fn has_extension(file: &str, ext: &str) -> bool {
 fn has_font_extension(file: &str) -> bool {
     has_extension(file, "ttf") || has_extension(file, "otf")
 }
+
+#[test]
+fn a_failed_settings_save_keeps_the_draft_and_the_old_live_values() {
+    let store = temp_store("save-fails");
+    // a file where the config folder should be: every write fails
+    let config_dir = store.dir.join("config-is-a-file");
+    std::fs::write(&config_dir, "not a folder").unwrap();
+    let config = crate::config::Loaded {
+        keymap: crate::keymap::Keymap::vim(),
+        presets: crate::keymap::Keymap::builtin(),
+        settings: crate::config::settings::Settings::default(),
+        warnings: Vec::new(),
+        dir: config_dir,
+    };
+    let mut app = App::with_config(store, Start::Named("One".into()), config).unwrap();
+    app.preview.set_headless();
+    let live = app.settings.font_list.hide_bitmap;
+    app.with_draft(|a| a.settings.font_list.hide_bitmap = !live);
+    app.settings_save();
+    assert!(app.settings_page.draft.is_some(), "the draft is kept");
+    assert_eq!(
+        app.settings.font_list.hide_bitmap, live,
+        "live is unchanged"
+    );
+    assert_eq!(app.draft_changes(), 1);
+    let (m, is_error) = app.messages.message.clone().unwrap();
+    assert!(is_error && m.starts_with("Saving:"), "{m}");
+}
