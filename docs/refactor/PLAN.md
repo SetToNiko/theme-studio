@@ -208,6 +208,7 @@ Completes: none (cycle count decreases, measured)
 - [x] P5.6 keymap: default bindings as data, separate from keymap logic; `Action::group()` (Window, Theme, Fonts or Colours), so run_action reads the group from data (Phase 3 review, note 2) | Files: `keymap.rs` -> `keymap/mod.rs`, `keymap/defaults.rs`, app/input/actions.rs | Target: T2, limits | Check: tests
 - [x] P5.7 fonts/: rendering jobs and installed fonts into their own files; fonts_pick, font_tree, and the data parts of fonts_dl and fonts_preview move into fonts/ | Files: fonts/ (moves and splits) | Target: T1, T5, limits | Check: tests; fonts/mod.rs under 500
 - [x] P5.8 config: sizes and defaults separate from load and save | Files: `config.rs` -> `config/mod.rs`, `config/sizes.rs` | Target: limits | Check: tests
+- [ ] P5.11 desktop_preview split: the hidden-terminal state (Pane, Preview, key_bytes, TermColors) leaves ui/ for its own module outside ui (for example `preview_term.rs`; P5.9/P5.10 place it), the desktop drawing (bar, rofi, windows) stays in ui/desktop_preview.rs; each under 500 lines | Files: ui/desktop_preview.rs, the new module, users | Target: limits, T5 | Check: tests; cycles 0
 - [ ] P5.9 `core/` folder: color, palette, theme, store, history, paths, settle, config, encoding, tournament (10 or fewer; place each remaining root module explicitly) | Files: main.rs, core/mod.rs, moves | Target: T5 | Check: tests
 - [ ] P5.10 `system/` folder: desktop, download, prefetch, samples, out, docs (or core, decide by what it does), and the cycle ratchet set to 0: `nix flake check` fails on any cycle | Files: main.rs, system/mod.rs, moves, `docs/refactor/lint-baseline.txt` | Target: T5 | Check: tests; cycles 0; no module left in the root except main.rs
 Removed: the old "settings: tabs into separate files" step (Phase 4 moved the impl App blocks out; settings.rs is under 500).
@@ -271,6 +272,7 @@ Completes: criterion 6
 | 3 | Break the big cycle group: nav as a leaf, draw function passed in, impl App blocks of the feature modules into app/ | ACCEPT: Phase 4 replaced (P4.2 to P4.14) | P3.12 moved the nav enums but the cycles did not shrink (2 groups, 22 modules): Overlay names settings and behaviour types, and the feature modules impl App. |
 | 4 | Revise Phase 5: app/ sub-folders first (P5.0), ui/widgets leaf, fonts/types leaf, folder lists complete, cycles to 0 | ACCEPT: Phase 5 rewritten (P5.0 to P5.10) | Phase 5 was written before Phases 3 and 4; the two remaining cycles break on splits that Phase 5 does anyway. |
 | 5 | P5.3 is too large (panes ~700, overlays ~520 lines) | ACCEPT: divided into P5.3a, P5.3b, P5.3c (same goal) | Found in P5.2; the three parts take different functions out of ui/mod.rs. |
+| 6 | ui/desktop_preview.rs (about 1000 lines) holds terminal state and drawing | ACCEPT: new step P5.11 before P5.9 | Found in P5.4. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
