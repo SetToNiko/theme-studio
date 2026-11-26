@@ -15,6 +15,7 @@ use crate::tournament::{self, Tournament};
 
 impl App {
     /// Asks pane `i` to show entrant `who`, and picks up a finished image.
+    // Long function: one ordered sequence (find the font, size the sample, request the render) where each step needs the one before.
     pub(super) fn tour_draw_pane(&mut self, i: usize, who: Option<usize>) -> bool {
         let Some(who) = who else {
             let p = &mut self.tour().panes[i];
@@ -62,6 +63,12 @@ impl App {
         let wrap = (t.kind == Kind::Prose).then_some(width);
         let p = &mut t.panes[i];
         p.renderer.request_with(markup, bg, dpi, fontconfig, wrap);
+        self.take_pane_image(i)
+    }
+
+    /// Picks up pane `i`'s finished image (or error). True when it changed.
+    fn take_pane_image(&mut self, i: usize) -> bool {
+        let p = &mut self.tour().panes[i];
         match p.renderer.take() {
             Some(Ok(img)) => {
                 let proto = self.picker.as_ref().map(|pk| pk.new_resize_protocol(img));
@@ -119,6 +126,7 @@ impl App {
         }
     }
 
+    // Long function: one match over the keys while a round is played.
     fn run_tour_playing(&mut self, a: Action) -> bool {
         let t = self.tour();
         if t.t.is_none() {
@@ -169,6 +177,7 @@ impl App {
         true
     }
 
+    // Long function: one match over the keys on the results page.
     fn run_tour_results(&mut self, a: Action) -> bool {
         let t = self.tour();
         let Some(x) = t.t.as_ref() else {

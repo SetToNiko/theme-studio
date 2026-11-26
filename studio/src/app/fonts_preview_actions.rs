@@ -27,6 +27,7 @@ impl App {
 
     /// The font the preview shows: the highlighted catalogue font, or on the
     /// Installed tab the highlighted installed one (drawn from its files).
+    // Long function: most lines are the `Entry` literal for an installed font.
     pub fn preview_entry(&mut self) -> Option<Entry> {
         if let Some(e) = self.dl_selected() {
             return Some(e);
@@ -70,6 +71,7 @@ impl App {
 
     /// Each loop: fetch the highlighted font after a pause, render it, pick
     /// up a finished image. True when something changed.
+    // Long function: one ordered sequence (note the highlight, fetch, render, finish) where each step needs the one before.
     pub fn poll_preview(&mut self) -> bool {
         if self.page != Page::Downloads || !self.layout.fonts_preview_visible {
             return false;
@@ -99,12 +101,12 @@ impl App {
             return false;
         };
         self.render_preview(&e, &family);
-        self.pv(); // makes sure the preview exists
+        // the preview exists here (`self.pv()` made it above)
         let picker = self.picker.as_ref(); // a field of its own, so `dl` can be borrowed too
-        self.dl
-            .preview
-            .as_mut()
-            .is_some_and(|pv| pv.finish_render(picker))
+        let Some(pv) = self.dl.preview.as_mut() else {
+            return false;
+        };
+        pv.finish_render(picker)
     }
 
     /// Asks for the preview image (the renderer skips unchanged requests).
@@ -128,30 +130,7 @@ impl App {
             size: pv.size,
             palette: &palette,
         };
-        let markup = match kind {
-            Kind::Code => {
-                // about as many lines as fit, less two kept from the last page
-                let px = (pv.size * dpi / 72).max(6);
-                let lines = ((rows * cell_h) / (px * 12 / 10).max(1)) as usize;
-                pv.step = lines.saturating_sub(2).max(1);
-                let last = samples::code_lines(pv.lang).saturating_sub(1);
-                pv.page = pv.page.min(last);
-                // only what shows (one more for a part-shown line)
-                samples::code(&st, pv.lang, pv.page, lines + 1)
-            }
-            Kind::Icons => samples::icons(&st),
-            Kind::Readme => samples::readme(&st),
-            Kind::Prose => {
-                // about as many characters as fit
-                let px = (pv.size * dpi / 72).max(6);
-                let per_line = width / (px * 55 / 100).max(1);
-                let lines = (rows * cell_h) / (px * 16 / 10).max(1);
-                let (m, next) =
-                    samples::prose_page(&st, pv.page, (per_line * lines * 85 / 100) as usize);
-                pv.next_page = next;
-                m
-            }
-        };
+        let markup = sample_markup(pv, kind, &st, dpi, (rows * cell_h, width));
         pv.request_render(
             markup,
             bg,
@@ -163,6 +142,7 @@ impl App {
     }
 
     /// Keys for the preview (on the Fonts page). True if handled.
+    // Long function: one match over the preview's key actions.
     pub fn preview_action(&mut self, a: Action) -> bool {
         let sel = self.preview_entry();
         let pv = self.pv();
@@ -289,6 +269,41 @@ impl App {
             self.set_preview_kind(KINDS[i % KINDS.len()].0);
         } else {
             self.set_preview_lang(i);
+        }
+    }
+}
+
+/// Builds the sample text (as markup) for the preview's text kind. Code and
+/// prose also set the page size (`step`, `next_page`) that the paging keys
+/// use. `(height, width)` is the preview area in pixels.
+fn sample_markup(
+    pv: &mut FontPreview,
+    kind: Kind,
+    st: &samples::Style,
+    dpi: u32,
+    (height, width): (u32, u32),
+) -> String {
+    let px = (pv.size * dpi / 72).max(6);
+    match kind {
+        Kind::Code => {
+            // about as many lines as fit, less two kept from the last page
+            let lines = (height / (px * 12 / 10).max(1)) as usize;
+            pv.step = lines.saturating_sub(2).max(1);
+            let last = samples::code_lines(pv.lang).saturating_sub(1);
+            pv.page = pv.page.min(last);
+            // only what shows (one more for a part-shown line)
+            samples::code(st, pv.lang, pv.page, lines + 1)
+        }
+        Kind::Icons => samples::icons(st),
+        Kind::Readme => samples::readme(st),
+        Kind::Prose => {
+            // about as many characters as fit
+            let per_line = width / (px * 55 / 100).max(1);
+            let lines = height / (px * 16 / 10).max(1);
+            let (m, next) =
+                samples::prose_page(st, pv.page, (per_line * lines * 85 / 100) as usize);
+            pv.next_page = next;
+            m
         }
     }
 }

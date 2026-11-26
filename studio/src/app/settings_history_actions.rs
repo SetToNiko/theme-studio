@@ -35,6 +35,7 @@ impl App {
     }
 
     /// The preview of the selected version against the file now.
+    // Long function: cache check, read the file, build the view, store it: each step needs the one before.
     pub fn diff_view(&mut self) -> DiffView {
         let versions = self.versions();
         let p = &self.settings_page;
@@ -58,19 +59,12 @@ impl App {
             .unwrap_or(Value::Null);
         let view = match sel.as_deref().and_then(History::load) {
             Some(then) => {
-                let colours = |v: &Value| -> Colours {
-                    let data = v.get("palettes").unwrap_or(v);
-                    data.get(&self.name)
-                        .and_then(|p| p.as_object())
-                        .map(|o| {
-                            o.iter()
-                                .filter_map(|(k, c)| Some((k.clone(), Rgb::parse(c.as_str()?)?)))
-                                .collect()
-                        })
-                        .unwrap_or_default()
-                };
-                let palette =
-                    (file == "palettes.json").then(|| (colours(&now), colours(&then.content)));
+                let palette = (file == "palettes.json").then(|| {
+                    (
+                        palette_colours(&now, &self.name),
+                        palette_colours(&then.content, &self.name),
+                    )
+                });
                 DiffView {
                     lines: diff_lines(&now, &then.content, p.show_all),
                     palette,
@@ -89,6 +83,7 @@ impl App {
         view
     }
 
+    // Long function: one ordered list of early-return key cases for the History tab.
     pub(crate) fn run_history_tab(&mut self, a: Action) {
         let p = &mut self.settings_page;
         if a == Action::ToggleAll {
@@ -117,15 +112,7 @@ impl App {
             return;
         }
         if p.hist_focus == HistFocus::Files {
-            let mut i = p.hist_file;
-            if Self::move_sel(&mut i, FILES.len(), a) {
-                p.hist_file = i;
-                p.hist_sel = 0;
-                p.diff_scroll = 0;
-            } else if a == Action::Confirm {
-                p.hist_focus = HistFocus::Versions;
-            }
-            return;
+            return self.run_history_files(a);
         }
         let versions = self.versions();
         let p = &mut self.settings_page;
@@ -161,4 +148,32 @@ impl App {
             _ => {}
         }
     }
+
+    /// Keys while the file list has the focus: move over the files, or
+    /// Enter to go on to the file's versions.
+    fn run_history_files(&mut self, a: Action) {
+        let p = &mut self.settings_page;
+        let mut i = p.hist_file;
+        if Self::move_sel(&mut i, FILES.len(), a) {
+            p.hist_file = i;
+            p.hist_sel = 0;
+            p.diff_scroll = 0;
+        } else if a == Action::Confirm {
+            p.hist_focus = HistFocus::Versions;
+        }
+    }
+}
+
+/// The colours of palette `name` in a palettes.json value (or a snapshot of
+/// one); empty when it is not there.
+fn palette_colours(v: &Value, name: &str) -> Colours {
+    let data = v.get("palettes").unwrap_or(v);
+    data.get(name)
+        .and_then(|p| p.as_object())
+        .map(|o| {
+            o.iter()
+                .filter_map(|(k, c)| Some((k.clone(), Rgb::parse(c.as_str()?)?)))
+                .collect()
+        })
+        .unwrap_or_default()
 }

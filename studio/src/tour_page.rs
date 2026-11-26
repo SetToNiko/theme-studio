@@ -84,7 +84,7 @@ pub struct TourPage {
 
 impl TourPage {
     /// A new page at the Setup stage, with its two preview panes.
-    pub fn new(draft_dir: &Path, dirty: &Arc<AtomicBool>) -> TourPage {
+    pub(crate) fn new(draft_dir: &Path, dirty: &Arc<AtomicBool>) -> TourPage {
         let pane = |name| Pane {
             renderer: SampleRenderer::named(draft_dir, dirty.clone(), name),
             image: None,
@@ -113,19 +113,19 @@ impl TourPage {
     }
 
     /// Shuffles a pool with the page's random numbers.
-    pub fn shuffle<T>(&mut self, pool: &mut [T]) {
+    pub(crate) fn shuffle<T>(&mut self, pool: &mut [T]) {
         self.rng.shuffle(pool);
     }
 
     /// Draws up the bracket for `entrants` and makes it the current tournament.
-    pub fn start_bracket(&mut self, entrants: Vec<Entrant>) {
+    pub(crate) fn start_bracket(&mut self, entrants: Vec<Entrant>) {
         let (key, title) = self.pool.clone();
         self.t = Some(Tournament::new(&key, &title, entrants, &mut self.rng));
     }
 
     /// Picks the left or right font of the current match. True when that
     /// was the last match (no tournament: false).
-    pub fn pick(&mut self, left: bool) -> bool {
+    pub(crate) fn pick(&mut self, left: bool) -> bool {
         let Some(x) = self.t.as_mut() else {
             return false;
         };
