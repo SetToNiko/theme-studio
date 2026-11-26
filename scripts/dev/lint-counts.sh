@@ -31,6 +31,10 @@ compare() {
   local count=$2
   local allowed
   allowed=$(baseline_of "$name")
+  if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+    echo "$name: no count ($count)" >&2
+    return 1
+  fi
   if [ -z "$allowed" ]; then
     echo "lint-counts: no line for '$name' in $baseline_file" >&2
     return 1
@@ -49,7 +53,13 @@ compare() {
 # duplicates that the test build reports again).
 clippy_count() {
   local output
-  output=$(cd "$project/studio" && cargo clippy --all-targets 2>&1) || true
+  # A build error is not "fewer warnings": stop, so the ratchet cannot pass.
+  if ! output=$(cd "$project/studio" && cargo clippy --all-targets 2>&1); then
+    printf '%s\n' "$output" | grep -aE '^error' | head -5 >&2
+    echo "lint-counts: clippy failed (build error), no count" >&2
+    echo "build-error"
+    return
+  fi
   local line
   line=$(printf '%s\n' "$output" | grep -aoE '\(bin "theme-studio"\) generated [0-9]+ warning' || true)
   if [ -z "$line" ]; then

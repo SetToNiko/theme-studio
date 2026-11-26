@@ -279,7 +279,10 @@ impl App {
             .load_all()
             .into_iter()
             .map(|(n, t)| {
-                let sw = palettes.get(&t.palette).map(swatches).unwrap_or_default();
+                let sw = palettes
+                    .get(&t.palette)
+                    .map(super::overlay::swatches)
+                    .unwrap_or_default();
                 (n, sw)
             })
             .collect();
@@ -297,20 +300,4 @@ impl App {
             entries,
         };
     }
-}
-
-/// The colours the open list shows for a theme's palette (`palette` is the
-/// palette's file contents): the keys that exist and parse, in a fixed order.
-fn swatches(palette: &serde_json::Value) -> Vec<Rgb> {
-    [
-        "bg0", "fg0", "red", "orange", "yellow", "green", "aqua", "blue", "purple",
-    ]
-    .iter()
-    .filter_map(|k| {
-        palette
-            .get(*k)
-            .and_then(|x| x.as_str())
-            .and_then(Rgb::parse)
-    })
-    .collect()
 }

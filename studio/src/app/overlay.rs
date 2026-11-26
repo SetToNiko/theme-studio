@@ -371,7 +371,7 @@ fn help_key(page: usize, k: KeyEvent) -> Overlay {
 
 /// Picks the nine swatch colours (backgrounds, foreground and accents) from a
 /// palette's JSON object. Keys that are missing or not a colour are skipped.
-fn swatches(v: &serde_json::Value) -> Vec<Rgb> {
+pub(super) fn swatches(v: &serde_json::Value) -> Vec<Rgb> {
     let mut out = Vec::new();
     for key in [
         "bg0", "fg0", "red", "orange", "yellow", "green", "aqua", "blue", "purple",
