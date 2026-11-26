@@ -66,7 +66,7 @@ Theme Studio has a 25k-line Rust TUI (35 modules in one flat folder) and 4 bash 
 | `share/` | Data for scripts and studio | terminal-colors.json, palette-derive.jq, integrations.json, integrations/ (generators) | none |
 | `packaging/nix/` | Nix package and modules | package, home-manager module, NixOS module, fonts | none |
 
-Cycles: app â {behaviour, draft, fonts_dl, fonts_preview, hit, prefetch, presets, settings, theme, tour_page, ui, â¦}; ui â settings_ui, fonts_ui; fonts â keymap, fonts_pick, font_tree; fonts_dl â fonts_preview; paths â store (tests only).
+Cycles: app ↔ {behaviour, draft, fonts_dl, fonts_preview, hit, prefetch, presets, settings, theme, tour_page, ui, …}; ui ↔ settings_ui, fonts_ui; fonts ↔ keymap, fonts_pick, font_tree; fonts_dl ↔ fonts_preview; paths ↔ store (tests only).
 Key numbers: 35 Rust modules in 1 folder, 6 scripts, about 25k Rust lines, 12 files over 500 production lines, largest `app.rs` (2,448 production lines), 2 cycle groups with 21 of 35 modules (`scripts/dev/module-cycles.py`), line coverage 82.72%, duplicate rate 1.13%.
 
 ## 3. Target architecture
@@ -75,7 +75,7 @@ Key numbers: 35 Rust modules in 1 folder, 6 scripts, about 25k Rust lines, 12 fi
 - `scripts/lib/integrations.sh`: the runner. It writes the outputs and runs the reloads one time. It is the only location that runs reload commands.
 - `scripts/lib/paths.sh` and `studio/src/paths.rs`: each user and system path, with one `home()`. The login-screen paths can be changed with environment variables.
 - `studio/src/app/`: App divided by concern: `palette_editor`, `layout`, `messages`, `overlay`, `mouse`, `actions`, `nav` (Page, Overlay, For, Side).
-- `studio/src/core/`, `system/`, `ui/`: folders by layer, 10 modules or fewer each. Direction: ui â app â core and system. No cycles.
+- `studio/src/core/`, `system/`, `ui/`: folders by layer, 10 modules or fewer each. Direction: ui → app → core and system. No cycles.
 
 Advanced techniques that the refactor adds:
 - Module re-exports (`pub use`) | `main.rs` during the folder moves | keep `crate::x` paths valid, so one move changes 5 files or fewer. A comment explains each re-export.
@@ -86,7 +86,7 @@ Advanced techniques that the refactor adds:
 |---|---|---|---|---|
 | 1 | `scripts/theme-switch.sh`, `font-switch.sh` | App integrations hard-coded, outputs and reloads mixed with picker logic | T2, T6, goal 1-2 | H |
 | 2 | `studio/src/app.rs` | God object: 60 public fields, 6 concerns, 2,448 production lines | T1 (SRP), T4, limits | H |
-| 3 | most modules â `app.rs` | Dependency cycles, mostly for nav enums and one helper | T5 | H |
+| 3 | most modules ↔ `app.rs` | Dependency cycles, mostly for nav enums and one helper | T5 | H |
 | 4 | `store.rs`, `fonts.rs`, `theme.rs`, `download.rs`, `paths.rs` | `home()` defined 5 times, user paths outside paths.rs | T2 (single source), rule 1 | M |
 | 5 | `download.rs:544` (the `font-switch.sh:102-103` paths go with R.2) | Hard-coded system paths | goal 3, rule 1 | M |
 | 6 | `ui.rs`, `keymap.rs`, `fonts.rs`, `settings.rs`, `config.rs` | Over 500 production lines (2,154, 1,370, 1,288, 1,071, 611) | limits | M |
@@ -114,7 +114,7 @@ Advanced techniques that the refactor adds:
 ## 5. Test coverage
 - Rust: 169 tests in 27 modules (165 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
 - No tests: `fonts_dl`, `fonts_dl_ui`, `fonts_preview`, `fonts_ui`, `settings_ui`, `tour_page`, `tour_ui`, `main`.
-- Scripts: no tests â golden-file tests in Phase 0.
+- Scripts: no tests → golden-file tests in Phase 0.
 - Scripts: golden-file tests in `tests/scripts/run.sh` (P0.6 to P0.8). Not covered: the rofi picker.
 - Nix sandbox: data tests use `studio/tests/fixtures/data` (P0.5). Sandbox skips: 13 before, 10 after. The remaining skips need jq, ImageMagick, fontconfig, a pty, or the checkout (docs, share).
 - Before Phase 5 changes a module without tests, the revise action adds a safety-net step for it.
@@ -164,7 +164,7 @@ Completes: criteria 1, 2, project rule 2
 
 ### Phase 3: Divide App by concern
 - [x] P3.1 Safety net: characterization tests for behaviour and draft | Files: `behaviour.rs`, `draft.rs` | Target: correctness | Check: tests pass on unchanged code
-- [x] P3.2 App folder: `app.rs` â `app/mod.rs`, tests â `app/tests.rs` | Files: `app/mod.rs`, `app/tests.rs` | Target: T4 | Check: tests
+- [x] P3.2 App folder: `app.rs` → `app/mod.rs`, tests → `app/tests.rs` | Files: `app/mod.rs`, `app/tests.rs` | Target: T4 | Check: tests
 - [x] P3.3 PaletteEditor: palette, saved, undo, redo, HSV, hex, edit session, and their methods | Files: `app/mod.rs`, `app/palette_editor.rs`, `app/tests.rs`, `ui.rs`, `fonts_ui.rs`, `theme.rs`, `settings.rs`, `tour_page.rs`, `fonts_preview.rs` | Target: T1, T4 | Check: tests
 - [x] P3.4 Layout: sizes, borders, dragging, resize, visibility flags, pane columns | Files: `app/mod.rs`, `app/layout.rs`, `app/tests.rs`, `behaviour.rs`, `draft.rs`, `ui.rs`, `fonts_ui.rs`, `fonts_dl_ui.rs`, `fonts_preview.rs`, `settings_ui.rs`, `tour_ui.rs` | Target: T1 | Check: tests
 - [x] P3.5 Messages: message, notice, hover note, timing | Files: `app/mod.rs`, `app/messages.rs`, `app/tests.rs`, `ui.rs`, `fonts_ui.rs`, `behaviour.rs`, `draft.rs`, `fonts_dl.rs`, `fonts_preview.rs`, `presets.rs`, `settings.rs`, `theme.rs`, `tour_page.rs` | Target: T1 | Check: tests
@@ -186,13 +186,13 @@ Completes: none (prepares criterion 5)
 Completes: none (cycle count decreases, measured)
 
 ### Phase 5: Large files and folders
-- [ ] P5.1 ui.rs: page drawing into `ui/pages.rs` | Files: `ui.rs` â `ui/mod.rs`, `ui/pages.rs` | Target: limits | Check: tests
+- [ ] P5.1 ui.rs: page drawing into `ui/pages.rs` | Files: `ui.rs` → `ui/mod.rs`, `ui/pages.rs` | Target: limits | Check: tests
 - [ ] P5.2 ui: pane drawing into `ui/panes.rs` | Files: `ui/mod.rs`, `ui/panes.rs` | Target: limits | Check: tests
 - [ ] P5.3 ui: overlay drawing into `ui/overlays.rs` | Files: `ui/mod.rs`, `ui/overlays.rs` | Target: limits | Check: tests
-- [ ] P5.4 keymap: default bindings as data, separate from keymap logic. Also `Action::group()` (Window, Theme, Fonts or Colours), so run_action reads the group from data (Phase 3 review, note 2) | Files: `keymap.rs` â `keymap/mod.rs`, `keymap/defaults.rs` | Target: T2, limits | Check: tests
-- [ ] P5.5 fonts: rendering jobs into `fonts/render.rs`, installed fonts into `fonts/installed.rs` | Files: `fonts.rs` â `fonts/mod.rs`, `fonts/render.rs`, `fonts/installed.rs` | Target: T1, limits | Check: tests
-- [ ] P5.6 settings: tabs into separate files | Files: `settings.rs` â `settings/mod.rs`, `settings/keymaps.rs`, `settings/history.rs` | Target: limits | Check: tests
-- [ ] P5.7 config: sizes and defaults separate from load and save | Files: `config.rs` â `config/mod.rs`, `config/sizes.rs` | Target: limits | Check: tests
+- [ ] P5.4 keymap: default bindings as data, separate from keymap logic. Also `Action::group()` (Window, Theme, Fonts or Colours), so run_action reads the group from data (Phase 3 review, note 2) | Files: `keymap.rs` → `keymap/mod.rs`, `keymap/defaults.rs` | Target: T2, limits | Check: tests
+- [ ] P5.5 fonts: rendering jobs into `fonts/render.rs`, installed fonts into `fonts/installed.rs` | Files: `fonts.rs` → `fonts/mod.rs`, `fonts/render.rs`, `fonts/installed.rs` | Target: T1, limits | Check: tests
+- [ ] P5.6 settings: tabs into separate files | Files: `settings.rs` → `settings/mod.rs`, `settings/keymaps.rs`, `settings/history.rs` | Target: limits | Check: tests
+- [ ] P5.7 config: sizes and defaults separate from load and save | Files: `config.rs` → `config/mod.rs`, `config/sizes.rs` | Target: limits | Check: tests
 - [ ] P5.8 `core/` folder: color, palette, theme, store, history, paths, settle (re-exports in main.rs) | Files: `main.rs`, `core/mod.rs`, moved files | Target: T5 | Check: tests
 - [ ] P5.9 `system/` folder: desktop, download, prefetch, samples, encoding | Files: `main.rs`, `system/mod.rs`, moved files | Target: T5 | Check: tests
 - [ ] P5.10 `ui/` folder complete: fonts_ui, fonts_dl_ui, settings_ui, tour_ui, preview, hit, docs | Files: `main.rs`, `ui/mod.rs`, moved files | Target: T5 | Check: tests, each folder 10 modules or fewer
