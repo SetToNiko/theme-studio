@@ -88,7 +88,7 @@ Advanced techniques that the refactor adds:
 | 2 | `studio/src/app.rs` | God object: 60 public fields, 6 concerns, 2,448 production lines | T1 (SRP), T4, limits | H |
 | 3 | most modules ↔ `app.rs` | Dependency cycles, mostly for nav enums and one helper | T5 | H |
 | 4 | `store.rs`, `fonts.rs`, `theme.rs`, `download.rs`, `paths.rs` | `home()` defined 5 times, user paths outside paths.rs | T2 (single source), rule 1 | M |
-| 5 | `font-switch.sh:102-103`, `download.rs:544` | Hard-coded system paths | goal 3, rule 1 | M |
+| 5 | `download.rs:544` (the `font-switch.sh:102-103` paths go with R.2) | Hard-coded system paths | goal 3, rule 1 | M |
 | 6 | `ui.rs`, `keymap.rs`, `fonts.rs`, `settings.rs`, `config.rs` | Over 500 production lines (2,154, 1,370, 1,288, 1,071, 611) | limits | M |
 | 7 | `settings_ui.rs`, `download.rs`, `tour_page.rs`, `behaviour.rs`, `fonts_dl.rs`, `samples.rs` | Over 500 production lines (819 to 522) | limits | L |
 | 8 | `download.rs` | 18 ignored results (`let _ =`) | T7 | M |
@@ -106,7 +106,7 @@ Advanced techniques that the refactor adds:
 - Rust: 119 tests in 25 modules (115 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
 - No tests: `behaviour`, `draft`, `fonts_dl`, `fonts_dl_ui`, `fonts_preview`, `fonts_ui`, `settings_ui`, `tour_page`, `tour_ui`, `main`.
 - Scripts: no tests → golden-file tests in Phase 0.
-- Scripts: golden-file tests in `tests/scripts/run.sh` (P0.6 to P0.8). Not covered: the rofi picker, and the login-screen part of font-switch.sh (skipped: /var/lib/ascii-boot is read-only in the test namespace until P1.3 makes the path configurable).
+- Scripts: golden-file tests in `tests/scripts/run.sh` (P0.6 to P0.8). Not covered: the rofi picker, and the login-screen part of font-switch.sh (skipped: /var/lib/ascii-boot is read-only in the test namespace until R.2 removes the part).
 - Nix sandbox: data tests use `studio/tests/fixtures/data` (P0.5). Sandbox skips: 13 before, 10 after. The remaining skips need jq, ImageMagick, fontconfig, a pty, or the checkout (docs, share).
 - Before Phase 5 changes a module without tests, the revise action adds a safety-net step for it.
 
@@ -126,10 +126,19 @@ Step format (one line for each step):
 - [x] P0.8 Golden tests, themes-switch, and the scripts in flake checks | Files: `tests/scripts/run.sh`, `tests/scripts/golden/themes-switch/`, `flake.nix` | Target: goal 4 | Check: `nix flake check` runs the golden tests
 Completes: criterion 4 (the check command exists)
 
+### Phase R: Removals (goal change, 2026-11-26)
+- [ ] R.1 [removal] Wallpaper hook: theme-switch.sh no longer runs `wallpaper-rotate refresh` | Files: `scripts/theme-switch.sh`, `tests/scripts/run.sh` (stub list) | Target: goal (only fonts and palettes) | Check: golden files lose only the wallpaper-rotate call
+- [ ] R.2 [removal] Login screen in font-switch.sh: remove the greeter part. Remove the namespace protection from `tests/scripts/run.sh` (nothing writes to /var/lib/ascii-boot any more) | Files: `scripts/font-switch.sh`, `tests/scripts/run.sh` | Target: goal | Check: golden files unchanged (the part was skipped), `grep ascii-boot scripts/` = 0
+- [ ] R.3 [removal] NixOS module: remove `packaging/nix/nixos-module.nix` and the `nixosModules` output, and its documentation | Files: `packaging/nix/nixos-module.nix`, `flake.nix`, `README.md`, `docs/theme-studio.md` | Target: goal | Check: `nix flake check`
+- [ ] R.4 Shared data reader: move `json_data` from `rofi-picker.sh` into `scripts/lib/data.sh` (no behavior change) | Files: `scripts/lib/rofi-picker.sh`, `scripts/lib/data.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: T1 | Check: golden files unchanged
+- [ ] R.5 [removal] rofi picker: remove `scripts/lib/rofi-picker.sh` and the picker branches. No name: a usage message, exit 2 | Files: `scripts/lib/rofi-picker.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh`, `tests/scripts/run.sh` (new no-name cases) | Target: goal | Check: golden files unchanged, new no-name cases pass
+- [ ] R.6 [removal] Picker documentation: README and the guide describe the switch commands with a name only | Files: `README.md`, `docs/theme-studio.md` | Target: goal | Check: `grep -i "rofi menu\|picker" README.md docs/theme-studio.md` names only rofi as a themed app
+Completes: the removals of GOAL.md. Criterion 3 for the scripts (the system paths of font-switch.sh go with R.2)
+
 ### Phase 1: One source for paths
 - [ ] P1.1 One `home()` and the output folders in paths.rs: remove the 4 copies of `home()`, add `colors_dir`, `fonts_dir`, `host_fonts_file`, move the `/etc/fonts/fonts.conf` constant | Files: `paths.rs`, `store.rs`, `fonts.rs`, `theme.rs`, `download.rs` | Target: goal 3, T2, rule 1 | Check: tests
 - [ ] P1.2 Config and state folders through paths.rs | Files: `paths.rs`, `config.rs`, `history.rs`, `fonts.rs` | Target: rule 1 | Check: tests
-- [ ] P1.3 Script folders in paths.sh: `colors_dir`, `fonts_dir`, `cache_dir`, and the login-screen paths (`ASCII_BOOT_DIR`, `ASCII_BOOT_TEMPLATE`, defaults unchanged) | Files: `scripts/lib/paths.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: goal 3 | Check: golden tests; the login-screen golden test now runs
+- [ ] P1.3 Script folders in paths.sh: `colors_dir`, `fonts_dir`, `cache_dir` | Files: `scripts/lib/paths.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: goal 3 | Check: golden tests
 - [ ] P1.4 Sample text: replace the old dotfiles path in the Go sample with `$XDG_CONFIG_HOME/theme-studio/themes.json` | Files: `studio/src/samples/code/go.go` | Target: success criteria | Check: grep = 0, tests
 Completes: criterion 3
 
@@ -138,7 +147,6 @@ Completes: criterion 3
 - [ ] P2.2 Ghostty and Pywalfox theme outputs in the list (Ghostty theme-line check as a hook) | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `share/integrations/ghostty-colors.sh`, `scripts/theme-switch.sh` | Target: goal 2 | Check: golden tests unchanged
 - [ ] P2.3 Ghostty, i3, and rofi font outputs in the list | Files: `share/integrations.json`, `scripts/font-switch.sh`, `share/integrations/ghostty-font.tmpl`, `i3-font.tmpl`, `rofi-font.tmpl` | Target: goal 2 | Check: golden tests unchanged
 - [ ] P2.4 Lock screen, GTK, and fontconfig font outputs as hooks | Files: `share/integrations.json`, `scripts/font-switch.sh`, `share/integrations/lock-font.tmpl`, `gtk-font.sh`, `fontconfig-font.sh` | Target: goal 2 | Check: golden tests unchanged
-- [ ] P2.5 Login-screen font output as a hook | Files: `share/integrations.json`, `scripts/font-switch.sh`, `share/integrations/login-font.sh` | Target: goal 2 | Check: golden tests unchanged
 - [ ] P2.6 One reload location: reload commands come from the list, `reload_apps` runs them one time. themes-switch reloads once for both | Files: `share/integrations.json`, `scripts/lib/integrations.sh`, `theme-switch.sh`, `font-switch.sh`, `themes-switch.sh` | Target: rule 2 | Check: golden reload logs unchanged
 - [ ] P2.7 Extensibility check: on a temporary branch, add a sample terminal. Record `git diff --stat` | Files: `docs/refactor/SUCCESS_CRITERIA.md` | Target: goal 1 | Check: 2 files or fewer, no script logic
 Completes: criteria 1, 2, project rule 2
@@ -198,6 +206,12 @@ Completes: criterion 6
 - `set -euo pipefail` in the scripts: it changes behavior.
 - Splitting `settings_ui.rs`, `download.rs`, `tour_page.rs`, `behaviour.rs`, `fonts_dl.rs`, `samples.rs` (finding 7): a later plan revision decides.
 
+**Handover** (goal change, Phase R). After the removals, the dotfiles must provide these. No dotfiles change in this refactor.
+- Wallpaper border colour (R.1): run `wallpaper-rotate refresh` after a theme switch, for example in a dotfiles wrapper around `theme-switch`, or a watch on `~/.config/colors/current`.
+- Login screen (R.2, R.3): remove `services.theme-studio.loginFont` from the NixOS configuration. Set the greeter font in the dotfiles.
+- rofi menus (R.5): menus that list the names in `palettes.json`, `fonts.json`, and `themes.json` (the data folder) and run `theme-switch <name>`, `font-switch <name>`, or `themes-switch <name>`. Deleting a preset from a menu: the studio does it, or the dotfiles menu does.
+- `docs/migration.md` and `docs/plan.md` describe the old setup (login screen, wallpaper, pickers). The docs action updates or archives them.
+
 ## 8. Outcome
 <!-- The final action completes this section. -->
 
@@ -207,6 +221,7 @@ Completes: criterion 6
 ## 10. Plan changelog
 | Phase | Note | Decision | Reason |
 |---|---|---|---|
+| Goal | Theme Studio configures only fonts and colour palettes: remove the wallpaper hook, the login screen (font-switch part, NixOS module), and the rofi picker menus | ACCEPT: new Phase R (R.1 to R.6), P1.3 without the login-screen paths, P2.5 removed | The user changed the goal on 2026-11-26. Removals first make Phases 1 and 2 smaller. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
@@ -214,6 +229,8 @@ Completes: criterion 6
 |---|---|
 | Plan | done |
 | Phase 0 safety net | done |
+| Phase R steps | open |
+| Phase R review | open |
 | Phase 1 steps | open |
 | Phase 1 review | open |
 | Phase 2 steps | open |
