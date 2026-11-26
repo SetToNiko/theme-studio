@@ -43,11 +43,19 @@ pub fn rewrite(buf: &[u8]) -> Vec<u8> {
 }
 
 impl Write for Out {
+    /// Adds the bytes to the buffer. `flush` sends them on.
+    ///
+    /// # Errors
+    /// Never fails: the bytes only go into a buffer. `flush` writes them.
     fn write(&mut self, b: &[u8]) -> std::io::Result<usize> {
         self.buf.extend_from_slice(b);
         Ok(b.len())
     }
 
+    /// Writes the buffered bytes to the output, then flushes the output.
+    ///
+    /// # Errors
+    /// Fails when the output cannot be written or flushed.
     fn flush(&mut self) -> std::io::Result<()> {
         if !self.buf.is_empty() {
             let frame = if self

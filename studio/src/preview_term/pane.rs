@@ -39,6 +39,11 @@ fn nz(n: u16) -> NonZeroU16 {
 }
 
 impl Pane {
+    /// Starts `cmd` in a new pty (a pseudo terminal) of the given size, at least 2 by 2.
+    ///
+    /// # Errors
+    /// Fails when the pty cannot be opened, `cmd` cannot start, or the pty reader or writer cannot
+    /// be made.
     pub(super) fn spawn(
         cmd: CommandBuilder,
         rows: u16,

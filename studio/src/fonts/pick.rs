@@ -81,6 +81,9 @@ impl FontsTab {
 
     /// `F`: every role from the highlighted family (or the family of the
     /// highlighted font).
+    ///
+    /// # Errors
+    /// Returns the message `Nothing highlighted` when the list has no highlighted row.
     pub fn fill_from_family(&mut self) -> Result<Fill, String> {
         let rows = self.rows();
         let group = match rows.get(self.list_sel) {
@@ -103,6 +106,9 @@ impl FontsTab {
 
     /// `r` on a role: the same family's face that fits it, in place of a
     /// font that doesn't.
+    ///
+    /// # Errors
+    /// Returns a message when the font of the role already fits the role.
     pub fn fix_role(&mut self) -> Result<Fill, String> {
         let role = self.slot;
         let family = self.preset.fonts[role].family.clone();

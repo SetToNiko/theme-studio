@@ -17,6 +17,10 @@ pub enum LoadError {
 }
 
 impl fmt::Display for LoadError {
+    /// Writes the error as one line of text.
+    ///
+    /// # Errors
+    /// Returns an error only when the formatter `f` fails to write.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             LoadError::Io(e) => write!(f, "reading: {e}"),
@@ -27,6 +31,10 @@ impl fmt::Display for LoadError {
 
 impl Palette {
     /// Reads `name = #rrggbb` lines; blank lines and `;` comments are skipped.
+    ///
+    /// # Errors
+    /// Returns `LoadError::Io` when the file cannot be read. Returns `LoadError::BadLine` for a
+    /// line without `=` or without a 6-digit hex colour.
     pub fn load(path: &Path) -> Result<Self, LoadError> {
         let text = fs::read_to_string(path).map_err(LoadError::Io)?;
         let mut colours = Vec::with_capacity(34);

@@ -12,6 +12,9 @@ use super::low;
 use crate::model::paths::download_cache_dir;
 
 /// GETs a URL's body (small JSON answers).
+///
+/// # Errors
+/// Fails when curl cannot start, or exits with an error (for example an HTTP error or no network).
 pub(super) fn get(url: &str) -> Result<String> {
     let out = low("curl")
         .args([
@@ -33,6 +36,9 @@ pub(super) fn get(url: &str) -> Result<String> {
 }
 
 /// Downloads a URL to `out`, calling `progress(bytes so far)` as it goes.
+///
+/// # Errors
+/// Fails when curl cannot start or cannot be waited for, or exits with an error.
 pub(super) fn fetch(url: &str, out: &Path, mut progress: impl FnMut(u64)) -> Result<()> {
     let mut child = low("curl")
         .args(["-sS", "-f", "-L", "--max-time", "600", "-o"])
@@ -61,6 +67,10 @@ pub(super) fn fetch(url: &str, out: &Path, mut progress: impl FnMut(u64)) -> Res
 }
 
 /// A JSON answer, cached for a week (an old copy is used when offline).
+///
+/// # Errors
+/// Fails when the cache is too old (or not usable) and the download fails or is not valid JSON, and
+/// no old copy can be read.
 pub(super) fn cached(name: &str, url: &str) -> Result<Value> {
     let path = download_cache_dir().join(name);
     let fresh = std::fs::metadata(&path)

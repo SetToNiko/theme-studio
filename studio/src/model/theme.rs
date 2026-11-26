@@ -137,6 +137,9 @@ impl ThemeStore {
     }
 
     /// Adds or replaces a theme (in place, keeping the file's order).
+    ///
+    /// # Errors
+    /// Fails when themes.json cannot be written.
     pub fn save(&self, name: &str, t: &Theme) -> Result<()> {
         let mut m = Map::new();
         let mut placed = false;
@@ -164,6 +167,11 @@ impl ThemeStore {
         Some(s.trim().to_string()).filter(|s| !s.is_empty())
     }
 
+    /// Writes the name of the active theme to the `theme` file of the colours folder. In tests it
+    /// does nothing.
+    ///
+    /// # Errors
+    /// Fails when the folder cannot be created or the file cannot be written.
     pub fn set_active(name: &str) -> Result<()> {
         // tests never touch your ~/.config
         if cfg!(test) {

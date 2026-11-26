@@ -156,6 +156,9 @@ fn lum(c: Rgb) -> f64 {
 }
 
 /// All 34 keys computed from the 8 base colours (palette-derive.jq's `derive`).
+///
+/// # Panics
+/// Panics when `base` has no entry for one of the 8 base keys (`BASE`).
 // Long function (reason verified, phase 6): one table, one `put` line for each of the 34 derived keys.
 pub fn derive(base: &HashMap<&'static str, Rgb>) -> HashMap<&'static str, Rgb> {
     let b = |k: &str| base[k];
@@ -211,6 +214,9 @@ pub fn derive(base: &HashMap<&'static str, Rgb>) -> HashMap<&'static str, Rgb> {
 }
 
 /// Reads the 8 base colours from a palettes.json object.
+///
+/// # Errors
+/// Fails when a base colour is missing, is not a string, or is not a valid colour.
 fn read_base(obj: &Map<String, Value>) -> Result<HashMap<&'static str, Rgb>> {
     let mut values = HashMap::new();
     for k in BASE {
@@ -238,6 +244,9 @@ pub struct Palette {
 impl Palette {
     /// Reads a palette from its palettes.json object. A derived key counts as
     /// pinned when its value differs from what the base colours would give.
+    ///
+    /// # Errors
+    /// Fails when a base colour is missing or not valid (see `read_base`).
     pub fn from_json(obj: &Map<String, Value>) -> Result<Palette> {
         let mut values = read_base(obj)?;
         let mut pinned = HashSet::new();
@@ -305,6 +314,10 @@ impl Palette {
         m
     }
 
+    /// The colour of a key.
+    ///
+    /// # Panics
+    /// Panics when `key` is not one of the 34 palette keys (`KEYS`).
     pub fn get(&self, key: &str) -> Rgb {
         self.values[key]
     }

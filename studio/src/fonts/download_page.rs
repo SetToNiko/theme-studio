@@ -124,6 +124,10 @@ impl DlPage {
     }
 
     /// The next waiting background message, if any.
+    ///
+    /// # Errors
+    /// Returns `TryRecvError::Empty` when no message waits, and `TryRecvError::Disconnected` when
+    /// all senders are gone.
     pub(crate) fn try_recv(&self) -> Result<Msg, TryRecvError> {
         self.rx.try_recv()
     }

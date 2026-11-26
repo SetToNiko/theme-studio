@@ -122,6 +122,11 @@ impl History {
         self.dir.join(file.trim_end_matches(".json"))
     }
 
+    /// Writes one snapshot file and creates its folder if needed.
+    ///
+    /// # Errors
+    /// Fails when the folder cannot be created, the snapshot cannot be turned into JSON, or the
+    /// file cannot be written.
     fn write(path: &Path, s: &Snapshot) -> Result<()> {
         bump();
         std::fs::create_dir_all(path.parent().unwrap())?;
@@ -131,6 +136,9 @@ impl History {
 
     /// Keeps `before` (the file before a write of `after`), unless nothing
     /// changed; then prunes old automatic snapshots.
+    ///
+    /// # Errors
+    /// Fails when the snapshot file cannot be written. Pruning old snapshots never fails.
     pub fn record(&self, file: &str, before: &Value, after: &Value) -> Result<()> {
         if before == after {
             return Ok(());
@@ -148,6 +156,9 @@ impl History {
     }
 
     /// Saves `content` as a named version (never pruned).
+    ///
+    /// # Errors
+    /// Fails when the snapshot file cannot be written.
     pub fn save_named(&self, file: &str, name: &str, content: &Value) -> Result<PathBuf> {
         let s = Snapshot {
             time: now_ms(),
@@ -202,6 +213,10 @@ impl History {
             .collect()
     }
 
+    /// Deletes one snapshot file.
+    ///
+    /// # Errors
+    /// Fails when the file cannot be removed.
     pub fn delete(path: &Path) -> Result<()> {
         bump();
         std::fs::remove_file(path).with_context(|| format!("removing {}", path.display()))
