@@ -196,18 +196,20 @@ Completes: none (prepares criterion 5)
 For P4.5 to P4.13: one module per step; the app/mod.rs map (its `//!`) is updated in each step. Each step reports module-cycles before and after.
 Completes: none (cycle count decreases, measured)
 
-### Phase 5: Large files and folders
-- [ ] P5.1 ui.rs: page drawing into `ui/pages.rs` | Files: `ui.rs` → `ui/mod.rs`, `ui/pages.rs` | Target: limits | Check: tests
-- [ ] P5.2 ui: pane drawing into `ui/panes.rs` | Files: `ui/mod.rs`, `ui/panes.rs` | Target: limits | Check: tests
-- [ ] P5.3 ui: overlay drawing into `ui/overlays.rs` | Files: `ui/mod.rs`, `ui/overlays.rs` | Target: limits | Check: tests
-- [ ] P5.4 keymap: default bindings as data, separate from keymap logic. Also `Action::group()` (Window, Theme, Fonts or Colours), so run_action reads the group from data (Phase 3 review, note 2) | Files: `keymap.rs` → `keymap/mod.rs`, `keymap/defaults.rs` | Target: T2, limits | Check: tests
-- [ ] P5.5 fonts: rendering jobs into `fonts/render.rs`, installed fonts into `fonts/installed.rs` | Files: `fonts.rs` → `fonts/mod.rs`, `fonts/render.rs`, `fonts/installed.rs` | Target: T1, limits | Check: tests
-- [ ] P5.6 settings: tabs into separate files | Files: `settings.rs` → `settings/mod.rs`, `settings/keymaps.rs`, `settings/history.rs` | Target: limits | Check: tests
-- [ ] P5.7 config: sizes and defaults separate from load and save | Files: `config.rs` → `config/mod.rs`, `config/sizes.rs` | Target: limits | Check: tests
-- [ ] P5.8 `core/` folder: color, palette, theme, store, history, paths, settle (re-exports in main.rs) | Files: `main.rs`, `core/mod.rs`, moved files | Target: T5 | Check: tests
-- [ ] P5.9 `system/` folder: desktop, download, prefetch, samples, encoding | Files: `main.rs`, `system/mod.rs`, moved files | Target: T5 | Check: tests
-- [ ] P5.10 `ui/` folder complete: fonts_ui, fonts_dl_ui, settings_ui, tour_ui, preview, hit, docs | Files: `main.rs`, `ui/mod.rs`, moved files | Target: T5 | Check: tests, each folder 10 modules or fewer
-Completes: criterion 5 (with the docs action)
+### Phase 5: Large files and folders (revised after Phase 4)
+- [ ] P5.0 app/ sub-folders: `app/state/` (palette_editor, layout, messages, nav), `app/input/` (actions, focus, mouse, overlay, colours), `app/pages/settings/`, `app/pages/fonts/`, `app/pages/themes/` (the *_actions files, without the suffix inside their folder); persist.rs and tests.rs stay at the top. Mostly `git mv` and mod lines; the app/mod.rs map follows | Files: app/ (moves) | Target: T5, audience | Check: tests; each folder 10 files or fewer
+- [ ] P5.1 `ui/widgets.rs` as a leaf: the shared drawing helpers (pane_border, pane_title, friendly, accent, panel_number from widgets.rs) move there; ui.rs becomes ui/mod.rs | Files: `ui.rs` -> `ui/mod.rs`, `ui/widgets.rs`, `widgets.rs`, users (access paths) | Target: T5 | Check: tests; the {ui, settings_ui, fonts_ui} cycle is gone
+- [ ] P5.2 ui: page drawing into `ui/pages.rs` | Files: `ui/mod.rs`, `ui/pages.rs` | Target: limits | Check: tests
+- [ ] P5.3 ui: pane and overlay drawing into `ui/panes.rs` and `ui/overlays.rs` | Files: `ui/mod.rs`, `ui/panes.rs`, `ui/overlays.rs` | Target: limits | Check: tests, ui/mod.rs under 500
+- [ ] P5.4 ui/ complete: settings_ui, fonts_ui, fonts_dl_ui, tour_ui, preview move into ui/ (sub-folders if over 10 modules) | Files: moves + mod lines | Target: T5 | Check: tests; ui/ folders 10 modules or fewer
+- [ ] P5.5 `fonts/types.rs` as a leaf: CHIPS, ROLES, ROLE_NAMES, Installed, FontFocus, Row; keymap, fonts_pick, font_tree import the leaf, not fonts | Files: `fonts.rs` -> `fonts/mod.rs`, `fonts/types.rs`, keymap.rs, fonts_pick.rs, font_tree.rs | Target: T5 | Check: tests; the {keymap, fonts, fonts_pick, font_tree} cycle is gone
+- [ ] P5.6 keymap: default bindings as data, separate from keymap logic; `Action::group()` (Window, Theme, Fonts or Colours), so run_action reads the group from data (Phase 3 review, note 2) | Files: `keymap.rs` -> `keymap/mod.rs`, `keymap/defaults.rs`, app/input/actions.rs | Target: T2, limits | Check: tests
+- [ ] P5.7 fonts/: rendering jobs and installed fonts into their own files; fonts_pick, font_tree, and the data parts of fonts_dl and fonts_preview move into fonts/ | Files: fonts/ (moves and splits) | Target: T1, T5, limits | Check: tests; fonts/mod.rs under 500
+- [ ] P5.8 config: sizes and defaults separate from load and save | Files: `config.rs` -> `config/mod.rs`, `config/sizes.rs` | Target: limits | Check: tests
+- [ ] P5.9 `core/` folder: color, palette, theme, store, history, paths, settle, config, encoding, tournament (10 or fewer; place each remaining root module explicitly) | Files: main.rs, core/mod.rs, moves | Target: T5 | Check: tests
+- [ ] P5.10 `system/` folder: desktop, download, prefetch, samples, out, docs (or core, decide by what it does), and the cycle ratchet set to 0: `nix flake check` fails on any cycle | Files: main.rs, system/mod.rs, moves, `docs/refactor/lint-baseline.txt` | Target: T5 | Check: tests; cycles 0; no module left in the root except main.rs
+Removed: the old "settings: tabs into separate files" step (Phase 4 moved the impl App blocks out; settings.rs is under 500).
+Completes: criterion 5 (with the docs action), no dependency cycles
 
 ### Phase 6: Lint and errors to zero
 Also: `palette_menu_focused` and `page_tabs_focused` may become one `enum TopFocus { None, PaletteMenu, PageTabs }` (check first that both are never true at once; Phase 3 review, note 3).
@@ -265,6 +267,7 @@ Completes: criterion 6
 | 3 | Action::group() in keymap.rs | DEFER to P5.4 | The flat match fixes the audience problem now; keymap.rs changes in P5.4 anyway. |
 | 3 | TopFocus enum for the two top-row focus flags | DEFER to Phase 6 | Small; check first that both are never true. |
 | 3 | Break the big cycle group: nav as a leaf, draw function passed in, impl App blocks of the feature modules into app/ | ACCEPT: Phase 4 replaced (P4.2 to P4.14) | P3.12 moved the nav enums but the cycles did not shrink (2 groups, 22 modules): Overlay names settings and behaviour types, and the feature modules impl App. |
+| 4 | Revise Phase 5: app/ sub-folders first (P5.0), ui/widgets leaf, fonts/types leaf, folder lists complete, cycles to 0 | ACCEPT: Phase 5 rewritten (P5.0 to P5.10) | Phase 5 was written before Phases 3 and 4; the two remaining cycles break on splits that Phase 5 does anyway. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
@@ -281,7 +284,7 @@ Completes: criterion 6
 | Phase 3 steps | done |
 | Phase 3 review | done |
 | Phase 4 steps | done |
-| Phase 4 review | open |
+| Phase 4 review | done |
 | Phase 5 steps | open |
 | Phase 5 review | open |
 | Phase 6 steps | open |
