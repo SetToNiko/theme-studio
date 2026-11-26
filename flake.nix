@@ -38,7 +38,8 @@
           buildPhase = ''
             runHook preBuild
             output=$(cargo clippy --all-targets 2>&1) || { printf '%s\n' "$output"; exit 1; }
-            count=$(printf '%s\n' "$output" | grep -aoE '\(bin "theme-studio"\) generated [0-9]+ warning' | grep -oE '[0-9]+' | head -1)
+            # No warnings: there is no "generated" line, so grep fails. That is a count of 0.
+            count=$(printf '%s\n' "$output" | grep -aoE '\(bin "theme-studio"\) generated [0-9]+ warning' | grep -oE '[0-9]+' | head -1 || true)
             LINT_BASELINE=${./docs/refactor/lint-baseline.txt} \
               bash ${./scripts/dev/lint-counts.sh} compare clippy "''${count:-0}"
             runHook postBuild
