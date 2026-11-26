@@ -107,10 +107,13 @@ Advanced techniques that the refactor adds:
 | 21 | `config::dir()`, `history::default_dir()` | One-line wrappers around paths.rs functions since P1.2. Callers could use paths:: directly (Phase 1 review) | T4 | L |
 | 22 | `studio/src/preview.rs:338` | Reads `XDG_RUNTIME_DIR` (else the temp folder) for the preview's runtime files outside paths.rs (found in P1.5) | rule 1 | L |
 | 23 | `scripts/theme-switch.sh` (and `reload_apps`) | The exit code of a switch is the exit code of its last reload command. Without Pywalfox, theme-switch exits 127 although all files were written. A caller that checks the exit code (the studio, home-manager activation) sees a failed switch (found in P2.6, kept unchanged) | correctness, T7 | M |
+| 24 | `draft.rs` `settings_save` | When the save fails, the draft is dropped and its values go live, although nothing was written (found in P3.1, recorded in a test, not fixed) | correctness, T7 | H |
+| 25 | `draft.rs` `draft_changes` | Returns at least 1 even when only keys outside "settings" and "keymaps" differ (`n.max(1)`) (P3.1) | correctness | L |
+| 26 | `behaviour.rs` | Confirm on a Gap row moves the cursor to row 0; Header rows are selectable (P3.1) | correctness | L |
 
 ## 5. Test coverage
-- Rust: 119 tests in 25 modules (115 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
-- No tests: `behaviour`, `draft`, `fonts_dl`, `fonts_dl_ui`, `fonts_preview`, `fonts_ui`, `settings_ui`, `tour_page`, `tour_ui`, `main`.
+- Rust: 169 tests in 27 modules (165 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
+- No tests: `fonts_dl`, `fonts_dl_ui`, `fonts_preview`, `fonts_ui`, `settings_ui`, `tour_page`, `tour_ui`, `main`.
 - Scripts: no tests → golden-file tests in Phase 0.
 - Scripts: golden-file tests in `tests/scripts/run.sh` (P0.6 to P0.8). Not covered: the rofi picker.
 - Nix sandbox: data tests use `studio/tests/fixtures/data` (P0.5). Sandbox skips: 13 before, 10 after. The remaining skips need jq, ImageMagick, fontconfig, a pty, or the checkout (docs, share).
@@ -160,7 +163,7 @@ Completes: criterion 3 for the Rust code. For the scripts, the per-app paths (GT
 Completes: criteria 1, 2, project rule 2
 
 ### Phase 3: Divide App by concern
-- [ ] P3.1 Safety net: characterization tests for behaviour and draft | Files: `behaviour.rs`, `draft.rs` | Target: correctness | Check: tests pass on unchanged code
+- [x] P3.1 Safety net: characterization tests for behaviour and draft | Files: `behaviour.rs`, `draft.rs` | Target: correctness | Check: tests pass on unchanged code
 - [ ] P3.2 App folder: `app.rs` → `app/mod.rs`, tests → `app/tests.rs` | Files: `app/mod.rs`, `app/tests.rs` | Target: T4 | Check: tests
 - [ ] P3.3 PaletteEditor: palette, saved, undo, redo, HSV, hex, edit session, and their methods | Files: `app/mod.rs`, `app/palette_editor.rs`, `ui.rs`, `fonts_ui.rs` | Target: T1, T4 | Check: tests
 - [ ] P3.4 Layout: sizes, borders, dragging, resize, visibility flags, pane focus and move | Files: `app/mod.rs`, `app/layout.rs`, `ui.rs`, `fonts_ui.rs`, `fonts_dl_ui.rs` | Target: T1 | Check: tests
