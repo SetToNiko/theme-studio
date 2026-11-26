@@ -17,7 +17,7 @@ description: Gives the stack, commands, refactor settings, coding rules, and doc
 ## Refactor settings
 - Refactor folder: `docs/refactor/` (GOAL.md, PRINCIPLES.md, SUCCESS_CRITERIA.md, PLAN.md)
 - Branch: `refactor/maintainability` · Commits: after each approved action
-- Simplify step: simplifier agent · Documentation: ARCHITECTURE.md + README.md + doc comments · Step size: 5 files or fewer
+- Simplify step: simplifier agent · Documentation: ARCHITECTURE.md + README.md + doc comments · Step size: 5 files or fewer. A pure move (`git mv`, no content change) and new test-data files (fixtures, golden files) do not count.
 
 ## Audience: A1 Beginner (junior developer)
 The reader knows Rust and bash basics. The reader possibly does not know design patterns, trait objects, advanced generics, macros, or this project.
