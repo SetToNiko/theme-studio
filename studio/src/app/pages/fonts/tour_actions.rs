@@ -11,11 +11,11 @@ use std::path::PathBuf;
 
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Overlay, Page};
+use crate::core::tournament::{self, Entrant, Tournament};
 use crate::download::{self, Entry};
 use crate::fonts::download_page::DlTab;
 use crate::keymap::action::Action;
 use crate::tour_page::{POOLS, SIZES, SetupRow, Stage, TourPage};
-use crate::tournament::{self, Entrant, Tournament};
 
 impl App {
     pub fn tour(&mut self) -> &mut TourPage {

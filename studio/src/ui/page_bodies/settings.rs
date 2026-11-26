@@ -9,7 +9,7 @@ use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use crate::app::App;
 use crate::app::state::nav::{BhRow, LookId};
-use crate::color::Rgb;
+use crate::core::color::Rgb;
 use crate::hit::{Target, hover, hover_line, hover_row};
 use crate::keymap::Keymap;
 use crate::keymap::key::display_seq;
@@ -125,7 +125,7 @@ pub fn draw_settings(f: &mut Frame, app: &mut App, area: Rect) {
 /// docs/theme-studio.md, rendered for the pane (at most 100 columns wide, so
 /// lines stay readable), from the scroll position, with a scrollbar.
 fn draw_readme(f: &mut Frame, app: &mut App, area: Rect) {
-    let path = crate::paths::guide(&app.store.share);
+    let path = crate::core::paths::guide(&app.store.share);
     let modified = std::fs::metadata(&path).and_then(|m| m.modified()).ok();
     let p = &mut app.settings_page;
     // read it (again, if the file changed)

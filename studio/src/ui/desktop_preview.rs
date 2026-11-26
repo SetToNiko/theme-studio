@@ -11,10 +11,10 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
-use crate::palette::Palette;
+use crate::core::palette::Palette;
+use crate::core::store::TerminalMap;
 use crate::preview_term::pane::TermColors;
 use crate::preview_term::{PaneId, Preview};
-use crate::store::TerminalMap;
 
 impl Preview {
     /// Draws the model desktop: two tiled windows with i3 borders, the bar,

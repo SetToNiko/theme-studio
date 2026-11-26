@@ -11,8 +11,8 @@ use serde_json::Value;
 
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Naming};
-use crate::color::Rgb;
-use crate::history::{History, SnapshotInfo};
+use crate::core::color::Rgb;
+use crate::core::history::{History, SnapshotInfo};
 use crate::keymap::action::Action;
 use crate::settings::{Colours, DiffView, FILES, HistFocus, diff_lines};
 
@@ -20,7 +20,7 @@ impl App {
     /// The selected file's versions (named first, then newest first);
     /// read again only after something changed.
     pub fn versions(&mut self) -> Vec<(PathBuf, SnapshotInfo)> {
-        let generation = crate::history::generation();
+        let generation = crate::core::history::generation();
         let file = self.settings_page.hist_file;
         if let Some(v) = self.settings_page.cached_versions(generation, file) {
             return v;
@@ -40,7 +40,7 @@ impl App {
         let versions = self.versions();
         let p = &self.settings_page;
         let sel = versions.get(p.hist_sel).map(|(path, _)| path.clone());
-        let generation = crate::history::generation();
+        let generation = crate::core::history::generation();
         let hist_file = p.hist_file;
         let show_all = p.show_all;
         if let Some(v) = self.settings_page.cached_view(

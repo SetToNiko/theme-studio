@@ -5,9 +5,9 @@ use super::*;
 
 use crate::keymap::action::Action;
 
+use crate::core::store::to_jq_string;
 use crate::keymap::Context;
 use crate::preview_term::PaneId;
-use crate::store::to_jq_string;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{
@@ -26,7 +26,7 @@ fn temp_store(tag: &str) -> Store {
     m.insert("Two".into(), Value::Object(two.to_json()));
     std::fs::write(
         dir.join("palettes.json"),
-        to_jq_string(&crate::store::data_file("palettes", m)),
+        to_jq_string(&crate::core::store::data_file("palettes", m)),
     )
     .unwrap();
     Store::at(dir)
@@ -133,7 +133,7 @@ fn pinning_hex_entry_paste_and_copy_from() {
 fn themes_save_open_and_fork() {
     let store = temp_store("save");
     let dir = store.dir.clone();
-    crate::history::init_for_test(dir.join("history"));
+    crate::core::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
     let themes = || {
         ThemeStore { dir: dir.clone() }
@@ -889,7 +889,7 @@ fn settings_changes_wait_for_save() {
     use crate::settings::KmRow;
     let store = temp_store("settings-keys");
     let dir = store.dir.clone();
-    crate::history::init_for_test(dir.join("history"));
+    crate::core::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
     app.on_key(KeyEvent::new(KeyCode::F(3), KeyModifiers::NONE));
     assert_eq!(app.page, Page::Settings);
@@ -993,7 +993,7 @@ fn settings_behaviour_tab_edits_then_saves() {
     use crate::behaviour::behaviour_rows;
     let store = temp_store("settings-behaviour");
     let dir = store.dir.clone();
-    crate::history::init_for_test(dir.join("history"));
+    crate::core::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
     app.page = Page::Settings;
     render(&mut app, 160, 45);
@@ -1040,7 +1040,7 @@ fn settings_history_tab_previews_restores_and_names_versions() {
     use crate::settings::DiffLine;
     let store = temp_store("settings-history");
     let dir = store.dir.clone();
-    crate::history::init_for_test(dir.join("history"));
+    crate::core::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
     let before = app.editor.palette.get("red");
     app.editor.palette.set("red", Rgb(1, 2, 3));
@@ -1153,7 +1153,7 @@ fn hover_look_is_configurable_and_pane_borders_light_up() {
     use ratatui::style::{Color, Modifier};
     let store = temp_store("hover-look");
     let dir = store.dir.clone();
-    crate::history::init_for_test(dir.join("history"));
+    crate::core::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
     // a system palette whose keys we know
     let mut sys = Palette::blank();
@@ -1319,7 +1319,7 @@ fn selecting_a_colour_lights_up_its_derivation_relatives() {
 fn settings_tabs_take_the_keyboard_at_the_list_edge() {
     let store = temp_store("tab-focus");
     let dir = store.dir.clone();
-    crate::history::init_for_test(dir.join("history"));
+    crate::core::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
     app.page = Page::Settings;
     // top (the default): up from the first row reaches the tabs
@@ -1384,7 +1384,7 @@ fn preset_browser_previews_loads_creates_and_deletes() {
     use crate::hit::Target as T;
     let store = temp_store("presets");
     let dir = store.dir.clone();
-    crate::history::init_for_test(dir.join("history"));
+    crate::core::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
     app.page = Page::Settings;
     let screen = render(&mut app, 160, 45);
@@ -1554,7 +1554,7 @@ fn download_page_lists_searches_and_removes() {
     use crate::hit::Target as T;
     let store = temp_store("dl");
     let dir = store.dir.clone();
-    crate::history::init_for_test(dir.join("history"));
+    crate::core::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
     let entry = |id: &str, family: &str, cat: &str, source: Source| Entry {
         id: id.into(),
@@ -1643,7 +1643,7 @@ fn download_page_lists_searches_and_removes() {
     click_on(&mut app, crate::hit::Target::PreviewMenu(0));
     mouse(&mut app, MouseEventKind::Down(MouseButton::Left), 1, 1);
     assert!(matches!(app.overlay, Overlay::None));
-    app.dl.preview.as_mut().unwrap().kind = Some(crate::samples::Kind::Code);
+    app.dl.preview.as_mut().unwrap().kind = Some(crate::core::samples::Kind::Code);
     press(&mut app, "t");
     assert!(render(&mut app, 160, 45).contains("Preview  Icons"));
     // a failed fetch says so
@@ -1943,7 +1943,7 @@ fn the_readme_tab_renders_scrolls_and_jumps_between_headings() {
 fn messages_time_out_and_saves_can_pop_up() {
     let store = temp_store("messages");
     let dir = store.dir.clone();
-    crate::history::init_for_test(dir.join("history"));
+    crate::core::history::init_for_test(dir.join("history"));
     let mut app = test_app(store, Start::Named("One".into()));
     let ago = |s: u64| Some(Instant::now() - Duration::from_secs(s));
     // info messages go after settings.messages.seconds (3 by default)
@@ -2304,7 +2304,7 @@ fn installed_fonts_preview_from_their_files() {
     let store = temp_store("installed-preview");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
-    let fonts = crate::paths::installed_fonts_dir().join("test-mono");
+    let fonts = crate::core::paths::installed_fonts_dir().join("test-mono");
     std::fs::create_dir_all(&fonts).unwrap();
     let ext = if file.ends_with(".otf") { "otf" } else { "ttf" };
     std::fs::copy(&file, fonts.join(format!("TestMono-Regular.{ext}"))).unwrap();
@@ -2418,7 +2418,7 @@ fn a_tournament_of_installed_fonts_from_setup_to_results() {
     let store = temp_store("tournament");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
-    let _ = std::fs::remove_dir_all(crate::tournament::dir());
+    let _ = std::fs::remove_dir_all(crate::core::tournament::dir());
     app.fonts.installed = (0..5)
         .map(|i| crate::fonts::types::Installed {
             family: format!("Test Mono {i}"),
@@ -2472,7 +2472,7 @@ fn a_tournament_of_installed_fonts_from_setup_to_results() {
     assert_eq!(app.tour().stage, Stage::Setup);
     assert!(screen(&mut app).contains("won by Test Mono"));
     assert_eq!(app.tour_past().len(), 1);
-    let _ = std::fs::remove_dir_all(crate::tournament::dir());
+    let _ = std::fs::remove_dir_all(crate::core::tournament::dir());
     std::fs::remove_dir_all(dir).unwrap();
 }
 

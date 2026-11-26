@@ -15,7 +15,7 @@ use settings::Settings;
 
 /// `$XDG_CONFIG_HOME/theme-studio`, or `~/.config/theme-studio`.
 pub fn dir() -> PathBuf {
-    crate::paths::studio_config_dir()
+    crate::core::paths::studio_config_dir()
 }
 
 /// What loading the config produced, and anything worth telling the user.
@@ -29,7 +29,7 @@ pub struct Loaded {
 }
 
 fn write_json(path: &Path, v: &Value) -> Result<()> {
-    crate::store::write_json_file(path, v)
+    crate::core::store::write_json_file(path, v)
 }
 
 fn read_json(path: &Path) -> Result<Option<Value>> {
@@ -237,11 +237,11 @@ pub fn load(dir: &Path, write: bool) -> Loaded {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::store::to_jq_string;
     use crate::fonts::filters::Spacing;
     use crate::keymap::action::Action;
     use crate::keymap::key::Key;
     use crate::keymap::{Context, Lookup};
-    use crate::store::to_jq_string;
 
     fn temp(tag: &str) -> PathBuf {
         let d =

@@ -270,7 +270,7 @@ mod tests {
             std::fs::canonicalize(d.join("new/palettes.json")).unwrap()
         );
         // the studio's save: through the link, which stays a link
-        crate::store::write_json_file(&d.join("palettes.json"), &serde_json::json!({"a": 1}))
+        crate::core::store::write_json_file(&d.join("palettes.json"), &serde_json::json!({"a": 1}))
             .unwrap();
         assert!(
             std::fs::symlink_metadata(d.join("palettes.json"))

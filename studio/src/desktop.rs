@@ -9,8 +9,8 @@ use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::time::Duration;
 
-use crate::color::Rgb;
-use crate::palette::{self, Palette};
+use crate::core::color::Rgb;
+use crate::core::palette::{self, Palette};
 
 /// Colour roles: role name -> palette keys (one per column, e.g.
 /// `client.focused` -> [border, background, text, indicator, child_border]).
@@ -268,7 +268,7 @@ mod tests {
 
     #[test]
     fn real_configs_parse() {
-        let dir = crate::store::Store::locate().dir;
+        let dir = crate::core::store::Store::locate().dir;
         if !dir.join("i3/theme").exists() {
             eprintln!("skipped: no configs");
             return;

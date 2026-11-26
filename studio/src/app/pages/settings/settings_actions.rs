@@ -12,7 +12,7 @@ use std::path::PathBuf;
 
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Naming, Overlay};
-use crate::history::History;
+use crate::core::history::History;
 use crate::keymap::action::Action;
 use crate::keymap::key::Key;
 use crate::settings::{FILES, HistFocus, KmRow, SettingsPage, TABS, Tab, ends, wrap};
@@ -94,7 +94,7 @@ impl App {
     /// `<leader>u`: puts back the newest snapshot of the file the studio last
     /// wrote (which itself is kept, so doing it again redoes).
     pub fn undo_config(&mut self) {
-        let Some((file, path)) = crate::history::last_write() else {
+        let Some((file, path)) = crate::core::history::last_write() else {
             return self.messages.info("No config change to undo yet");
         };
         let Some(h) = self.history() else { return };
@@ -105,7 +105,7 @@ impl App {
         let Some(snap) = newest.and_then(|(p, _)| History::load(&p)) else {
             return self.messages.info(format!("No earlier version of {file}"));
         };
-        match crate::store::write_json_file(&path, &snap.content) {
+        match crate::core::store::write_json_file(&path, &snap.content) {
             Ok(()) => {
                 self.reload_file(&file);
                 self.messages.info(format!(
@@ -386,7 +386,7 @@ impl App {
                 let Some(snap) = History::load(&version) else {
                     return self.messages.error("That version can't be read");
                 };
-                match crate::store::write_json_file(&self.file_path(file), &snap.content) {
+                match crate::core::store::write_json_file(&self.file_path(file), &snap.content) {
                     Ok(()) => {
                         self.reload_file(file);
                         self.settings_page.hist_sel = 0;

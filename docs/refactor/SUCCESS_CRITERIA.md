@@ -37,7 +37,7 @@ Main source: `docs/migration.md`, section "For the refactor: what still ties it 
 
 | Criterion | How to measure | Baseline | Target | Result |
 |---|---|---|---|---|
-| No code outside `studio/src/paths.rs` and `scripts/lib/paths.sh` contains a hard-coded system path. | `grep -n -E '/var/lib\|/etc/' scripts/*.sh studio/src/*.rs`. Ignore comments. | 4 (in `font-switch.sh`) | 0 outside the two paths files | |
+| No code outside `studio/src/core/paths.rs` and `scripts/lib/paths.sh` contains a hard-coded system path. | `grep -rn -E '/var/lib\|/etc/' scripts/*.sh studio/src --include=*.rs`. Ignore comments. | 4 (in `font-switch.sh`) | 0 outside the two paths files | |
 | No reference to the old dotfiles location. | `grep -rn 'dotfiles-nixos' studio/src scripts share packaging` | 1 | 0 | |
 | External programs start from fewer modules. Each such module has a name that tells its concern. | `grep -l 'Command::new' studio/src/**/*.rs` | 8 files: app, desktop, download, fonts, history, palette, paths, samples | Fewer than 8. `app.rs` and the UI modules start no programs. | |
 | Modules are in folders by feature, not all in one folder. | Count the modules in each folder. | 35 modules in `studio/src/`, 0 subfolders | 10 modules or fewer in each folder | |

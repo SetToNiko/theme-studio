@@ -11,10 +11,10 @@ use std::time::{Duration, Instant};
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
 
-use crate::color::Rgb;
+use crate::core::color::Rgb;
+use crate::core::samples::{self, KINDS, Kind, LANGS};
 use crate::download::{Entry, Source};
 use crate::fonts::render::SampleRenderer;
-use crate::samples::{self, KINDS, Kind, LANGS};
 
 /// How long the highlight rests on a font before its preview is fetched.
 const PAUSE: Duration = Duration::from_millis(150);
@@ -43,7 +43,7 @@ pub struct FontPreview {
     /// The pane's size in cells (from the last draw, once settled).
     pub area: (u16, u16),
     /// The pane's size while resizing (re-rendered once it holds still).
-    pub settle: crate::settle::Settle,
+    pub settle: crate::core::settle::Settle,
 }
 
 impl FontPreview {

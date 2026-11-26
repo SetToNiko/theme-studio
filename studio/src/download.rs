@@ -15,7 +15,7 @@ use std::time::{Duration, SystemTime};
 use anyhow::{Context, Result, anyhow, bail};
 use serde_json::{Map, Value, json};
 
-use crate::paths::{
+use crate::core::paths::{
     SYSTEM_FONTCONFIG, download_cache_dir, home, installed_fonts_dir, preview_cache_dir,
 };
 
@@ -316,7 +316,7 @@ fn sri(file: &Path) -> Result<String> {
     let bytes: Vec<u8> = (0..hex.len() / 2)
         .filter_map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).ok())
         .collect();
-    Ok(format!("sha256-{}", crate::encoding::base64(&bytes)))
+    Ok(format!("sha256-{}", crate::core::encoding::base64(&bytes)))
 }
 
 /// Downloads `files` (name, url, size) into `dir`, reporting progress.
@@ -688,7 +688,7 @@ pub fn read_list(path: &Path) -> Map<String, Value> {
 }
 
 pub fn write_list(path: &Path, fonts: Map<String, Value>) -> Result<()> {
-    crate::store::write_json_file(path, &json!({"version": 1, "fonts": fonts}))
+    crate::core::store::write_json_file(path, &json!({"version": 1, "fonts": fonts}))
 }
 
 /// A channel for the page's background work.

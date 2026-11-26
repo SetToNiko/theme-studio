@@ -167,7 +167,8 @@ impl FontStore {
         let text = std::fs::read_to_string(self.path())
             .with_context(|| format!("reading {}", self.path().display()))?;
         let v: Value = serde_json::from_str(&text)?;
-        crate::store::data_map(v, "presets").ok_or_else(|| anyhow!("fonts.json has no presets"))
+        crate::core::store::data_map(v, "presets")
+            .ok_or_else(|| anyhow!("fonts.json has no presets"))
     }
 
     /// Brings fonts.json up to the current version (3: the new role keys;
@@ -175,7 +176,7 @@ impl FontStore {
     /// (configs/hosts/*/fonts.json) with it. Run after themes.json's
     /// migration, which takes the sizes from here first.
     pub fn migrate(&self) -> Result<Option<u64>> {
-        let done = crate::store::migrate_data_file(&self.path(), "presets", |presets| {
+        let done = crate::core::store::migrate_data_file(&self.path(), "presets", |presets| {
             presets
                 .into_iter()
                 .map(|(name, p)| match p {
@@ -207,7 +208,7 @@ impl FontStore {
             if !OLD_ROLES.iter().any(|k| obj.contains_key(*k)) {
                 continue;
             }
-            let new = crate::store::to_jq_string(&Value::Object(rename_roles(obj)));
+            let new = crate::core::store::to_jq_string(&Value::Object(rename_roles(obj)));
             std::fs::write(&path, new).with_context(|| format!("writing {}", path.display()))?;
         }
         Ok(())
@@ -226,7 +227,10 @@ impl FontStore {
     pub fn save(&self, name: &str, preset: &Preset) -> Result<()> {
         let mut all = self.load_all().unwrap_or_default();
         all.insert(name.to_string(), Value::Object(preset.to_json()));
-        crate::store::write_json_file(&self.path(), &crate::store::data_file("presets", all))
+        crate::core::store::write_json_file(
+            &self.path(),
+            &crate::core::store::data_file("presets", all),
+        )
     }
 
     /// Runs font-switch to make a saved preset the system fonts, at the
@@ -243,7 +247,7 @@ impl FontStore {
     }
 
     fn run_switch(&self, name: &str, sizes: [u32; 3], quiet: bool) -> Result<()> {
-        let mut cmd = crate::paths::switch_command("font-switch", &self.dir, &self.share);
+        let mut cmd = crate::core::paths::switch_command("font-switch", &self.dir, &self.share);
         cmd.env("FONT_SIZES", sizes.map(|s| s.to_string()).join(" "));
         if quiet {
             cmd.env("NO_RESTART", "1");
@@ -266,7 +270,7 @@ impl FontStore {
 
     /// The preset font-switch.sh last applied.
     pub fn active_name(&self) -> Option<String> {
-        let s = std::fs::read_to_string(crate::paths::fonts_dir().join("current")).ok()?;
+        let s = std::fs::read_to_string(crate::core::paths::fonts_dir().join("current")).ok()?;
         Some(s.trim().to_string()).filter(|s| !s.is_empty())
     }
 
@@ -274,10 +278,11 @@ impl FontStore {
     /// names); Icons falls back to the Proportional offset, like
     /// font-switch.sh.
     pub fn offsets() -> [i32; 3] {
-        let obj: Map<String, Value> = std::fs::read_to_string(crate::paths::host_fonts_file())
-            .ok()
-            .and_then(|t| serde_json::from_str(&t).ok())
-            .unwrap_or_default();
+        let obj: Map<String, Value> =
+            std::fs::read_to_string(crate::core::paths::host_fonts_file())
+                .ok()
+                .and_then(|t| serde_json::from_str(&t).ok())
+                .unwrap_or_default();
         let get = |r: usize| {
             role_entry(&obj, r)
                 .and_then(Value::as_i64)
@@ -291,7 +296,7 @@ impl FontStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::store::to_jq_string;
+    use crate::core::store::to_jq_string;
 
     #[test]
     fn presets_round_trip_with_new_keys_and_icons_falls_back() {
@@ -319,7 +324,7 @@ mod tests {
 
     #[test]
     fn real_fonts_json_round_trips_byte_for_byte() {
-        let dir = crate::store::test_data_dir();
+        let dir = crate::core::store::test_data_dir();
         let Ok(text) = std::fs::read_to_string(dir.join("fonts.json")) else {
             eprintln!("skipped: no fonts.json");
             return;
@@ -327,8 +332,8 @@ mod tests {
         // any version: rebuilding every preset gives what the migration
         // writes (the file itself, once it's version 3)
         let v: Value = serde_json::from_str(&text).unwrap();
-        let current = v["version"] == crate::store::FONTS_VERSION;
-        let all = crate::store::data_map(v, "presets").unwrap();
+        let current = v["version"] == crate::core::store::FONTS_VERSION;
+        let all = crate::core::store::data_map(v, "presets").unwrap();
         let mut rebuilt = Map::new();
         let mut migrated = Map::new();
         for (name, v) in &all {
@@ -340,10 +345,10 @@ mod tests {
                 Value::Object(drop_sizes(rename_roles(o.clone()))),
             );
         }
-        let rebuilt = to_jq_string(&crate::store::data_file("presets", rebuilt));
+        let rebuilt = to_jq_string(&crate::core::store::data_file("presets", rebuilt));
         assert_eq!(
             rebuilt,
-            to_jq_string(&crate::store::data_file("presets", migrated))
+            to_jq_string(&crate::core::store::data_file("presets", migrated))
         );
         if current {
             assert_eq!(rebuilt, text);

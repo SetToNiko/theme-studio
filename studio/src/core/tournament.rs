@@ -142,7 +142,7 @@ impl Tournament {
     ) -> Tournament {
         rng.shuffle(&mut entrants);
         let ids: Vec<usize> = (0..entrants.len()).collect();
-        let started = crate::history::local_time();
+        let started = crate::core::history::local_time();
         let file = format!(
             "{}.json",
             started.replace([' ', ':'], "-").replace("--", "-")
@@ -295,7 +295,7 @@ impl Tournament {
     pub fn save(&self, dir: &Path) -> Result<()> {
         std::fs::create_dir_all(dir)?;
         let path = dir.join(&self.file);
-        crate::store::write_json_file(&path, &serde_json::to_value(self)?)
+        crate::core::store::write_json_file(&path, &serde_json::to_value(self)?)
             .with_context(|| format!("saving {}", path.display()))
     }
 
@@ -314,7 +314,7 @@ pub fn dir() -> PathBuf {
             std::process::id()
         ));
     }
-    crate::history::default_dir()
+    crate::core::history::default_dir()
         .parent()
         .map(|p| p.join("tournaments"))
         .unwrap_or_default()

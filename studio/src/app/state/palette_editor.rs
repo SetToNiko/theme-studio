@@ -5,8 +5,8 @@
 //! as a parameter. [`App`](crate::app::App) calls it and then does the parts that
 //! need the rest of the studio, such as showing a message.
 
-use crate::color::{self, Rgb};
-use crate::palette::Palette;
+use crate::core::color::{self, Rgb};
+use crate::core::palette::Palette;
 
 /// The most undo steps we keep.
 const MAX_UNDO: usize = 500;

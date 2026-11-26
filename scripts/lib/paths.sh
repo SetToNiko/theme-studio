@@ -1,4 +1,4 @@
-# Where the theme scripts find things (the studio's paths.rs does the same).
+# Where the theme scripts find things (the studio's core/paths.rs does the same).
 # Source this after setting $here to the script's own folder (resolved
 # through links), then:
 #
@@ -19,7 +19,7 @@
 #   ghostty_themes_dir  your own Ghostty themes (~/.config/ghostty/themes)
 #
 # The first three of these five match colors_dir, fonts_dir and host_fonts_file
-# in studio/src/paths.rs. If you change one side, change the other.
+# in studio/src/core/paths.rs. If you change one side, change the other.
 
 data_file() {
   printf '%s/%s\n' "${THEME_STUDIO_DATA:-${XDG_CONFIG_HOME:-$HOME/.config}/theme-studio}" "$1"

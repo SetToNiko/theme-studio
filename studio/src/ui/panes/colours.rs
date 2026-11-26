@@ -11,9 +11,9 @@ use ratatui::widgets::Paragraph;
 
 use crate::app::App;
 use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
-use crate::color::{self, Rgb};
+use crate::core::color::{self, Rgb};
+use crate::core::palette::{self, GROUPS, TEXT_KEYS};
 use crate::hit::{Target, hover};
-use crate::palette::{self, GROUPS, TEXT_KEYS};
 use crate::ui::pane_chrome::pane_title;
 use crate::ui::widgets::panel_number;
 use crate::ui::{focused_block, swatch};

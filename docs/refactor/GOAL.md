@@ -15,7 +15,7 @@ The codebase is disorganized and has much coupling. Thus, it is difficult to mai
 `docs/refactor/SUCCESS_CRITERIA.md` has the measurement, baseline, and target of each criterion.
 1. To add a new app integration (for example a terminal other than Ghostty), you change 2 files or fewer, and no script logic.
 2. One data list defines the app integrations: the files that each app reads, and the reload command of each app.
-3. No code outside `studio/src/paths.rs` and `scripts/lib/paths.sh` contains a hard-coded system path.
+3. No code outside `studio/src/core/paths.rs` and `scripts/lib/paths.sh` contains a hard-coded system path.
 4. All current functionality works: `nix flake check` passes, and the manual checklist passes.
 5. Each `.rs` file and each script starts with a comment that gives its purpose. ARCHITECTURE.md lists each module with a one-line purpose.
 6. After the refactor phases, one command installs Theme Studio without Nix, and `theme-switch` works after that install.

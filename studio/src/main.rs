@@ -4,30 +4,21 @@
 
 mod app;
 mod behaviour;
-mod color;
 mod config;
+mod core;
 mod desktop;
 mod docs;
 mod download;
 mod draft;
-mod encoding;
 mod fonts;
-mod history;
 mod hit;
 mod keymap;
 mod out;
-mod palette;
-mod paths;
 mod prefetch;
 mod presets;
 mod preview_term;
-mod samples;
 mod settings;
-mod settle;
-mod store;
-mod theme;
 mod tour_page;
-mod tournament;
 mod ui;
 
 use std::io::stdout;
@@ -40,7 +31,7 @@ use ratatui::crossterm::event::{
 use ratatui::crossterm::execute;
 
 use app::{App, Start};
-use store::Store;
+use core::store::Store;
 
 const USAGE: &str = "\
 Usage: theme-studio [--fonts] [THEME | PALETTE | --new]
@@ -69,7 +60,7 @@ More: docs/theme-studio.md (also the Settings page's README tab)";
 
 fn main() -> Result<()> {
     // every write the studio makes keeps the old file in the history
-    history::init(history::default_dir());
+    core::history::init(core::history::default_dir());
     let mut args: Vec<String> = std::env::args().skip(1).collect();
     let fonts_tab = args.iter().any(|a| a == "--fonts");
     args.retain(|a| a != "--fonts");
@@ -89,7 +80,7 @@ fn main() -> Result<()> {
                 share: store.share.clone(),
             };
             // themes.json: the first theme, from the active palette and fonts
-            let themes = theme::ThemeStore {
+            let themes = core::theme::ThemeStore {
                 dir: store.dir.clone(),
             };
             if !themes.exists()
@@ -97,14 +88,14 @@ fn main() -> Result<()> {
             {
                 match themes.save(
                     &p,
-                    &theme::Theme {
+                    &core::theme::Theme {
                         palette: p.clone(),
                         sizes: fonts.load(&f).ok().map(|preset| preset.sizes()),
                         fonts: f,
                     },
                 ) {
                     Ok(()) => {
-                        let _ = theme::ThemeStore::set_active(&p);
+                        let _ = core::theme::ThemeStore::set_active(&p);
                         println!("themes.json: made the theme \"{p}\"");
                     }
                     Err(e) => eprintln!("warning: themes.json: {e:#}"),

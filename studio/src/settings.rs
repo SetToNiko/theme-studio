@@ -6,8 +6,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-use crate::color::Rgb;
-use crate::history::SnapshotInfo;
+use crate::core::color::Rgb;
+use crate::core::history::SnapshotInfo;
 use crate::keymap::Context;
 use crate::keymap::action::Action;
 

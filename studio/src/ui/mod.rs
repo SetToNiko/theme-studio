@@ -10,7 +10,7 @@ use ratatui::widgets::{Block, Paragraph};
 
 use crate::app::App;
 use crate::app::state::nav::Page;
-use crate::color::Rgb;
+use crate::core::color::Rgb;
 use crate::hit::{Target, hover};
 use crate::keymap::Context;
 use crate::keymap::action::Action;

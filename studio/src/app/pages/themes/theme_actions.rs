@@ -2,13 +2,13 @@
 //!
 //! This is another `impl App { ... }` block (see `persist.rs` for the same
 //! style). The theme data (`Theme`, `ThemeStore`, reading and writing
-//! themes.json and the current theme file) stays in `theme.rs`, and so do
+//! themes.json and the current theme file) stays in `core/theme.rs`, and so do
 //! its tests; this file only holds the methods that need the whole `App`.
 
 use crate::app::App;
 use crate::app::state::nav::{For, Overlay};
-use crate::color::Rgb;
-use crate::theme::{Theme, ThemeStore};
+use crate::core::color::Rgb;
+use crate::core::theme::{Theme, ThemeStore};
 
 impl App {
     /// The theme's parts as they are now.

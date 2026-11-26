@@ -24,7 +24,7 @@ static DIR: OnceLock<PathBuf> = OnceLock::new();
 
 /// `$XDG_STATE_HOME/theme-studio/history`, or `~/.local/state/…`.
 pub fn default_dir() -> PathBuf {
-    crate::paths::history_dir()
+    crate::core::paths::history_dir()
 }
 
 pub fn init(dir: PathBuf) {

@@ -12,8 +12,8 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::app::state::nav::{For, Overlay, Pending};
 use crate::app::{App, open_matches};
-use crate::color::Rgb;
-use crate::palette::Palette;
+use crate::core::color::Rgb;
+use crate::core::palette::Palette;
 
 impl App {
     /// Opens the palette list (`For::Palette`) with the current palette highlighted.

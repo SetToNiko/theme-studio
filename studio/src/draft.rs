@@ -50,8 +50,8 @@ impl Draft {
 mod tests {
     use super::*;
     use crate::app::{App, Start};
-    use crate::palette::Palette;
-    use crate::store::{Store, data_file, to_jq_string};
+    use crate::core::palette::Palette;
+    use crate::core::store::{Store, data_file, to_jq_string};
 
     /// An app on a temp store with a temp config folder (never ~/.config).
     /// Returns the app and the config folder.
@@ -67,7 +67,7 @@ mod tests {
         )
         .unwrap();
         // saving records history: keep it in the temp folder
-        crate::history::init_for_test(dir.join("history"));
+        crate::core::history::init_for_test(dir.join("history"));
         let config_dir = dir.join("studio-config");
         let config = crate::config::Loaded {
             keymap: Keymap::vim(),
