@@ -315,7 +315,7 @@ Completes: criterion 6
 | Phase 4 steps | done |
 | Phase 4 review | done |
 | Phase 5 steps | done |
-| Phase 5 review | done (3 reviewers in parallel; no bugs; fixes applied; notes N1-N5 pending) |
+| Phase 5 review | done (3 reviewers in parallel; no bugs; fixes applied; notes N1-N5 decided: P5.15-P5.18, N1 deferred) |
 | Phase 6 steps | done |
 | Phase 6 review | done (3 reviewers; no refactor bugs; finding 28 fixed; long-function reasons verified in one pass) |
 | Phase 7 steps | done (P7.1 and P7.2 ran next to Phase 6 wave 1: no shared files) |
