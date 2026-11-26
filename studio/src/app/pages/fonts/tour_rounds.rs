@@ -59,7 +59,7 @@ impl App {
             }
             _ => samples::code(&st, t.lang, 0, lines + 1),
         };
-        let fontconfig = (!e.installed).then(|| download::preview_fontconfig_for(&e.id));
+        let fontconfig = (!e.installed).then(|| download::preview::preview_fontconfig_for(&e.id));
         let wrap = (t.kind == Kind::Prose).then_some(width);
         let p = &mut t.panes[i];
         p.renderer.request_with(markup, bg, dpi, fontconfig, wrap);

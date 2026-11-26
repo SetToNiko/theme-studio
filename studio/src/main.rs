@@ -114,7 +114,7 @@ fn main() -> Result<()> {
         None => Start::Active,
     };
     // preview fonts moved from ~/.cache to ~/.local/share
-    system::download::migrate_previews();
+    system::download::preview::migrate_previews();
     // Load before taking over the terminal, so errors print normally.
     let mut app = App::new(Store::locate(), start)?;
     if fonts_tab {
