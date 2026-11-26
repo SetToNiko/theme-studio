@@ -111,6 +111,9 @@ Advanced techniques that the refactor adds:
 | 24 | `draft.rs` `settings_save` | When the save fails, the draft is dropped and its values go live, although nothing was written (found in P3.1, recorded in a test, not fixed) | correctness, T7 | H |
 | 25 | `draft.rs` `draft_changes` | Returns at least 1 even when only keys outside "settings" and "keymaps" differ (`n.max(1)`) (P3.1) | correctness | L |
 | 26 | `behaviour.rs` | Confirm on a Gap row moves the cursor to row 0; Header rows are selectable (P3.1) | correctness | L |
+| 27 | `packaging/nix/package.nix` | The `theme-studio` command gets only `$out/bin` on its PATH: magick, curl, tar, fc-*, nice and kill must come from the system. Only the switch commands get the runtime inputs. (Found in P7.2.) | goal 6 | S |
+| 28 | `ui/overlays/help.rs` | The help text says "columns 1 13 of N": a literal "13" before the last column number. (Found in P6.4, kept unchanged.) | bug | S |
+| 29 | `install.sh` with the default PREFIX | The install folder `~/.local/share/theme-studio` is also the studio's runtime folder for `previews/`. An uninstall must never remove it (incident in P7.1: the downloaded previews were lost). The uninstall now removes only scripts/, share/ and docs/theme-studio.md. Better: keep the previews in another folder, or install into `share/theme-studio/app`. | data safety | S |
 
 ## 5. Test coverage
 - Rust: 169 tests in 27 modules (165 pass, 4 ignored). `app.rs` has about 2,500 lines of tests.
@@ -238,9 +241,9 @@ Wave 2:
 Completes: criterion 7
 
 ### Phase 7: [feature] Install without Nix
-- [ ] P7.1 [feature] Install script: `install.sh` with PREFIX: cargo build, scripts, share files, desktop entry | Files: `install.sh`, `packaging/theme-studio.desktop` | Target: goal 6 | Check: install into `$(mktemp -d)`, `command -v` finds each command
+- [x] P7.1 [feature] Install script: `install.sh` with PREFIX: cargo build, scripts, share files, desktop entry | Files: `install.sh`, `packaging/theme-studio.desktop` | Target: goal 6 | Check: install into `$(mktemp -d)`, `command -v` finds each command
 - [x] P7.2 [feature] Dependencies and docs: README section with the install command and each runtime dependency | Files: `README.md`, `docs/theme-studio.md` | Target: goal 6 | Check: each program that the code starts is listed
-- [ ] P7.3 [feature] Install test: golden tests against the installed commands, without THEME_STUDIO_SHARE, in flake checks | Files: `tests/scripts/run.sh`, `flake.nix` | Target: goal 6 | Check: `nix flake check`; `nix build` still passes
+- [ ] P7.3 [feature] Install test: golden tests against the installed commands, without THEME_STUDIO_SHARE, in flake checks; also an install and an uninstall into a temp PREFIX that holds `share/theme-studio/previews/`: the uninstall leaves it (finding 29) | Files: `tests/scripts/run.sh`, `flake.nix`, a new `tests/install/` script | Target: goal 6 | Check: `nix flake check`; `nix build` still passes
 Completes: criterion 6
 
 ## 7. Out of scope
