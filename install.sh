@@ -20,6 +20,9 @@
 # It does not install the programs that Theme Studio runs (jq, ghostty, ...).
 # It prints a warning for each one that it does not find.
 # Needs: cargo (Rust toolchain). It builds with `cargo build --release --locked`.
+# THEME_STUDIO_BIN=/path/to/theme-studio ./install.sh
+#   installs that prebuilt binary and skips cargo (for tests and for packagers
+#   that build the studio in another step, for example without network).
 set -euo pipefail
 
 PREFIX=${PREFIX:-$HOME/.local}
@@ -33,12 +36,18 @@ appsdir=$root/share/applications
 commands=(theme-switch themes-switch font-switch)
 
 install_all() {
-  if ! command -v cargo >/dev/null 2>&1; then
-    echo "install.sh: cargo is not installed. Install the Rust toolchain (https://rustup.rs), then run this script again." >&2
-    exit 1
+  local studio_bin=${THEME_STUDIO_BIN:-}
+  if [ -n "$studio_bin" ]; then
+    [ -x "$studio_bin" ] || { echo "install.sh: THEME_STUDIO_BIN ($studio_bin) is not an executable file." >&2; exit 1; }
+  else
+    if ! command -v cargo >/dev/null 2>&1; then
+      echo "install.sh: cargo is not installed. Install the Rust toolchain (https://rustup.rs), then run this script again." >&2
+      exit 1
+    fi
+    echo "Building the studio (cargo build --release --locked) ..."
+    (cd "$here/studio" && cargo build --release --locked)
+    studio_bin=$here/studio/target/release/theme-studio
   fi
-  echo "Building the studio (cargo build --release --locked) ..."
-  (cd "$here/studio" && cargo build --release --locked)
 
   mkdir -p "$bindir" "$sharedir/docs" "$appsdir"
   rm -rf "$sharedir/scripts" "$sharedir/share"
@@ -47,7 +56,7 @@ install_all() {
   chmod +x "$sharedir"/scripts/*.sh
   echo "Installed $sharedir (scripts, share, docs)"
 
-  install -m 755 "$here/studio/target/release/theme-studio" "$bindir/theme-studio"
+  install -m 755 "$studio_bin" "$bindir/theme-studio"
   echo "Installed $bindir/theme-studio"
   for name in "${commands[@]}"; do
     ln -sf "../share/theme-studio/scripts/$name.sh" "$bindir/$name"

@@ -12,7 +12,8 @@
 #
 # Each case runs one script in a temporary HOME, with:
 #   - THEME_STUDIO_DATA = a copy of tests/scripts/fixtures/data
-#   - THEME_STUDIO_SHARE = the project's share/ (or $SCRIPTS_SHARE)
+#   - THEME_STUDIO_SHARE = the project's share/ (or $SCRIPTS_SHARE; if SCRIPTS_SHARE
+#     is set but empty, THEME_STUDIO_SHARE is not set at all)
 #   - a PATH with only the real tools that the scripts need (bash, jq, awk, ...)
 #     and stub commands for the desktop programs (pkill, i3-msg, pywalfox,
 #     fc-list). Each stub writes its arguments to
@@ -20,6 +21,10 @@
 #     depend on the themes of an installed Ghostty.
 # The result of a case is: the files under HOME, calls.log, stderr, and the exit
 # code. They are compared with tests/scripts/golden/<case>/ with `diff -r`.
+#
+# To test installed scripts (tests/install/run.sh): set SCRIPTS_DIR to the
+# installed bin/ folder, SCRIPTS_SUFFIX to empty (the installed commands have
+# no ".sh"), and SCRIPTS_SHARE to empty. The scripts must then find share/ alone.
 #
 # Stub assumption: fc-list calls each family with "Mono" in its name
 # monospaced (also "... Nerd Font Propo"). The golden files record the
@@ -29,7 +34,10 @@ set -euo pipefail
 here=$(dirname "$(readlink -f "$0")")
 project=$(readlink -f "$here/../..")
 scripts="${SCRIPTS_DIR:-$project/scripts}"
-share="${SCRIPTS_SHARE:-$project/share}"
+share="${SCRIPTS_SHARE-$project/share}"
+ext="${SCRIPTS_SUFFIX-.sh}"
+share_env=()
+if [ -n "$share" ]; then share_env=(THEME_STUDIO_SHARE="$share"); fi
 golden_root="$here/golden"
 fixtures="$here/fixtures"
 
@@ -118,7 +126,7 @@ run_case() {
     status=0
     env -i HOME="$home" XDG_CONFIG_HOME="$home/.config" TMPDIR="$work" \
       PATH="$dir/bin:$work/stubs:$work/tools" CALLS_LOG="$dir/calls.log" \
-      THEME_STUDIO_DATA="$dir/data" THEME_STUDIO_SHARE="$share" \
+      THEME_STUDIO_DATA="$dir/data" "${share_env[@]}" \
       "$@" > "$dir/stdout" 2> "$dir/stderr" || status=$?
     echo "$status" > "$dir/status"
   ) 9>&1 | cat > /dev/null
@@ -165,12 +173,12 @@ make_ghostty_stub() {
 }
 
 cases_theme_switch() {
-  run_case theme-switch-palette bash "$scripts/theme-switch.sh" "CRT Amber"
-  run_case theme-switch-no-restart env NO_RESTART=1 bash "$scripts/theme-switch.sh" "0x96f"
-  run_case theme-switch-unknown bash "$scripts/theme-switch.sh" "No Such Palette"
-  run_case theme-switch-ghostty-theme bash "$scripts/theme-switch.sh" "CRT Amber"
-  run_case theme-switch-ghostty-no-theme bash "$scripts/theme-switch.sh" "0x96f"
-  run_case theme-switch-no-name bash "$scripts/theme-switch.sh"
+  run_case theme-switch-palette bash "$scripts/theme-switch$ext" "CRT Amber"
+  run_case theme-switch-no-restart env NO_RESTART=1 bash "$scripts/theme-switch$ext" "0x96f"
+  run_case theme-switch-unknown bash "$scripts/theme-switch$ext" "No Such Palette"
+  run_case theme-switch-ghostty-theme bash "$scripts/theme-switch$ext" "CRT Amber"
+  run_case theme-switch-ghostty-no-theme bash "$scripts/theme-switch$ext" "0x96f"
+  run_case theme-switch-no-name bash "$scripts/theme-switch$ext"
 }
 
 # Setup functions: setup_<case> runs with HOME set to the case's home folder.
@@ -206,16 +214,16 @@ setup_font_switch_fontconfig_link() {
 }
 
 cases_font_switch() {
-  run_case font-switch-fontconfig-link bash "$scripts/font-switch.sh" "JetBrains + DejaVu Sans"
-  run_case font-switch-preset bash "$scripts/font-switch.sh" "JetBrains Mono"
-  run_case font-switch-proportional bash "$scripts/font-switch.sh" "JetBrains + DejaVu Sans"
-  run_case font-switch-sizes env FONT_SIZES="16 10 11" bash "$scripts/font-switch.sh" "JetBrains Mono"
-  run_case font-switch-theme-sizes bash "$scripts/font-switch.sh" "JetBrains Mono"
-  run_case font-switch-host-offsets bash "$scripts/font-switch.sh" "JetBrains + DejaVu Sans"
-  run_case font-switch-gtk-settings bash "$scripts/font-switch.sh" "JetBrains Mono"
-  run_case font-switch-no-restart env NO_RESTART=1 bash "$scripts/font-switch.sh" "JetBrains Mono"
-  run_case font-switch-unknown bash "$scripts/font-switch.sh" "No Such Preset"
-  run_case font-switch-no-name bash "$scripts/font-switch.sh"
+  run_case font-switch-fontconfig-link bash "$scripts/font-switch$ext" "JetBrains + DejaVu Sans"
+  run_case font-switch-preset bash "$scripts/font-switch$ext" "JetBrains Mono"
+  run_case font-switch-proportional bash "$scripts/font-switch$ext" "JetBrains + DejaVu Sans"
+  run_case font-switch-sizes env FONT_SIZES="16 10 11" bash "$scripts/font-switch$ext" "JetBrains Mono"
+  run_case font-switch-theme-sizes bash "$scripts/font-switch$ext" "JetBrains Mono"
+  run_case font-switch-host-offsets bash "$scripts/font-switch$ext" "JetBrains + DejaVu Sans"
+  run_case font-switch-gtk-settings bash "$scripts/font-switch$ext" "JetBrains Mono"
+  run_case font-switch-no-restart env NO_RESTART=1 bash "$scripts/font-switch$ext" "JetBrains Mono"
+  run_case font-switch-unknown bash "$scripts/font-switch$ext" "No Such Preset"
+  run_case font-switch-no-name bash "$scripts/font-switch$ext"
 }
 
 # A theme whose palette is not in palettes.json.
@@ -230,10 +238,10 @@ setup_themes_switch_missing_palette() {
 }
 
 cases_themes_switch() {
-  run_case themes-switch-theme bash "$scripts/themes-switch.sh" "CRT Amber"
-  run_case themes-switch-missing-palette bash "$scripts/themes-switch.sh" "Broken"
-  run_case themes-switch-unknown bash "$scripts/themes-switch.sh" "No Such Theme"
-  run_case themes-switch-no-name bash "$scripts/themes-switch.sh"
+  run_case themes-switch-theme bash "$scripts/themes-switch$ext" "CRT Amber"
+  run_case themes-switch-missing-palette bash "$scripts/themes-switch$ext" "Broken"
+  run_case themes-switch-unknown bash "$scripts/themes-switch$ext" "No Such Theme"
+  run_case themes-switch-no-name bash "$scripts/themes-switch$ext"
 }
 
 # ---- Main -------------------------------------------------------------------
