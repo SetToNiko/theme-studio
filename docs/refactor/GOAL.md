@@ -2,6 +2,8 @@
 
 <!-- The refactor-kit setup wrote this file. You can edit it. -->
 
+Draft pack: junior-readable-maintainability
+
 ## Goal
 After the refactor, a junior developer can read the codebase, quickly find the purpose of each module, and understand the architecture of the project. The code is as easy as possible to maintain and to extend.
 
