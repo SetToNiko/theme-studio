@@ -218,6 +218,10 @@ Completes: none (cycle count decreases, measured)
 - [x] P5.14b `system/download.rs` (699) under 500 | Files: system/download/{mod,net,catalogue,install,preview,list}.rs | Target: limits | Check: tests
 - [x] P5.14c `model/samples.rs` (523) under 500 | Files: the file, new files in model/ | Target: limits | Check: tests
 - [x] P5.14d `app/pages/themes/behaviour_actions.rs` (521) under 500: moved to app/pages/settings/ (it serves only the Behaviour tab) and divided | Files: settings/behaviour_actions.rs, behaviour_colours_actions.rs, behaviour_rows_actions.rs | Target: limits | Check: tests
+- [ ] P5.15 (N2) model/history: local time with the `chrono` crate (default-features off, `clock`), not the `date` program; same text format | Files: `model/history.rs`, `Cargo.toml`, `Cargo.lock`, `packaging/nix/package.nix` (dependency hash) | Target: layers | Check: tests; history shows the same local time
+- [ ] P5.16 (N3) fonts/types: `kind()` returns an enum, not strings | Files: `fonts/types.rs`, users | Target: T2 | Check: tests
+- [ ] P5.17 (N4) keymap: one table with id, label and group for each action; a new action is one entry | Files: `keymap/action.rs`, `keymap/labels.rs`, users | Target: T2 | Check: tests; every id, label and group the same as before
+- [ ] P5.18 (N5) `Action::legacy` returns an enum (`Renamed(Action)`, `Dropped`) | Files: `keymap/action.rs`, `keymap/mod.rs` | Target: T1 | Check: tests
 Removed: the old "settings: tabs into separate files" step (Phase 4 moved the impl App blocks out; settings.rs is under 500).
 Completes: criterion 5 (with the docs action), no dependency cycles
 
@@ -253,6 +257,7 @@ Completes: criterion 6
   - The terminal that the studio runs in: the studio uses the kitty graphics protocol for font previews (half blocks otherwise) and the terminal's own colours. Put this behind one small interface, so the studio does not assume the terminal that it runs in.
   - The preview draws a Ghostty-style terminal: part of the "preview per app" feature.
   - The preview terminal is one module since P5.11: `studio/src/preview_term/`. Ghostty-specific places there: `TermColors` in pane.rs (colours as Ghostty sets them, from terminal-colors.json); mod.rs sets TERM, COLORTERM and THEME_COLORS for the shell and uses the `colors.sh` draft file.
+  - Phase 5 review, note N1 (deferred here by the user): the `Preview` type lives in two folders (state in preview_term/, a second `impl Preview` for the drawing in ui/desktop_preview.rs), so 8 fields are pub(crate). Join them when the terminal is isolated.
 
 **Handover** (goal change, Phase R). After the removals, the dotfiles must provide these. No dotfiles change in this refactor.
 - Wallpaper border colour (R.1): run `wallpaper-rotate refresh` after a theme switch, for example in a dotfiles wrapper around `theme-switch`, or a watch on `~/.config/colors/current`.
@@ -265,11 +270,6 @@ Completes: criterion 6
 
 ## 9. Architecture notes (pending)
 <!-- The review action adds notes here. The revise action processes them. -->
-- N1 (Phase 5 review) The `Preview` type lives in two folders: preview_term/ has the state, ui/desktop_preview.rs has a second `impl Preview` for the drawing, so 8 fields are pub(crate). Option: move that drawing into preview_term/ (a draw module on a ratatui Buffer), fields private again. Cost M.
-- N2 (Phase 5 review) model/history.rs `local_time` runs the `date` program: model/ should start no programs. Option: format the time with SystemTime in Rust, or get it from system/ and pass it in. Cost S.
-- N3 (Phase 5 review) fonts/types.rs `kind()` returns strings ("nf-mono", "propo"): a typo compiles. Option: a small enum. Cost S.
-- N4 (Phase 5 review) A new action touches 4 or 5 places in keymap/ (the enum, all_actions, id, describe, group); the compiler checks only some. Option: one table with id, label and group for each action. Cost M.
-- N5 (Phase 5 review) `Action::legacy` returns `Option<Option<Action>>`. Option: an enum (`Renamed(Action)`, `Dropped`). Cost S.
 
 ## 10. Plan changelog
 | Phase | Note | Decision | Reason |
@@ -290,6 +290,7 @@ Completes: criterion 6
 | 7 | After P5.9: `core` hides Rust's core crate; 7 page-state modules have no place in P5.10 | USER: rename to `model/` (P5.12); page-state folder `settings_page/`, tour_page to fonts/, hit to app/state/ (P5.13) | Decided by the user. |
 | 8 | After P5.10: 4 production files are still over the 500-line hard limit | ACCEPT: P5.14a-d, one file each, in parallel | Phase 5 has the limits as its target. |
 | 9 | Phase 5 review: about 80 functions over 30 lines without a reason; stale paths in current plan text | ACCEPT: new step P6.7 (long functions, one step per folder); section 3 and Phase 6 updated to the new folders | No bugs found by the 3 reviewers. |
+| 10 | Notes N1-N5 (Phase 5 review) | USER: N1 deferred to the terminal-independence refactor; N2 accepted with chrono (P5.15); N3, N4, N5 accepted (P5.16-P5.18) | Decided by the user in the revise action. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
@@ -307,7 +308,7 @@ Completes: criterion 6
 | Phase 3 review | done |
 | Phase 4 steps | done |
 | Phase 4 review | done |
-| Phase 5 steps | done |
+| Phase 5 steps | open (P5.15-P5.18 from the revise action) |
 | Phase 5 review | done (3 reviewers in parallel; no bugs; fixes applied; notes N1-N5 pending) |
 | Phase 6 steps | open |
 | Phase 6 review | open |
