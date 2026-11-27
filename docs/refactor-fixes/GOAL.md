@@ -1,5 +1,7 @@
 # Refactor Goal: Theme Studio, small fixes
 
+Draft pack: small-fixes-round
+
 <!-- The refactor-kit setup wrote this file. You can edit it. Keep it shorter than approximately 40 lines. -->
 
 ## Goal
