@@ -99,7 +99,7 @@ Completes: criterion 9. The coordinator measures the Phase 0 baselines of SUCCES
 
 ### Phase 1: Library target
 - [x] P1.1 Library: add `lib.rs` with the module declarations of `main.rs`, each with `///`. Move the argument handling, `--init-config`, and the start into `cli.rs` (`pub fn run`). `main.rs` calls `theme_studio::cli::run()`. The tests of P0.5 do not change. The `fmt` gate formats `lib.rs` and `main.rs`. | Wave: 6 | Depends: P0.5 | Owns: studio/src/main.rs, studio/src/lib.rs, studio/src/cli.rs, flake.nix, studio/src/preview_term/mod.rs | Target: criteria 4, T3. | Check: `nix flake check` passes. The binary starts and `--help` gives the same text.
-- [ ] P1.2 Integration tests: `studio/tests/cli.rs` tests `cli` through its public API only. | Wave: 7 | Depends: P1.1 | Owns: studio/tests/cli.rs | Target: criterion 6. | Check: `cargo nextest run` passes.
+- [ ] P1.2 Integration tests: `git mv studio/tests/command_line.rs studio/tests/cli.rs`. The `//!` header says that the tests cover the public API of `cli` through the binary that calls `cli::run`. Add a test of the type of `cli::run`. | Wave: 7 | Depends: P1.1 | Owns: studio/tests/cli.rs, studio/tests/command_line.rs | Target: criterion 6. | Check: `cargo nextest run` passes.
 - [ ] P1.3 Gate `examples-doc`: a script fails when a `pub` item that `lib.rs` exports has no `# Examples`. Add `# Examples` with `?` to each public item of `cli`. Add a flake check that runs `cargo test --doc`. | Wave: 7 | Depends: P1.1 | Owns: scripts/dev/examples-doc.sh, flake.nix, studio/src/cli.rs | Target: criterion 7, C-EXAMPLE. | Check: `cargo test --doc` passes. `nix flake check` passes.
 Completes: criterion 4.
 
@@ -167,6 +167,7 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 | 0 | `tokei` misreads Rust char literals: 10 of 114 files differ | Criterion 1 uses the self-test of `file-limits.sh`. `tokei` is a cross-check only. | Approved by the user. |
 | 0 | A unit test in `main.rs` cannot run `main()` with arguments | P0.5 writes integration tests that run the binary, and adds `studio/tests/*.rs` to the package source (from P1.2) | Cargo gives `CARGO_BIN_EXE_theme-studio` only to integration tests. The tests stay valid after P1.1. |
 | 1 | P1.1 replied NEEDS for `preview_term/mod.rs`. Rustdoc merges the `///` of `mod preview_term;` in `lib.rs` with the `//!` header of the child module and resolves the links in the parent scope. The `doc` gate fails with 2 unresolved links. | Release `studio/src/preview_term/mod.rs` to P1.1. The 2 links get `crate::` paths. | Approved by the user. P2.3 and P4.4 own the file too, but they run in later waves. P1.1 stays one atomic commit. |
+| 1 | P1.2 replied NEEDS for `studio/tests/command_line.rs`. `cli::run` reads `std::env::args()` and the environment. An in-process test gets the arguments of the test harness, and the rules forbid `set_var`. The tests of P0.5 already run the binary. | Release `studio/tests/command_line.rs` to P1.2. P1.2 renames it to `studio/tests/cli.rs` and adds a test of the type of `cli::run`. | Approved by the user. No other open step owns the file. A new file would copy the 17 tests of P0.5. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
