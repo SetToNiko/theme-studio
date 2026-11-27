@@ -4,7 +4,7 @@
 //! in another file of the same crate. `app/mod.rs` has the other `App`
 //! methods and the struct itself.
 //!
-//! [`App::on_mouse`] is the entry point. It sends the event to
+//! [`App::on_mouse`](crate::app::app_state::App::on_mouse) is the entry point. It sends the event to
 //! `handle_mouse`, which checks the notice box and the pop-ups first, then
 //! sends the event by kind: scroll, left button down, drag, or button up. A
 //! click goes to `click`, which looks at the target under the pointer
@@ -15,10 +15,11 @@ use ratatui::crossterm::event::{
 };
 use ratatui::layout::Rect;
 
+use crate::app::app_state::App;
 use crate::app::state::hit::Target as T;
 use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
-use crate::app::{App, PreviewMode};
 use crate::keymap::action::Action;
+use crate::preview_term::types::Mode as PreviewMode;
 
 /// Where `v` lies between `start` and the end of a control that is `len` cells long (0.0 to 1.0).
 fn frac(v: u16, start: u16, len: u16) -> f64 {

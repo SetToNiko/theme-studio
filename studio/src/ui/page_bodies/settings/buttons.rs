@@ -6,7 +6,7 @@ use ratatui::style::Style;
 use ratatui::text::Span;
 use ratatui::widgets::Paragraph;
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Target, hover};
 use crate::keymap::action::Action;
 use crate::keymap::context::Context;

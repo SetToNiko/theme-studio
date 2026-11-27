@@ -6,8 +6,13 @@
 //! - `overlay.rs`: the pop-ups (naming, open lists, confirmations).
 //! - `colours.rs`: picking and changing colours.
 
+/// Run one key action.
 pub(super) mod actions;
+/// Pick and change colours.
 pub(super) mod colours;
+/// Move the focus between panes.
 pub(super) mod focus;
+/// Clicks, drags, and scrolling.
 pub(super) mod mouse;
+/// The pop-ups.
 pub(super) mod overlay;

@@ -7,7 +7,7 @@
 
 use ratatui::style::{Color, Modifier};
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Look, Looks, Underline};
 use crate::app::state::nav::{BhRow, LookId};
 use crate::config::settings::{LookSettings, Settings};

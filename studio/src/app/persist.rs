@@ -1,17 +1,17 @@
 //! App's methods for saving, opening and applying palettes and font presets.
 //!
 //! This is a second `impl App { ... }` block. Rust allows an `impl` of a type
-//! in another file of the same crate. `app/mod.rs` has the other `App`
-//! methods and the struct itself.
+//! in another file of the same crate. `app/app_state.rs` has the struct. The other files of the folder have the other `App`
+//! methods.
 //!
-//! The palette methods ([`App::save`], [`App::save_as`], [`App::apply`]) and
-//! the font preset methods ([`App::fonts_save`], [`App::fonts_save_as`]) are
+//! The palette methods ([`App::save`](crate::app::app_state::App::save), [`App::save_as`](crate::app::app_state::App::save_as), [`App::apply`](crate::app::app_state::App::apply)) and
+//! the font preset methods ([`App::fonts_save`](crate::app::app_state::App::fonts_save), [`App::fonts_save_as`](crate::app::app_state::App::fonts_save_as)) are
 //! side by side on purpose: they follow the same pattern (ask for a name if
-//! the item is new, save, then optionally apply). [`App::guard`] runs an
+//! the item is new, save, then optionally apply). [`App::guard`](crate::app::app_state::App::guard) runs an
 //! action at once, or asks first when there are unsaved changes.
 
+use super::app_state::App;
 use super::state::nav::{Focus, For, Overlay, Pending};
-use super::{App, open_matches};
 use crate::model::color::Rgb;
 
 impl App {
@@ -247,4 +247,15 @@ impl App {
             self.messages.info(s);
         }
     }
+}
+
+/// Indices of entries whose name contains `filter` (case-insensitive).
+pub fn open_matches(entries: &[(String, Vec<Rgb>)], filter: &str) -> Vec<usize> {
+    let f = filter.to_lowercase();
+    entries
+        .iter()
+        .enumerate()
+        .filter(|(_, (n, _))| n.to_lowercase().contains(&f))
+        .map(|(i, _)| i)
+        .collect()
 }

@@ -1,8 +1,8 @@
 //! The palette being edited: colours, undo history, and the colour picker's numbers.
 //!
-//! [`PaletteEditor`] knows nothing about the rest of the studio (pages,
+//! [`PaletteEditor`](crate::app::state::palette_editor::PaletteEditor) knows nothing about the rest of the studio (pages,
 //! messages, the preview). It works on one palette and gets the selected key
-//! as a parameter. [`App`](crate::app::App) calls it and then does the parts that
+//! as a parameter. [`App`](crate::app::app_state::App) calls it and then does the parts that
 //! need the rest of the studio, such as showing a message.
 
 use crate::model::color::{self, Rgb};

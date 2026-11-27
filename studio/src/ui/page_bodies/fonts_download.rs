@@ -14,7 +14,7 @@ use serde_json::{Map, Value};
 use super::fonts_download_details::draw_details;
 use super::fonts_download_preview::draw_preview;
 use super::rows::{RowLook, draw_selectable_row, follow, row_rect};
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Target, hover, hover_line, hover_row};
 use crate::fonts::pages::download::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb};
 use crate::ui::widgets::truncate;

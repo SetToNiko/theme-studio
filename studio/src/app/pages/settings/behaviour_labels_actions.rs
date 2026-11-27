@@ -4,7 +4,7 @@
 //! same style). The tab's own data stays in `settings_page/behaviour.rs`,
 //! which also tests these methods (it builds an `App`).
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{BhRow, LookId};
 use crate::keymap::key::{Key, display_seq};
 use crate::model::palette::GROUPS;

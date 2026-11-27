@@ -9,7 +9,7 @@ use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use serde_json::{Map, Value};
 
 use super::fonts_download::status_span;
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Target, hover};
 use crate::fonts::pages::download::{DlRow, DlStatus, mb};
 use crate::system::download::types::{Entry, Source};

@@ -1,7 +1,7 @@
 //! Tests of the Fonts page: roles, families, presets, and sizes.
 
-use super::state::nav::Pending;
 use super::*;
+use crate::app::state::nav::Pending;
 
 #[test]
 #[expect(

@@ -1,7 +1,7 @@
 //! Tests of the app lifecycle: saving, opening and forking themes, and quitting.
 
-use super::state::nav::Pending;
 use super::*;
+use crate::app::state::nav::Pending;
 
 #[test]
 fn themes_save_open_and_fork() {

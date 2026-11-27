@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{Deferred, Naming};
 use crate::app::state::steps::offset;
 use crate::keymap::action::Action;

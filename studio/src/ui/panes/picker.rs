@@ -11,7 +11,7 @@ use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::{Focus, Side};
 use crate::model::color::{self, Rgb};

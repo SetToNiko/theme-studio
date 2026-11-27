@@ -8,7 +8,7 @@ use ratatui::layout::{Constraint, Layout};
 
 use super::pages::{draw_body_page, draw_main_page, draw_too_small};
 use super::tabs::draw_tabs;
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::ui::layout::{Arrangement, arrange};
 use crate::ui::overlays::{dialogs, notice, pending};
 use crate::ui::status::draw::draw_status;

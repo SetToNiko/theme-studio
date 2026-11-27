@@ -7,7 +7,7 @@ use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Target, hover};
 use crate::model::samples::langs::LANGS;
 use crate::model::samples::{KINDS, Kind};

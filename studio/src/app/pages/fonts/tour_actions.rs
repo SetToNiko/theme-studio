@@ -9,7 +9,7 @@
 
 use std::path::PathBuf;
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{Deferred, Overlay, Page};
 use crate::fonts::pages::download::DlTab;
 use crate::fonts::pages::tournament::{POOLS, SIZES, SetupRow, Stage, TourPage};

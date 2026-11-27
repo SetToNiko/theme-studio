@@ -9,7 +9,7 @@ use std::sync::mpsc::Sender;
 
 use serde_json::Value;
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{Deferred, Overlay};
 use crate::fonts::pages::download::{DlRow, DlStatus, norm};
 use crate::system::download;

@@ -2,16 +2,17 @@
 //!
 //! This is a second `impl App { ... }` block. Rust allows an `impl` of a type
 //! in another file of the same crate. `app/mod.rs` has the other `App`
-//! methods and the struct itself (and the [`Overlay`] enum).
+//! methods and the struct itself (and the [`Overlay`](crate::app::state::nav::Overlay) enum).
 //!
 //! An overlay is a pop-up over the page: help, a name prompt, a list, a
-//! question. [`App::on_overlay_key`] takes the open overlay, gives the key to
+//! question. [`App::on_overlay_key`](crate::app::app_state::App::on_overlay_key) takes the open overlay, gives the key to
 //! one method for that kind of overlay, and stores the overlay that results.
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
+use crate::app::app_state::App;
+use crate::app::persist::open_matches;
 use crate::app::state::nav::{For, Overlay, Pending};
-use crate::app::{App, open_matches};
 use crate::model::color::Rgb;
 use crate::model::palette::Palette;
 

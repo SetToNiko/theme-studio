@@ -10,7 +10,7 @@
 
 use std::path::PathBuf;
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{Deferred, Naming, Overlay};
 use crate::app::state::steps::{offset, to_i32};
 use crate::keymap::action::Action;

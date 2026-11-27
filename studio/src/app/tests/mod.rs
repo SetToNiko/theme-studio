@@ -11,7 +11,17 @@
 //! This file holds the helpers that more than one file uses. A child file gets
 //! them with `use super::*;`.
 
-use super::*;
+use crate::app::app_state::App;
+use crate::app::startup::Start;
+use crate::app::state::nav::{Focus, Overlay, Page, Side};
+use crate::keymap::key::Key;
+use crate::keymap::map::Keymap;
+use crate::model::color::Rgb;
+use crate::model::palette::{GROUPS, Palette};
+use crate::model::store::Store;
+use crate::model::theme::ThemeStore;
+use ratatui::layout::Rect;
+use std::time::Instant;
 
 use crate::model::store::to_jq_string;
 use ratatui::Terminal;

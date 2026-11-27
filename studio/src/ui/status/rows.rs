@@ -4,7 +4,7 @@
 //! `super::hint::row_hints` turn them into text with the keys of the active keymap.
 
 use super::hint::{Rows, hint, row_hints};
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::Focus;
 use crate::fonts::pages::download::DlTab;
 use crate::fonts::types::{CHIPS, FontFocus};

@@ -1,7 +1,7 @@
 //! Tests of input: the leader keys, mouse hover and clicks, and hover looks.
 
-use super::state::nav::ColourRow;
 use super::*;
+use crate::app::state::nav::ColourRow;
 use crate::preview_term::types::PaneId;
 
 #[test]

@@ -51,7 +51,7 @@ impl Draft {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::app::{App, Start};
+    use crate::app::{app_state::App, startup::Start};
     use crate::model::palette::Palette;
     use crate::model::store::{Store, data_file, to_jq_string};
 

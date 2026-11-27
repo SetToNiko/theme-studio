@@ -7,7 +7,7 @@ use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::Paragraph;
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Target, cursor_line, hover_line, hover_row};
 use crate::ui::widgets::to_u16;
 

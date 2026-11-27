@@ -7,7 +7,7 @@
 //! running an edit on the draft, showing it, counting its changes, save and
 //! discard.
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::settings_page::draft::{Draft, keymaps_value};
 
 impl App {

@@ -6,7 +6,7 @@
 //! need the whole `App`: the per-loop poll, feeding downloads, and measuring
 //! the space the previews use.
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::Page;
 use crate::system::download;
 use crate::system::download::types::Msg;

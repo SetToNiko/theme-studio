@@ -12,7 +12,7 @@ use ratatui_image::{Resize, StatefulImage};
 
 use super::fonts_roles::draw_roles;
 use super::rows::follow;
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::Side;
 use crate::fonts::tab::state::FontsTab;

@@ -5,7 +5,7 @@
 //! themes.json and the current theme file) stays in `model/theme.rs`, and so do
 //! its tests; this file only holds the methods that need the whole `App`.
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{For, Overlay};
 use crate::model::color::Rgb;
 use crate::model::theme::{Theme, ThemeStore};

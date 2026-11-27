@@ -5,7 +5,7 @@
 //! row type `KmRow` and the page data stay in `settings_page/mod.rs`; this file only
 //! holds the methods that need the whole `App`.
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{Capture, Deferred, Naming, Overlay};
 use crate::keymap::action::{Action, all_actions};
 use crate::keymap::key::{Key, display_seq};

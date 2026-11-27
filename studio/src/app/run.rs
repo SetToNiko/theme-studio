@@ -1,14 +1,28 @@
-//! The main loop of `App`: run until quit, refresh and poll before each draw,
-//! and send each terminal event to the key, mouse or paste handler.
+//! The main loop of `App` and the terminal it draws on: run until quit, refresh and poll before
+//! each draw, and send each terminal event to the key, mouse or paste handler.
+//!
+//! [`Term`](crate::app::run::Term), [`setup_terminal`](crate::app::run::setup_terminal) and [`restore_terminal`](crate::app::run::restore_terminal) are here too: the type, its set-up, and
+//! its restore are in one file.
 
+use std::io::stdout;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use ratatui::Frame;
-use ratatui::crossterm::event::{self, Event, KeyEventKind};
+use ratatui::crossterm::event::{
+    self, DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+    Event, KeyEventKind, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags,
+    PushKeyboardEnhancementFlags,
+};
+use ratatui::crossterm::execute;
 
+use super::app_state::App;
+use super::pointer::set_pointer;
 use super::state::nav::Page;
-use super::{App, Term};
+use crate::system;
+
+/// The terminal the studio draws on.
+pub type Term = ratatui::Terminal<ratatui::backend::CrosstermBackend<crate::system::out::Out>>;
 
 impl App {
     /// Runs the main loop until the user quits: timers, drawing, one event.
@@ -18,7 +32,7 @@ impl App {
     pub fn run(
         &mut self,
         terminal: &mut Term,
-        // The drawing code is in ui.rs; main.rs passes it in, so app does not depend on ui.
+        // The drawing code is in `ui`; `cli.rs` passes it in, so `app` does not depend on `ui`.
         draw: fn(&mut Frame, &mut App),
     ) -> Result<()> {
         let mut redraw = true;
@@ -89,4 +103,44 @@ impl App {
             _ => {}
         }
     }
+}
+
+/// Takes over the terminal: raw mode, the alternate screen, the mouse, and the paste events.
+///
+/// The second value is `true` when the terminal speaks the kitty keyboard protocol.
+/// [`restore_terminal`] needs it.
+///
+/// # Errors
+/// Fails when the terminal cannot be made, or the mouse and paste events cannot be turned on.
+pub(crate) fn setup_terminal() -> Result<(Term, bool)> {
+    // raw mode, the alternate screen and the panic hook; drawing goes
+    // through system::out::Out (for the hover underline styles)
+    drop(ratatui::init());
+    let terminal = ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(
+        system::out::Out::default(),
+    ))?;
+    execute!(stdout(), EnableMouseCapture, EnableBracketedPaste)?;
+    // The kitty keyboard protocol (Ghostty, kitty, foot, WezTerm…), so keys
+    // like Ctrl+Shift+Z, Ctrl+1 or Ctrl+I (not Tab) arrive as themselves.
+    let enhanced = ratatui::crossterm::terminal::supports_keyboard_enhancement().unwrap_or(false);
+    if enhanced {
+        let _ = execute!(
+            stdout(),
+            PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+        );
+    }
+    Ok((terminal, enhanced))
+}
+
+/// Gives the terminal back to the shell: the mouse pointer, the key protocol, the events, and the
+/// screen.
+///
+/// `enhanced` is the second value of [`setup_terminal`].
+pub(crate) fn restore_terminal(enhanced: bool) {
+    set_pointer("default");
+    if enhanced {
+        let _ = execute!(stdout(), PopKeyboardEnhancementFlags);
+    }
+    let _ = execute!(stdout(), DisableMouseCapture, DisableBracketedPaste);
+    ratatui::restore();
 }
