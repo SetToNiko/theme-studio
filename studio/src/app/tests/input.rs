@@ -1,8 +1,17 @@
 //! Tests of input: the leader keys, mouse hover and clicks, and hover looks.
 
-use super::*;
+use crate::app::app_state::App;
+use crate::app::startup::Start;
 use crate::app::state::nav::ColourRow;
+use crate::app::state::nav::{Focus, Overlay, Page, Side};
+use crate::app::test_support::*;
+use crate::model::color::Rgb;
+use crate::model::palette::Palette;
+use crate::model::store::Store;
 use crate::preview_term::types::PaneId;
+use ratatui::Terminal;
+use ratatui::backend::TestBackend;
+use ratatui::crossterm::event::{MouseButton, MouseEventKind};
 
 #[test]
 fn leader_sequences_popup_help_and_hints() {

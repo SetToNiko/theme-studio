@@ -1,7 +1,15 @@
 //! Tests of palette editing: the picker, pinning, derived colours, and the palette list.
 
-use super::*;
+use crate::app::app_state::App;
+use crate::app::startup::Start;
 use crate::app::state::nav::{ColourRow, Pending};
+use crate::app::state::nav::{Focus, Overlay, Page};
+use crate::app::test_support::*;
+use crate::model::color::Rgb;
+use crate::model::palette::{GROUPS, Palette};
+use ratatui::Terminal;
+use ratatui::backend::TestBackend;
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
 
 #[test]
 fn picker_edits_follow_through_derived_keys_and_undo() {

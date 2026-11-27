@@ -1,8 +1,19 @@
 //! Tests of layout and messages: window sizes, panes, borders, number keys, status line, and toggles.
 
-use super::*;
+use crate::app::app_state::App;
+use crate::app::startup::Start;
+use crate::app::state::nav::{Focus, Page, Side};
+use crate::app::test_support::*;
+use crate::keymap::map::Keymap;
+use crate::model::color::Rgb;
+use crate::model::store::Store;
 use crate::preview_term::types::PaneId;
+use ratatui::Terminal;
+use ratatui::backend::TestBackend;
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
+use ratatui::layout::Rect;
 use std::time::Duration;
+use std::time::Instant;
 
 #[test]
 fn renders_at_full_size_and_warns_when_small() {
