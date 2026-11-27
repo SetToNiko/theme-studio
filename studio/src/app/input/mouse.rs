@@ -299,3 +299,101 @@ impl App {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::app_state::App;
+    use crate::app::startup::Start;
+    use crate::app::state::nav::ColourRow;
+    use crate::app::state::nav::{Focus, Overlay, Page};
+    use crate::app::test_support::*;
+    use crate::preview_term::types::PaneId;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+    use ratatui::crossterm::event::{MouseButton, MouseEventKind};
+
+    #[test]
+    fn hover_highlights_and_clicks_through_the_click_map() {
+        use crate::app::state::hit::Target as T;
+        let mut app = test_app(temp_store("mouse"), Start::Named("One".into()));
+        let mut t = Terminal::new(TestBackend::new(200, 50)).unwrap();
+        let mut draw = |app: &mut App| {
+            t.draw(|f| crate::ui::screen::frame::draw(f, app)).unwrap();
+            t.backend().buffer().clone()
+        };
+        draw(&mut app);
+        // hovering a tab highlights it; clicking it opens the page
+        let tab = app.hits.rect_of(T::PageTab(Page::Settings)).unwrap();
+        mouse(&mut app, MouseEventKind::Moved, tab.x + 1, tab.y);
+        let buf = draw(&mut app);
+        // the default look: underlined, in the theme's yellow
+        let cell = &buf[(tab.x + 1, tab.y)];
+        assert!(
+            cell.modifier.contains(ratatui::style::Modifier::UNDERLINED),
+            "hover"
+        );
+        assert_eq!(cell.fg, app.theme_colour("yellow"), "hover");
+        assert_eq!(app.hits.hovered(), Some(T::PageTab(Page::Settings)));
+        click_on(&mut app, T::PageTab(Page::Settings));
+        assert_eq!(app.page, Page::Settings);
+        draw(&mut app);
+        click_on(&mut app, T::PageTab(Page::Main));
+        assert_eq!(app.page, Page::Main);
+        draw(&mut app);
+        // a group row: select, then open
+        let backgrounds = app
+            .colour_rows()
+            .iter()
+            .position(|r| matches!(r, ColourRow::Group { index: 1, .. }))
+            .unwrap();
+        click_on(&mut app, T::ColourRow(backgrounds));
+        click_on(&mut app, T::ColourRow(backgrounds));
+        assert!(app.expanded_groups.contains(&1));
+        draw(&mut app);
+        // a colour row twice opens the picker; dragging in the square edits
+        click_on(&mut app, T::ColourRow(1)); // bg0
+        click_on(&mut app, T::ColourRow(1));
+        assert!(app.layout.picker_visible && app.focus == Focus::Square);
+        draw(&mut app);
+        let before = app.editor.palette.get("bg0");
+        let sq = app.hits.rect_of(T::Square).unwrap();
+        mouse(
+            &mut app,
+            MouseEventKind::Down(MouseButton::Left),
+            sq.x + sq.width - 1,
+            sq.y,
+        );
+        mouse(
+            &mut app,
+            MouseEventKind::Drag(MouseButton::Left),
+            sq.x + sq.width - 2,
+            sq.y,
+        );
+        assert_ne!(app.editor.palette.get("bg0"), before);
+        press(&mut app, "\n"); // keep it
+        draw(&mut app);
+        // a pane title focuses the pane
+        click_on(&mut app, T::PaneTitle(1));
+        assert_eq!(app.current_pane(), 1);
+        // a preview window takes the keyboard
+        click_on(&mut app, T::Preview(PaneId::Nvim));
+        assert_eq!(app.preview.focus, Some(PaneId::Nvim));
+        // clicking the studio again gives it back
+        draw(&mut app);
+        click_on(&mut app, T::PaneTitle(4));
+        assert_eq!(app.preview.focus, None);
+        // pop-up buttons: the unsaved-changes prompt's Esc
+        press(&mut app, "q");
+        assert!(matches!(app.overlay, Overlay::Confirm(_)));
+        draw(&mut app);
+        click_on(&mut app, T::ConfirmChoice('n'));
+        assert!(matches!(app.overlay, Overlay::None));
+        // tabs on top: their own first row
+        app.settings.layout.tabs = "top".into();
+        let buf = draw(&mut app);
+        let row0: String = (0..40).map(|x| buf[(x, 0)].symbol().to_string()).collect();
+        assert!(row0.contains("F1 Main"), "{row0}");
+        let last: String = (0..60).map(|x| buf[(x, 49)].symbol().to_string()).collect();
+        assert!(!last.contains("F1 Main"), "{last}");
+    }
+}

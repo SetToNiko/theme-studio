@@ -473,3 +473,59 @@ fn nudge_step(a: Action) -> Option<(i32, i32, bool)> {
         _ => return None,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::startup::Start;
+    use crate::app::test_support::*;
+    use crate::model::color::Rgb;
+    use crate::model::store::Store;
+
+    #[test]
+    fn leader_sequences_popup_help_and_hints() {
+        let store = temp_store("leader");
+        let dir = store.dir.clone();
+        let mut app = test_app(store, Start::Named("One".into()));
+        // the hints come from the keymap
+        let screen = render(&mut app, 160, 45);
+        assert!(
+            screen.contains("j/k move")
+                && screen.contains("Enter edit")
+                && screen.contains("? keys"),
+            "{screen}"
+        );
+        // Space waits and shows what can follow
+        press(&mut app, " ");
+        assert_eq!(app.pending_keys.len(), 1);
+        let screen = render(&mut app, 160, 45);
+        assert!(
+            screen.contains("<leader>") && screen.contains("Esc cancels"),
+            "{screen}"
+        );
+        // Esc cancels without doing anything
+        press(&mut app, "\x1b");
+        assert_eq!(app.pending_keys, []);
+        // <leader>sp saves the palette from anywhere
+        press(&mut app, "#abcdef\n");
+        assert!(app.dirty());
+        press(&mut app, " 1"); // the fonts column
+        press(&mut app, " sp");
+        assert!(!app.dirty(), "saved from the Fonts tab");
+        assert_eq!(
+            Store::at(dir).load("One").unwrap().get("bg0"),
+            Rgb(0xab, 0xcd, 0xef)
+        );
+        // an unbound sequence does nothing and clears
+        press(&mut app, " zz");
+        assert_eq!(app.pending_keys, []);
+        // the help screen lists the real bindings
+        press(&mut app, "?");
+        let screen = render(&mut app, 160, 45);
+
+        assert!(
+            screen.contains("<leader>sp") && screen.contains("save palette"),
+            "{screen}"
+        );
+        assert!(screen.contains("Vim preset"));
+    }
+}
