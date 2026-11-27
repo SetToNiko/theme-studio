@@ -14,7 +14,7 @@ use crate::app::state::nav::{Focus, Page, Side};
 use crate::app::state::steps::offset;
 use crate::keymap::action::{Action, ActionGroup};
 use crate::keymap::context::Context;
-use crate::preview_term::{Mode as PreviewMode, PaneId};
+use crate::preview_term::types::{Mode as PreviewMode, PaneId};
 
 impl App {
     /// Starts with the font roles focused (`--fonts`).

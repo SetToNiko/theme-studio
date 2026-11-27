@@ -2,7 +2,7 @@
 
 use super::state::nav::ColourRow;
 use super::*;
-use crate::preview_term::PaneId;
+use crate::preview_term::types::PaneId;
 
 #[test]
 fn leader_sequences_popup_help_and_hints() {

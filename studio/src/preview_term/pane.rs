@@ -1,8 +1,8 @@
 //! One program in a hidden terminal: the pane, its colours, and the key bytes.
 //!
-//! A [`Pane`] runs a real program (nvim, a shell, yazi) in a pseudo-terminal and
-//! keeps the screen it draws. [`TermColors`] maps the screen's colours to the draft
-//! palette. [`key_bytes`] turns a key press into the bytes a terminal sends.
+//! A [`Pane`](crate::preview_term::pane::Pane) runs a real program (nvim, a shell, yazi) in a pseudo-terminal and
+//! keeps the screen it draws. [`TermColors`](crate::preview_term::pane::TermColors) maps the screen's colours to the draft
+//! palette. [`key_bytes`](crate::preview_term::pane::key_bytes) turns a key press into the bytes a terminal sends.
 
 use std::io::{Read, Write};
 use std::num::NonZeroU16;
