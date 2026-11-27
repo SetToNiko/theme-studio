@@ -472,11 +472,6 @@ mod tests {
         p.unpin("grey1");
         assert_eq!(p.get("grey1"), mix(Rgb(10, 10, 10), p.get("fg0"), 0.55));
     }
-}
-
-#[cfg(test)]
-mod related_tests {
-    use super::*;
 
     #[test]
     fn related_keys_match_derive() {

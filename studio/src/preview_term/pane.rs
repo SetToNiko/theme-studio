@@ -404,11 +404,6 @@ mod tests {
             "default background is bg0"
         );
     }
-}
-
-#[cfg(test)]
-mod input_tests {
-    use super::*;
 
     fn wait_for(pane: &Pane, text: &str) -> bool {
         for _ in 0..150 {
