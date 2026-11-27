@@ -3,10 +3,11 @@
 # (docs/refactor/GOAL.md, criterion 7, and PRINCIPLES.md, project rule 3).
 #
 # Usage:
-#   scripts/dev/lint-counts.sh                     measure clippy, shellcheck, and
-#                                                  the modules in dependency cycles
-#                                                  now (in the dev shell) and
-#                                                  compare with the baseline
+#   scripts/dev/lint-counts.sh                     measure clippy, shellcheck, the
+#                                                  modules in dependency cycles,
+#                                                  and the bad mod.rs files now
+#                                                  (in the dev shell) and compare
+#                                                  with the baseline
 #   scripts/dev/lint-counts.sh compare NAME COUNT  compare one count with the
 #                                                  baseline (`nix flake check`
 #                                                  uses this)
@@ -60,13 +61,18 @@ clippy_count() {
     echo "build-error"
     return
   fi
-  local line
-  line=$(printf '%s\n' "$output" | grep -aoE '\(bin "theme-studio"\) generated [0-9]+ warning' || true)
-  if [ -z "$line" ]; then
-    echo 0
-  else
-    printf '%s\n' "$line" | grep -oE '[0-9]+' | head -1
-  fi
+  # The binary and, after the library target exists, the library each have
+  # their own "generated N warnings" line. Add them.
+  printf '%s\n' "$output" \
+    | grep -aoE '\((bin|lib) "theme-studio"\) generated [0-9]+ warning' \
+    | grep -oE '[0-9]+ warning' | grep -oE '[0-9]+' \
+    | awk '{ total += $1 } END { print total + 0 }'
+}
+
+# Prints the number of mod.rs and lib.rs files with lines other than module
+# declarations (scripts/dev/mod-layout.sh).
+mod_layout_count() {
+  bash "$here/mod-layout.sh" --count "$project/studio/src"
 }
 
 # Prints the number of shellcheck findings in the scripts.
@@ -88,4 +94,5 @@ status=0
 compare clippy "$(clippy_count)" || status=1
 compare shellcheck "$(shellcheck_count)" || status=1
 compare cycles "$(cycles_count)" || status=1
+compare mod-layout "$(mod_layout_count)" || status=1
 exit $status

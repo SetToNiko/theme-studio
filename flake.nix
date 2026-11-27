@@ -89,6 +89,16 @@
           touch $out
         '';
 
+        # Module layout ratchet: the number of mod.rs and lib.rs files with lines
+        # other than module declarations must not go above the baseline
+        # (scripts/dev/mod-layout.sh, docs/refactor-fixes/PLAN.md, step P0.4).
+        mod-layout = pkgs.runCommand "theme-studio-mod-layout" { } ''
+          count=$(bash ${./scripts/dev/mod-layout.sh} --count ${./studio/src})
+          LINT_BASELINE=${./docs/refactor/lint-baseline.txt} \
+            bash ${./scripts/dev/lint-counts.sh} compare mod-layout "$count"
+          touch $out
+        '';
+
         # Doc gate: each function that returns Result has a `# Errors` section
         # (scripts/dev/errors-doc.sh).
         errors-doc = pkgs.runCommand "theme-studio-errors-doc" { nativeBuildInputs = [ pkgs.python3 ]; } ''
