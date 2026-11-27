@@ -45,6 +45,16 @@ More: docs/theme-studio.md (also the Settings page's README tab)";
 /// # Errors
 /// Fails when the start palette cannot be loaded (see `App::new`), or the terminal cannot be set
 /// up, or the main loop fails.
+///
+/// # Examples
+///
+/// The example is only compiled. A run would read the arguments of the test program and start the
+/// terminal.
+///
+/// ```no_run
+/// theme_studio::cli::run()?;
+/// # Ok::<(), anyhow::Error>(())
+/// ```
 pub fn run() -> Result<()> {
     // every write the studio makes keeps the old file in the history
     model::history::init(model::paths::history_dir());

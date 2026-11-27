@@ -106,6 +106,27 @@
           touch $out
         '';
 
+        # Doc tests: `cargo test --doc` runs the `# Examples` of the library.
+        # nextest (the build check) does not run doc tests. Same build setup
+        # as clippy.
+        doctests = theme-studio.bin.overrideAttrs (old: {
+          pname = "theme-studio-doctests";
+          buildPhase = ''
+            runHook preBuild
+            cargo test --doc
+            runHook postBuild
+          '';
+          doCheck = false;
+          installPhase = "touch $out";
+        });
+
+        # Examples gate: each pub item that lib.rs exports has a `# Examples`
+        # section (scripts/dev/examples-doc.sh).
+        examples-doc = pkgs.runCommand "theme-studio-examples-doc" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          bash ${./scripts/dev/examples-doc.sh} ${./studio/src}
+          touch $out
+        '';
+
         # File size gate: no .rs file over 500 production lines of code
         # (scripts/dev/file-limits.sh). The self-test checks the count first.
         file-limits = pkgs.runCommand "theme-studio-file-limits" { } ''
@@ -190,7 +211,7 @@
             pkgs.cargo-mutants # test strength: cargo mutants --in-diff
             pkgs.tokei # lines of code (the Code column)
             pkgs.python3Packages.lizard # function length, complexity, duplicates
-            pkgs.python3 # scripts/dev/module-cycles.py, errors-doc.sh
+            pkgs.python3 # scripts/dev/module-cycles.py, errors-doc.sh, examples-doc.sh
           ];
           # cargo-llvm-cov needs the llvm-cov and llvm-profdata of rustc's own LLVM.
           LLVM_COV = "${pkgs.rustc.llvm}/bin/llvm-cov";
