@@ -216,3 +216,102 @@ fn palette_colours(v: &Value, name: &str) -> Colours {
         })
         .unwrap_or_default()
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::startup::Start;
+    use crate::app::state::nav::{Overlay, Page};
+    use crate::app::test_support::*;
+    use crate::model::color::Rgb;
+    use crate::model::store::Store;
+
+    #[test]
+    fn settings_history_tab_previews_restores_and_names_versions() {
+        use crate::settings_page::diff::DiffLine;
+        let store = temp_store("settings-history");
+        let dir = store.dir.clone();
+        crate::model::history::init_for_test(dir.join("history"));
+        let mut app = test_app(store, Start::Named("One".into()));
+        let before = app.editor.palette.get("red");
+        app.editor.palette.set("red", Rgb(1, 2, 3));
+        app.save(false);
+        app.page = Page::Settings;
+        render(&mut app, 160, 45);
+        click_on(&mut app, crate::app::state::hit::Target::SettingsTab(2));
+        // palettes.json in the file list
+        app.settings_page.hist_file = crate::settings_page::state::FILES
+            .iter()
+            .position(|f| *f == "palettes.json")
+            .unwrap();
+        assert_eq!(
+            app.settings_page.tab,
+            crate::settings_page::state::Tab::History
+        );
+        let versions = app.versions();
+        assert_eq!(versions.len(), 1);
+        // red, and the colours derived from it
+        assert!(
+            versions[0].1.summary.starts_with("One: ") && versions[0].1.summary.contains(", red,")
+        );
+        // the preview: red as it is now → as it was
+        let view = app.diff_view();
+        assert!(view.lines.contains(&DiffLine::Changed {
+            depth: 2,
+            key: "red".into(),
+            now: "#010203".into(),
+            then: before.hex(),
+        }));
+        let (now, then) = view.palette.unwrap();
+        assert!(
+            now.contains(&("red".into(), Rgb(1, 2, 3))) && then.contains(&("red".into(), before))
+        );
+        let screen = render(&mut app, 160, 45);
+        assert!(
+            screen.contains("Restore preview") && screen.contains("One: bg_visual_red"),
+            "{screen}"
+        );
+        render(&mut app, 100, 30); // stacked
+        // A shows everything
+        press(&mut app, "A");
+        assert!(app.diff_view().lines.len() > 10);
+        // r asks, y restores (and what was there goes to the history)
+        press(&mut app, "r");
+        assert!(matches!(app.overlay, Overlay::Ask { .. }));
+        render(&mut app, 160, 45);
+        click_on(&mut app, crate::app::state::hit::Target::ConfirmChoice('y'));
+        assert_eq!(app.editor.palette.get("red"), before);
+        assert!(!app.dirty());
+        assert_eq!(
+            Store::at(dir.clone()).load("One").unwrap().get("red"),
+            before
+        );
+        assert_eq!(app.versions().len(), 2);
+        // <leader>u undoes the restore
+        press(&mut app, " u");
+        assert_eq!(app.editor.palette.get("red"), Rgb(1, 2, 3));
+        // n names the current file; named versions come first, d deletes them
+        press(&mut app, "nmy reds\n");
+        let versions = app.versions();
+        assert_eq!(versions[0].1.name.as_deref(), Some("my reds"));
+        app.settings_page.hist_sel = 1;
+        press(&mut app, "d");
+        assert!(
+            app.messages
+                .message
+                .as_ref()
+                .is_some_and(|(m, _)| m.contains("Only named"))
+        );
+        app.settings_page.hist_sel = 0;
+        press(&mut app, "dy");
+        assert!(app.versions().iter().all(|(_, s)| s.name.is_none()));
+        // other files: the list follows
+        press(&mut app, "hj");
+        assert_eq!(
+            crate::settings_page::state::FILES[app.settings_page.hist_file],
+            "fonts.json"
+        );
+        assert_eq!(app.versions(), []);
+        assert!(render(&mut app, 160, 45).contains("No earlier versions yet"));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
