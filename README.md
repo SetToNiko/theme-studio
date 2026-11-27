@@ -17,6 +17,7 @@ docs/             theme-studio.md: the guide (also the studio's README tab)
                   plan.md: how it was built; migration.md: how it became a
                   project of its own, and what still ties it to one setup
 ARCHITECTURE.md   how the code is built and how to extend it
+CONTRIBUTING.md   the gates, the rules, and a map of the code for contributors
 ```
 
 It works on NixOS today (packaged with Nix); making it work on other
@@ -24,6 +25,8 @@ distros is the next step (`docs/migration.md`, at the end).
 
 New to the code? Read [ARCHITECTURE.md](ARCHITECTURE.md): how to read the
 code, the modules, and how to add a program that Theme Studio configures.
+Before you change the code, read [CONTRIBUTING.md](CONTRIBUTING.md): the checks
+that must pass, the rules, and a map of the modules for parallel work.
 
 ## Install
 

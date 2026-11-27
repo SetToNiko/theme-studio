@@ -47,6 +47,7 @@ Priority: correctness > audience test > readability > maintainability, modularit
 - Ask before you add a new dependency.
 
 ## Documentation style (rustdoc, strict)
+- Write all text with the `asd-ste100` skill: documents, comments, doc comments, commit messages, and replies. Strict mode for text that an agent or a script reads (CONTRIBUTING.md, comments). Flavored mode for text for people (README.md, ARCHITECTURE.md, the user guide, commit messages). Run its linter (`scripts/ste-lint.py`) on each changed document.
 - Each .rs file starts with `//!`: a one-line purpose, then details. Each script starts with a `#` purpose comment.
 - Each item has `///`: the first line is a one-sentence summary, then details.
 - Sections: `# Errors` (each fn that returns Result), `# Panics` (can panic), `# Examples` (the use is not obvious), `# Safety` (unsafe).
