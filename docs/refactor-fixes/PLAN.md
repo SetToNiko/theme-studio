@@ -76,6 +76,7 @@ Advanced techniques that the refactor adds:
 | 16 | `ARCHITECTURE.md` lines 58, 111, 192, `CONTRIBUTING.md` lines 140, 232, 328 | the documents name `preview_term/mod.rs`. After P2.3, the code of that file is in `preview.rs`, `types.rs`, `bar.rs`, and `drafts.rs`. | documentation | L |
 | 17 | `ARCHITECTURE.md` lines 107, 183, 440, 522, 524, 534, 623, `CONTRIBUTING.md` line 235, `docs/refactor/BEFORE_AFTER.md` lines 34, 37, 38, 40, 49, 89, 90, 95, 111, the `//!` and `///` comments of `ui/page_bodies/fonts_download_preview.rs`, `ui/page_bodies/tournament_tab.rs`, and 7 files in `app/pages/` | the texts name `config/mod.rs`, `settings_page/mod.rs`, and `fonts/{download,preview,tournament}_page.rs`. After wave 9, this code is in the child modules of `config/`, `settings_page/`, `fonts/tab/`, and `fonts/pages/`. | documentation | L |
 | 18 | `app/mod.rs` lines 14 and 51 (the `//!` header) | the text names `ui::draw`. After P2.7, the function is `ui::screen::frame::draw`. P2.8 owns the file. | documentation | L |
+| 19 | `ARCHITECTURE.md` lines 31, 32, 49, 56, 221, 240, 474, 526, 563, 615, 617, 637, `CONTRIBUTING.md` lines 133, 168, 182, 245, 262, 330 | the texts name `ui::draw`. They also name `app/mod.rs` for `App`, `set_hsv`, `build`, `migrate_files`, the pointer, and the clipboard. After wave 11, this code is in `app/app_state.rs`, `app/editing.rs`, `app/startup.rs`, `app/pointer.rs`, `app/clipboard.rs`, and `ui::screen::frame::draw`. The file lists do not name the new files of `app/`. | documentation | L |
 
 Findings 6 to 10 are in scope only when a step already changes the file (GOAL.md, scope).
 
@@ -193,7 +194,7 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 | Phase 0 safety net | done |
 | Phase 1 steps | done |
 | Phase 1 review | done |
-| Phase 2 steps | open |
+| Phase 2 steps | done |
 | Phase 2 review | open |
 | Phase 3 steps | open |
 | Phase 3 review | open |
