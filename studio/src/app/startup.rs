@@ -2,6 +2,8 @@
 //!
 //! [`App::new`](crate::app::app_state::App::new) and [`App::with_config`](crate::app::app_state::App::with_config) are the two ways to make an `App`.
 
+use std::collections::HashSet;
+
 use anyhow::Result;
 
 use super::app_state::App;
@@ -87,19 +89,7 @@ impl App {
             side: Side::Colours,
             page: Page::Main,
             row_sel: 0,
-            expanded_groups: GROUPS
-                .iter()
-                .enumerate()
-                .filter(|(_, (g, _))| {
-                    config
-                        .settings
-                        .colours
-                        .open_groups
-                        .iter()
-                        .any(|o| o.eq_ignore_ascii_case(g))
-                })
-                .map(|(i, _)| i)
-                .collect(),
+            expanded_groups: open_group_indices(&config.settings.colours.open_groups),
             fonts,
             picker: None,
             sample_image: None,
@@ -221,4 +211,39 @@ fn first_palette(
         Start::Active => active_or_blank(),
         Start::New => ("untitled".to_string(), Palette::blank(), true),
     })
+}
+
+/// Gives the index in `GROUPS` of each colour group that starts open.
+///
+/// `open_groups` holds group names from settings.json. The match ignores
+/// upper and lower case. A name that is not a group has no effect.
+fn open_group_indices(open_groups: &[String]) -> HashSet<usize> {
+    let mut open = HashSet::new();
+    for (index, (group, _)) in GROUPS.iter().enumerate() {
+        for name in open_groups {
+            if name.eq_ignore_ascii_case(group) {
+                open.insert(index);
+            }
+        }
+    }
+    open
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn open_group_indices_ignores_case_and_unknown_names() {
+        let first = GROUPS[0].0.to_uppercase();
+        let last = GROUPS[GROUPS.len() - 1].0.to_string();
+        let names = vec![first, "no-such-group".to_string(), last];
+        let open = open_group_indices(&names);
+        assert_eq!(open, HashSet::from([0, GROUPS.len() - 1]));
+    }
+
+    #[test]
+    fn open_group_indices_is_empty_without_names() {
+        assert!(open_group_indices(&[]).is_empty());
+    }
 }
