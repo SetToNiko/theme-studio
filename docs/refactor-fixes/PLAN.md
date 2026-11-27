@@ -1,0 +1,190 @@
+# Refactor Plan: Theme Studio, the new kit rules
+
+<!--
+The refactor-kit plan action wrote this file. You can edit it. The agents read it.
+Keep the section numbers. The kit finds the sections by their numbers.
+-->
+
+## 0. Goal
+Theme Studio obeys the new rules of the refactor kit. Success criteria (GOAL.md, baseline in SUCCESS_CRITERIA.md):
+1. `file-limits.sh` counts lines of code. 2. Each `mod.rs` holds only declarations, each with `///` (gate). 3. The smallest visibility: `pub` only on the library API. 4. `studio/src/lib.rs` exists, and `main.rs` uses only the library. 5. No test file in `studio/src/`. 6. Integration tests in `studio/tests/` for each public module. 7. `# Examples` on each public item, `cargo test --doc` passes. 8. The API checklist has no open item. 9. The dev shell has nextest, mutants, fuzz, tokei, nightly (fuzz only), and the flake runs nextest and doc tests. 10. One fuzz target for each parser in section 3. 11. Coverage 82.74 % or more, `nix flake check` passes.
+A pure refactor: the behavior does not change.
+Goal locations:
+- `mod.rs` with code: `keymap/mod.rs`, `fonts/mod.rs`, `config/mod.rs`, `settings_page/mod.rs`, `app/mod.rs`, `preview_term/mod.rs`, `ui/status/mod.rs`, `ui/mod.rs`, `ui/page_bodies/settings/mod.rs`, `system/download/mod.rs`, `app/tests/mod.rs`, `ui/overlays/mod.rs`. All 22 `mod.rs` files: declarations without `///`.
+- Test files: `app/tests/{mod,input,layout,lifecycle,palette,pages_fonts,font_downloads,pages_settings}.rs`. Second test modules: `model/palette.rs:477`, `preview_term/pane.rs:409`.
+- Library target: `studio/src/main.rs:5-13` (module list), `main.rs:50-162` (`main`, about 110 lines).
+- Gates: `scripts/dev/file-limits.sh`, `flake.nix` (checks and dev shell), `studio/Cargo.toml` (lints).
+
+## 1. Summary
+The studio is one binary crate with 114 production files and about 30,900 lines with tests. The first refactor left clean modules with 0 dependency cycles, 0 clippy warnings, and no file over 500 lines. The new kit rules break in four places. Twelve `mod.rs` files hold code (`keymap/mod.rs`: 376 lines of code). The scenario tests of `app/` are in a separate folder. The crate has no library target, so 656 `pub` items have no API meaning. No parser has a fuzz target, and the dev shell lacks four tools and a nightly toolchain.
+
+## 2. Architecture map (before the refactor)
+<!-- The plan action writes this section one time. Do not change it later. The final action compares it with the code after the refactor (BEFORE_AFTER.md). -->
+
+| Module | Purpose | Responsibilities | Depends on |
+|---|---|---|---|
+| `main.rs` | start the studio | arguments, `--init-config`, store migration, terminal setup, run loop start | all 9 modules |
+| `app/` | editor state and actions | `App` (about 45 fields), keys, mouse, pop-ups, pages, saving, run loop | config, fonts, keymap, model, preview_term, settings_page, system |
+| `ui/` | draw the screen | ratatui drawing of each page, pane, overlay, and status line, click targets in `app.hits` | app, keymap, model, fonts, settings_page, preview_term |
+| `keymap/` | key bindings | contexts, actions, key notation, lookup, JSON load and save, presets | none |
+| `config/` | config files | load, migrate, and save `keymaps.json` and `settings.json` | keymap |
+| `settings_page/` | Settings page state | tabs, draft diff, rows, readme render, keymap presets | keymap, model |
+| `fonts/` | Fonts tab | presets, installed fonts, tree, pick, download, preview, and tournament pages, sample render | model, system, keymap |
+| `preview_term/` | live previews | nvim, shell, and yazi in PTYs, the draft palette file | model, system |
+| `model/` | studio data and rules | colour, palette, theme, store, history, paths, tournament, samples | system |
+| `system/` | outside world | desktop configs, downloads, prefetch threads, terminal output, switch scripts | model |
+
+Cycles: none (the gate `cycles` gives 0).
+Key numbers: 9 top-level modules and `main.rs`. 114 production files. 0 files over 500 lines of code. Largest file: `app/input/actions.rs`, 391 lines of code. 12 of 22 `mod.rs` files hold code. 656 `pub` items. 195 tests (4 ignored). Coverage 82.74 %.
+
+## 3. Target architecture
+- `studio/src/lib.rs`: only module declarations with `///`. The only public module is `cli`: `pub fn run()` and the argument types. The other modules are private or `pub(crate)`.
+- `studio/src/main.rs`: calls `theme_studio::cli::run()`. No `mod` lines.
+- Each `mod.rs`: a `//!` header and declarations with `///`. Its code moves into child modules with purpose names. A child module never has the name of its folder (clippy `module_inception`). Example: `keymap/map.rs`, not `keymap/keymap.rs`.
+- Folders stay at 10 modules or fewer: `fonts/tab/` (the `FontsTab` parts), `fonts/pages/` (download, preview, tournament), and one group folder in `ui/` (the refactorer proposes the name).
+- Tests: a `mod tests` at the end of each tested file. `app/test_support.rs` (`#[cfg(test)]`, no tests) holds the shared helpers `test_app`, `press`, `render`, `mouse`, `click_on`, `temp_store`. `studio/tests/cli.rs` tests the public API.
+- Fuzz: `studio/fuzz/` (cargo-fuzz crate). `lib.rs` has `#[cfg(fuzzing)] pub mod fuzzing;`. `src/fuzzing.rs` has thin `pub fn` wrappers that call the `pub(crate)` parsers. `scripts/dev/fuzz-all.sh` runs each target.
+- Parsers that get a fuzz target (criterion 10). A parser that reads a file gets a pure `&str` part first.
+  - text: `Rgb::parse`, `Key::parse_seq`, `Action::from_id`, `Context::from_id`, `Underline::parse`, `settings_page::readme::render`
+  - config JSON: `Keymap::from_json`, `parse_settings`, the keymaps-file parse
+  - data JSON: `Palette::from_json`, `Theme::from_json`, `Preset::from_json`, the store and tournament JSON loads
+  - downloads: `parse_fontsource`, `parse_nerd`, `sri`
+  - desktop and system: `read_i3`, `read_rasi`, `read_bar`, `parse_i3blocks`, `scan_families` (fc-list text), the CLI arguments
+- Gates: `file-limits` (lines of code), `mod-layout`, `examples-doc`, `[lints.rust] unreachable_pub = "warn"` (criterion 3), and nextest with `cargo test --doc` in the package build.
+
+Advanced techniques that the refactor adds:
+- `#[cfg(fuzzing)]` module | `studio/src/fuzzing.rs` | the fuzz crate can call only `pub` items. Public parsers would add about 20 items to the API, each with `# Examples`.
+
+## 4. Findings
+| # | File(s) | Problem | Target violated | Impact |
+|---|---|---|---|---|
+| 1 | 12 `mod.rs` files (section 0) | code, `use` lines, and tests in `mod.rs` | mod-layout rule, T5 | H |
+| 2 | all 22 `mod.rs` files | declarations without `///` | mod-layout rule | M |
+| 3 | `app/tests/*.rs` | scenario tests in a separate folder | tests rule | H |
+| 4 | crate | no library target, 656 `pub` items | criterion 3, C-STRUCT-PRIVATE | H |
+| 5 | `main.rs:50-162` | `main` has about 110 lines, `--init-config` has no test | T3, criterion 6 | M |
+| 6 | `ui/mod.rs:184`, `ui/page_bodies/settings/mod.rs:117` | two `truncate` functions with different overflow handling | T2 one source of truth | L |
+| 7 | `ui/status/mod.rs:15` | a child imports `draw_tabs` and `truncate` from the parent `mod.rs` | T5 | L |
+| 8 | `app/pages/settings/settings_actions.rs:352`, `settings_history_actions.rs:70` | the same file read and JSON parse, two copies | T2 | L |
+| 9 | `fonts/presets.rs:311` | `load_active` returns an unnamed 4-tuple | T3 | L |
+| 10 | `model/history.rs:28-35`, `system/switch.rs:80` | test hooks and `cfg!(test)` in production code | T4 testability | L |
+| 11 | `ui/` (11 modules), `fonts/` (14 modules) after the moves | over the folder limit of 10 | limits | M |
+| 12 | about 30 parsers (section 3) | no fuzz target | criterion 10 | M |
+
+Findings 6 to 10 are in scope only when a step already changes the file (GOAL.md, scope).
+
+## 5. Test coverage
+- `app/`: partial. Tests only through `app/tests/` scenarios. No tests for `run.rs`, `persist.rs`, `state/nav.rs`, `state/messages.rs`.
+- `ui/`: partial. Three inline test modules, the rest only through the app scenarios.
+- `keymap/`, `config/`, `settings_page/`: good. No tests for `keymap/key.rs` (its tests are in `mod.rs`), `keymap/table.rs`, `config/settings.rs`, `settings_page/readme_layout.rs`.
+- `fonts/`, `preview_term/`: partial. No tests for `filters.rs`, `pick.rs`, `download_page.rs`, `preview_page.rs`, `tournament_page.rs`.
+- `model/`, `system/`: good. Each file has a test module.
+- `main.rs`: none.
+
+## 6. Plan
+
+Step format: `- [ ] P<phase>.<n> <title>: <what changes> | Wave: <n> | Depends: <step IDs or none> | Owns: <paths> | Target: <criterion or target> | Check: <how to test>`
+Each Rust step runs the checks for each change of the conventions, after P0.1. Each `Owns` path starts at the repository root. In the step text, a path without a folder is in `studio/src/`.
+
+### Phase 0: Foundation and safety net
+- [ ] P0.1 Dev tools: add the flake input `rust-overlay`. Add `cargo-nextest`, `cargo-mutants`, `cargo-fuzz`, `tokei`, and a nightly cargo only for `cargo +nightly fuzz` to the dev shell. | Wave: 1 | Depends: none | Owns: flake.nix, flake.lock | Target: criterion 9. | Check: each tool runs in `nix develop`. `nix flake check` passes.
+- [ ] P0.2 Gate tests: the package build runs `cargo nextest run`. A new check runs `cargo test --doc`. | Wave: 2 | Depends: P0.1 | Owns: flake.nix | Target: criterion 9. | Check: `nix flake check` passes. The test count stays 195.
+- [ ] P0.3 Lines of code: `file-limits.sh` counts lines of code (no empty lines, no comment lines, no `/* */` lines) before the `#[cfg(test)]` module. Limit 500. | Wave: 3 | Depends: P0.1 | Owns: scripts/dev/file-limits.sh | Target: criterion 1. | Check: the count agrees with `tokei` for 5 sample files. `nix flake check` passes.
+- [ ] P0.4 Gate `mod-layout`: a script fails on a `mod.rs` with a bad line. A bad line is not empty, not a comment, and not a declaration. A declaration without `///` above it is also bad. A ratchet: the count of bad files must not increase (baseline 22, `docs/refactor/lint-baseline.txt`). | Wave: 4 | Depends: P0.1 | Owns: scripts/dev/mod-layout.sh, scripts/dev/lint-counts.sh, docs/refactor/lint-baseline.txt, flake.nix | Target: criterion 2. | Check: the script gives 22 now. `nix flake check` passes.
+- [ ] P0.5 Safety net for `main.rs`: tests for the argument handling (`-h`, `--help`, `--new`, `--fonts`, a name) and for `--init-config`, with a temporary HOME and `XDG_*`, with no `set_var`. | Wave: 5 | Depends: P0.2 | Owns: studio/src/main.rs | Target: correctness. | Check: the tests pass on the unchanged code.
+Completes: criterion 9 (tools part). The coordinator measures the Phase 0 baselines of SUCCESS_CRITERIA.md (rows 1, 2, 7) after P0.4.
+
+### Phase 1: Library target
+- [ ] P1.1 Library: add `lib.rs` with the module declarations of `main.rs`, each with `///`. Move the argument handling, `--init-config`, and the start into `cli.rs` (`pub fn run`). `main.rs` calls `theme_studio::cli::run()`. The tests of P0.5 move with their functions. | Wave: 6 | Depends: P0.5 | Owns: studio/src/main.rs, studio/src/lib.rs, studio/src/cli.rs | Target: criteria 4, T3. | Check: `nix flake check` passes. The binary starts and `--help` gives the same text.
+- [ ] P1.2 Integration tests: `studio/tests/cli.rs` tests `cli` through its public API only. | Wave: 7 | Depends: P1.1 | Owns: studio/tests/cli.rs | Target: criterion 6. | Check: `cargo nextest run` passes.
+- [ ] P1.3 Gate `examples-doc`: a script fails when a `pub` item that `lib.rs` exports has no `# Examples`. Add `# Examples` with `?` to each public item of `cli`. | Wave: 7 | Depends: P1.1 | Owns: scripts/dev/examples-doc.sh, flake.nix, studio/src/cli.rs | Target: criterion 7, C-EXAMPLE. | Check: `cargo test --doc` passes. `nix flake check` passes.
+Completes: criterion 4.
+
+### Phase 2: `mod.rs` layout
+Each step of this phase: move the code of each `mod.rs` in its folders into child modules with purpose names. Add `///` to each declaration. Move each test to the end of the file of its tested function. Change the `use` paths of the callers (no `pub use`). Report the new count of the `mod-layout` script: the coordinator lowers the baseline. Keep the cycle count at 0 and each folder at 10 modules or fewer.
+- [ ] P2.1 `keymap/`: `context.rs`, `map.rs`, `lookup.rs`, `json.rs`, `edit.rs`. The key tests go to `key.rs`, the preset tests to `defaults.rs`. | Wave: 8 | Depends: P1.1 | Owns: studio/src/keymap/ | Target: criteria 2, 5. | Check: `nix flake check` passes. The test count does not decrease.
+- [ ] P2.2 `model/` and `system/`: `///` on the declarations. `system/download/mod.rs` code to child modules (types, file helpers, channel). | Wave: 8 | Depends: P1.1 | Owns: studio/src/model/mod.rs, studio/src/system/ | Target: criterion 2. | Check: as P2.1.
+- [ ] P2.3 `preview_term/`: `types.rs` (`PaneId`, `Mode`), `preview.rs`, `bar.rs`, `drafts.rs`. | Wave: 8 | Depends: P1.1 | Owns: studio/src/preview_term/mod.rs, studio/src/preview_term/types.rs, studio/src/preview_term/preview.rs, studio/src/preview_term/bar.rs, studio/src/preview_term/drafts.rs | Target: criteria 2, 5. | Check: as P2.1.
+- [ ] P2.4 `config/`: `load.rs`, `files.rs`, `keymaps_file.rs`, `migrate.rs`, `settings_file.rs`. | Wave: 9 | Depends: P2.1 | Owns: studio/src/config/ | Target: criteria 2, 5. | Check: as P2.1.
+- [ ] P2.5 `settings_page/`: `state.rs`, `diff.rs`, `rows.rs`. | Wave: 9 | Depends: P2.1 | Owns: studio/src/settings_page/ | Target: criteria 2, 5. | Check: as P2.1.
+- [ ] P2.6 `fonts/`: `fonts/tab/` (tab, list, presets, keys) and `fonts/pages/` (download, preview, tournament). | Wave: 9 | Depends: P2.2, P2.3 | Owns: studio/src/fonts/ | Target: criteria 2, 5, folder limit. | Check: as P2.1.
+- [ ] P2.7 `ui/`: `ui/mod.rs` code to `frame.rs` and `tabs.rs`, the helpers to `pane_chrome.rs` and `widgets.rs`. One group folder keeps `ui/` at 10 modules. `status/`, `overlays/`, `page_bodies/settings/` code to child modules. One `truncate` (finding 6). | Wave: 10 | Depends: P2.5, P2.6 | Owns: studio/src/ui/ | Target: criteria 2, 5, folder limit. | Check: as P2.1.
+- [ ] P2.8 `app/`: `app/mod.rs` code to `app_state.rs`, `startup.rs`, `pointer.rs`, `queries.rs`, `sample.rs`, `editing.rs`, `clipboard.rs`. `Term` to `run.rs`. `open_matches` to `persist.rs`. `///` in each `app/` subfolder except `app/tests/`. | Wave: 10 | Depends: P2.4, P2.5, P2.6 | Owns: studio/src/app/ | Target: criterion 2. | Check: as P2.1.
+Completes: none (criterion 2 completes in P3.9).
+
+### Phase 3: Test locations
+- [ ] P3.1 Test helpers: move the helpers of `app/tests/mod.rs` into `app/test_support.rs` (`#[cfg(test)] pub(crate) mod test_support;` in `app/mod.rs`). The test files use the new path. | Wave: 11 | Depends: P2.8 | Owns: studio/src/app/test_support.rs, studio/src/app/mod.rs, studio/src/app/tests/ | Target: criterion 5. | Check: the test count does not decrease.
+- [ ] P3.2 Input tests: `app/tests/input.rs` to `app/input/actions.rs`, `app/input/mouse.rs`, `app/state/hit.rs`. | Wave: 12 | Depends: P3.1 | Owns: studio/src/app/tests/input.rs, studio/src/app/input/actions.rs, studio/src/app/input/mouse.rs, studio/src/app/state/hit.rs | Target: criterion 5. | Check: as P3.1.
+- [ ] P3.3 Layout tests: `app/tests/layout.rs` to `app/state/layout.rs`, `app/state/messages.rs`, `app/state/focus.rs`. | Wave: 12 | Depends: P3.1 | Owns: studio/src/app/tests/layout.rs, studio/src/app/state/layout.rs, studio/src/app/state/messages.rs, studio/src/app/state/focus.rs | Target: criterion 5. | Check: as P3.1.
+- [ ] P3.4 Palette tests: `app/tests/palette.rs` to `app/state/palette_editor.rs`, `app/input/colours.rs`, `app/input/overlay.rs`. | Wave: 12 | Depends: P3.1 | Owns: studio/src/app/tests/palette.rs, studio/src/app/state/palette_editor.rs, studio/src/app/input/colours.rs, studio/src/app/input/overlay.rs | Target: criterion 5. | Check: as P3.1.
+- [ ] P3.5 Lifecycle tests: `app/tests/lifecycle.rs` to `app/pages/themes/`. | Wave: 12 | Depends: P3.1 | Owns: studio/src/app/tests/lifecycle.rs, studio/src/app/pages/themes/ | Target: criterion 5. | Check: as P3.1.
+- [ ] P3.6 Settings tests: `app/tests/pages_settings.rs` to `app/pages/settings/`. | Wave: 12 | Depends: P3.1 | Owns: studio/src/app/tests/pages_settings.rs, studio/src/app/pages/settings/ | Target: criterion 5. | Check: as P3.1.
+- [ ] P3.7 Font tests: `app/tests/pages_fonts.rs` and `app/tests/font_downloads.rs` to `app/pages/fonts/`. | Wave: 12 | Depends: P3.1 | Owns: studio/src/app/tests/pages_fonts.rs, studio/src/app/tests/font_downloads.rs, studio/src/app/pages/fonts/ | Target: criterion 5. | Check: as P3.1.
+- [ ] P3.8 One test module for each file: merge `related_tests` into `tests` in `model/palette.rs`, and `input_tests` into `tests` in `preview_term/pane.rs`. | Wave: 12 | Depends: P2.2, P2.3 | Owns: studio/src/model/palette.rs, studio/src/preview_term/pane.rs | Target: criterion 5. | Check: as P3.1.
+- [ ] P3.9 Close: remove `app/tests/`. The `mod-layout` gate becomes hard (0). A gate check fails on a `tests.rs` file or a test folder in `studio/src/`. | Wave: 13 | Depends: P3.2, P3.3, P3.4, P3.5, P3.6, P3.7 | Owns: studio/src/app/tests/, studio/src/app/mod.rs, scripts/dev/mod-layout.sh, docs/refactor/lint-baseline.txt | Target: criteria 2, 5. | Check: `nix flake check` passes. The test count is 195 or more.
+Completes: criteria 2, 5.
+
+### Phase 4: Visibility and the API guidelines
+Each step of this phase: give each item the smallest visibility that works. Remove the dead code that the compiler then reports. Check the code of the folders against the API checklist, and fix each item or record a verified exception with its ID.
+- [ ] P4.1 `app/`. | Wave: 14 | Depends: P3.9 | Owns: studio/src/app/ | Target: criteria 3, 8. | Check: `nix flake check` passes.
+- [ ] P4.2 `ui/`. | Wave: 14 | Depends: P3.9 | Owns: studio/src/ui/ | Target: criteria 3, 8. | Check: as P4.1.
+- [ ] P4.3 `keymap/`, `config/`, `settings_page/`. | Wave: 14 | Depends: P3.9 | Owns: studio/src/keymap/, studio/src/config/, studio/src/settings_page/ | Target: criteria 3, 8. | Check: as P4.1.
+- [ ] P4.4 `fonts/`, `preview_term/` (finding 9). | Wave: 14 | Depends: P3.9 | Owns: studio/src/fonts/, studio/src/preview_term/ | Target: criteria 3, 8. | Check: as P4.1.
+- [ ] P4.5 `model/`, `system/` (finding 10). | Wave: 14 | Depends: P3.9 | Owns: studio/src/model/, studio/src/system/ | Target: criteria 3, 8. | Check: as P4.1.
+- [ ] P4.6 Gate: `[lints.rust] unreachable_pub = "warn"` in `Cargo.toml`, so clippy with `-D warnings` fails on a `pub` item outside the library API. | Wave: 15 | Depends: P4.1, P4.2, P4.3, P4.4, P4.5 | Owns: studio/Cargo.toml | Target: criterion 3. | Check: `nix flake check` passes.
+Completes: criterion 3.
+
+### Phase 5: Fuzz targets
+Each step of this phase: give each parser in its list a pure `&str` or `&[u8]` part if it reads a file. Add a wrapper in `fuzzing.rs` and a target in `studio/fuzz/`. Run each new target for 60 seconds. Add each crash input as a unit test.
+- [ ] P5.1 Fuzz crate: `studio/fuzz/` (cargo-fuzz), `#[cfg(fuzzing)] pub mod fuzzing;` in `lib.rs` with its comment, `fuzzing.rs`, `scripts/dev/fuzz-all.sh`, the first target `Rgb::parse`. | Wave: 16 | Depends: P4.6 | Owns: studio/fuzz/, studio/src/lib.rs, studio/src/fuzzing.rs, scripts/dev/fuzz-all.sh, studio/src/model/color.rs | Target: criterion 10. | Check: `cargo +nightly fuzz run rgb_parse -- -max_total_time=60` gives no crash. `nix flake check` passes.
+- [ ] P5.2 Keymap and config parsers: `Key::parse_seq`, `Action::from_id`, `Context::from_id`, `Keymap::from_json`, `parse_settings`, the keymaps-file parse, `Underline::parse`, `readme::render`. | Wave: 17 | Depends: P5.1 | Owns: studio/fuzz/, studio/src/fuzzing.rs, studio/src/keymap/, studio/src/config/, studio/src/settings_page/, studio/src/app/state/hit.rs | Target: criterion 10. | Check: as P5.1, for each new target.
+- [ ] P5.3 Model and font JSON: `Palette::from_json`, `Theme::from_json`, `Preset::from_json`, the store and tournament JSON loads. | Wave: 18 | Depends: P5.2 | Owns: studio/fuzz/, studio/src/fuzzing.rs, studio/src/model/, studio/src/fonts/presets.rs | Target: criterion 10. | Check: as P5.2.
+- [ ] P5.4 System parsers and arguments: `parse_fontsource`, `parse_nerd`, `read_i3`, `read_rasi`, `read_bar`, `parse_i3blocks`, `scan_families`, `sri`, the CLI arguments. | Wave: 19 | Depends: P5.3 | Owns: studio/fuzz/, studio/src/fuzzing.rs, studio/src/system/, studio/src/fonts/installed.rs, studio/src/cli.rs | Target: criterion 10. | Check: as P5.2. `scripts/dev/fuzz-all.sh 60` gives no crash.
+Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
+
+## 7. Out of scope
+- The 9 small fixes: the next refactor (HANDOFF.md, section 3, step 1).
+- Terminal independence and note N1: HANDOFF.md step 2.
+- The preview for each app: HANDOFF.md step 3.
+- Other Linux distributions, and a security review: HANDOFF.md step 4.
+- The 16 files with 300 to 400 lines of code: they are under the limit of 500.
+- Findings 6 to 10 outside the files that a step changes.
+
+## 8. Outcome
+<!-- The final action completes this section. -->
+
+## 9. Architecture notes (pending)
+<!-- The review action adds notes here. The revise action processes them. -->
+
+## 10. Plan changelog
+| Phase | Note | Decision | Reason |
+|---|---|---|---|
+
+## 11. Progress
+<!-- The kit updates this table after each action. -->
+| Item | Status |
+|---|---|
+| Plan | done |
+| Phase 0 safety net | open |
+| Phase 1 steps | open |
+| Phase 1 review | open |
+| Phase 2 steps | open |
+| Phase 2 review | open |
+| Phase 3 steps | open |
+| Phase 3 review | open |
+| Phase 4 steps | open |
+| Phase 4 review | open |
+| Phase 5 steps | open |
+| Phase 5 review | open |
+| Documentation | open |
+| Final review | open |
+
+## 12. Shared files (parallel mode only)
+| File | Steps that change it | Rule |
+|---|---|---|
+| `flake.nix` | P0.1, P0.2, P0.4, P1.3 | each step is alone in its wave, or the only owner in its wave |
+| `lib.rs` | P1.1, P5.1 | one owner in each wave |
+| `app/mod.rs` | P2.8, P3.1, P3.9 | one owner in each wave |
+| `docs/refactor/lint-baseline.txt` | P0.4, each Phase 2 step, P3.9 | Phase 2 steps do not own it. Each step reports its new count. The coordinator writes the file after the merge of the wave. |
+| the `use` lines of the callers | each Phase 2 step | a step changes only the `use` lines of files outside `Owns`. The coordinator merges conflicts in `use` lines by hand (`kit:reference/parallel-rules.md`, section 6). |
+| `fuzzing.rs`, `studio/fuzz/Cargo.toml` | P5.1 to P5.4 | one step in each wave |
