@@ -278,3 +278,154 @@ fn group_of(key: usize) -> usize {
     }
     0
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::startup::Start;
+    use crate::app::state::nav::Page;
+    use crate::app::test_support::*;
+    use crate::model::palette::GROUPS;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+    use ratatui::crossterm::event::{KeyModifiers, MouseButton, MouseEventKind};
+
+    #[test]
+    fn pinning_hex_entry_paste_and_copy_from() {
+        let mut app = test_app(temp_store("pin"), Start::Named("One".into()));
+        // select grey1 (in the Greys group) and type a hex colour
+        let i = app.keys.iter().position(|k| *k == "grey1").unwrap();
+        app.select(i);
+        press(&mut app, "#123456\n");
+        assert_eq!(app.editor.palette.get("grey1"), Rgb(0x12, 0x34, 0x56));
+        assert!(app.editor.palette.is_pinned("grey1"));
+        // a pinned key ignores base changes; p lets it follow again
+        app.select(0);
+        app.on_paste("#000000");
+        assert_eq!(app.editor.palette.get("bg0"), Rgb(0, 0, 0));
+        assert_eq!(app.editor.palette.get("grey1"), Rgb(0x12, 0x34, 0x56));
+        app.select(i);
+        press(&mut app, "p");
+        assert!(!app.editor.palette.is_pinned("grey1"));
+        assert_ne!(app.editor.palette.get("grey1"), Rgb(0x12, 0x34, 0x56));
+        // copy red into grey1: c, move to red, Enter
+        press(&mut app, "c");
+        let red = app.keys.iter().position(|k| *k == "red").unwrap();
+        while app.sel > red {
+            press(&mut app, "k");
+        }
+        press(&mut app, "\n");
+        assert_eq!(app.key(), "grey1");
+        assert_eq!(
+            app.editor.palette.get("grey1"),
+            app.editor.palette.get("red")
+        );
+    }
+
+    #[test]
+    fn selecting_a_colour_lights_up_its_derivation_relatives() {
+        use crate::app::state::hit::Target as T;
+        let mut app = test_app(temp_store("related"), Start::Named("One".into()));
+        let lit = |app: &mut App, key: &str| -> bool {
+            let mut t = Terminal::new(TestBackend::new(200, 60)).unwrap();
+            t.draw(|f| crate::ui::screen::frame::draw(f, app)).unwrap();
+            let i = app.keys.iter().position(|k| *k == key).unwrap();
+            let Some(row) = app
+                .colour_rows()
+                .iter()
+                .position(|r| *r == ColourRow::Key(i))
+            else {
+                return false;
+            };
+            let r = app.hits.rect_of(T::ColourRow(row)).unwrap();
+            let buf = t.backend().buffer().clone();
+            buf[(r.x + 5, r.y)].bg == app.looks(&app.settings).derived.bg.unwrap()
+        };
+        let group_lit = |app: &mut App, name: &str| -> bool {
+            let mut t = Terminal::new(TestBackend::new(200, 60)).unwrap();
+            t.draw(|f| crate::ui::screen::frame::draw(f, app)).unwrap();
+            let g = GROUPS.iter().position(|(n, _)| *n == name).unwrap();
+            let row = app
+                .colour_rows()
+                .iter()
+                .position(|r| matches!(r, ColourRow::Group { index, .. } if *index == g))
+                .unwrap();
+            let r = app.hits.rect_of(T::ColourRow(row)).unwrap();
+            let buf = t.backend().buffer().clone();
+            buf[(r.x + 4, r.y)].bg == app.looks(&app.settings).derived.bg.unwrap()
+        };
+        let select = |app: &mut App, key: &str| {
+            let i = app.keys.iter().position(|k| *k == key).unwrap();
+            app.select_key(i);
+        };
+        // a base colour: what's derived from it lights up (its closed group)
+        select(&mut app, "red");
+        assert!(group_lit(&mut app, "Tinted backgrounds"));
+        assert!(!lit(&mut app, "green"));
+        // a derived colour: its sources light up
+        let g = GROUPS
+            .iter()
+            .position(|(n, _)| *n == "Tinted backgrounds")
+            .unwrap();
+        app.set_group_open(g, true);
+        select(&mut app, "bg_visual_red");
+        assert!(lit(&mut app, "bg0") && lit(&mut app, "red"));
+        assert!(!lit(&mut app, "green"));
+        // pinned (setting a derived key by hand pins it): nothing lights up
+        app.editor.palette.set("bg_visual_red", Rgb(9, 9, 9));
+        assert!(!lit(&mut app, "red"));
+        std::fs::remove_dir_all(app.store.dir.clone()).unwrap();
+    }
+
+    #[test]
+    fn keyboard_reaches_the_palette_dropdown_and_the_page_tabs() {
+        let store = temp_store("nav-up");
+        let dir = store.dir.clone();
+        let mut app = test_app(store, Start::Named("One".into()));
+        app.settings.layout.tabs = "top".into();
+        let key = |app: &mut App, c: KeyCode| app.on_key(KeyEvent::new(c, KeyModifiers::NONE));
+        app.focus_pane(4);
+        // the cursor starts on the first colour, under the Base group
+        key(&mut app, KeyCode::Up);
+        assert_eq!(app.row_sel, 0);
+        // up from the first row: the dropdown row; Enter opens the list
+        key(&mut app, KeyCode::Up);
+        assert!(app.layout.palette_menu_focused);
+        key(&mut app, KeyCode::Enter);
+        assert!(matches!(app.overlay, Overlay::Open { .. }));
+        key(&mut app, KeyCode::Esc);
+        assert!(app.layout.palette_menu_focused, "back on the row");
+        // up again: the page tabs; right changes pages, the keyboard stays
+        key(&mut app, KeyCode::Up);
+        assert!(app.layout.page_tabs_focused);
+        let s = render(&mut app, 160, 45);
+        assert!(s.contains("F1 Main"), "{s}");
+        key(&mut app, KeyCode::Right);
+        assert_eq!(app.page, Page::Downloads);
+        assert!(app.layout.page_tabs_focused);
+        // down: into the page (its tabs are on top, so the list)
+        key(&mut app, KeyCode::Down);
+        assert!(!app.layout.page_tabs_focused && !app.dl.tabs_focused);
+        // up: the page's tabs, then the page tabs; left back to Main
+        key(&mut app, KeyCode::Up);
+        assert!(app.dl.tabs_focused);
+        key(&mut app, KeyCode::Up);
+        assert!(app.layout.page_tabs_focused);
+        key(&mut app, KeyCode::Left);
+        assert_eq!(app.page, Page::Main);
+        key(&mut app, KeyCode::Down);
+        assert!(!app.layout.page_tabs_focused && app.layout.palette_menu_focused);
+        key(&mut app, KeyCode::Down);
+        assert!(!app.layout.palette_menu_focused && app.row_sel == 0);
+        // tabs at the bottom: up from the dropdown row goes nowhere
+        app.settings.layout.tabs = "bottom".into();
+        key(&mut app, KeyCode::Up);
+        key(&mut app, KeyCode::Up);
+        assert!(app.layout.palette_menu_focused && !app.layout.page_tabs_focused);
+        // a click anywhere takes the keyboard off the page tabs
+        app.layout.page_tabs_focused = true;
+        mouse(&mut app, MouseEventKind::Down(MouseButton::Left), 1, 1);
+        assert!(!app.layout.page_tabs_focused);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}

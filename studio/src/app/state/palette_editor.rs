@@ -205,3 +205,107 @@ impl PaletteEditor {
         false
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::startup::Start;
+    use crate::app::state::nav::Focus;
+    use crate::app::test_support::*;
+    use crate::model::color::Rgb;
+    use crate::model::palette::Palette;
+    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    #[test]
+    fn picker_edits_follow_through_derived_keys_and_undo() {
+        let mut app = test_app(temp_store("edit"), Start::Named("One".into()));
+        assert_eq!(app.key(), "bg0");
+        let grey_before = app.editor.palette.get("grey1");
+        // bg0: into the square, raise value a lot
+        press(&mut app, "\nKKK");
+        let bg = app.editor.palette.get("bg0");
+        assert_ne!(bg, Palette::blank().get("bg0"));
+        assert_ne!(
+            app.editor.palette.get("grey1"),
+            grey_before,
+            "grey1 follows bg0"
+        );
+        assert!(app.dirty());
+        // one undo step for the whole run of picker moves
+        press(&mut app, "u");
+        assert_eq!(app.editor.palette, Palette::blank());
+        press(&mut app, "\x18"); // not a binding: ignored
+        app.on_key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL));
+        assert_eq!(app.editor.palette.get("bg0"), bg);
+    }
+
+    #[test]
+    fn esc_discards_picker_changes_enter_keeps_them() {
+        let mut app = test_app(temp_store("discard"), Start::Named("One".into()));
+        let before = app.editor.palette.clone();
+        // edit bg0 in the square, then Esc: everything as it was, nothing to undo
+        press(&mut app, "\nKK");
+        assert_ne!(app.editor.palette, before);
+        assert_ne!(
+            app.editor.palette.get("grey1"),
+            before.get("grey1"),
+            "derived keys followed"
+        );
+        press(&mut app, "\x1b");
+        assert_eq!(app.editor.palette, before);
+        assert!(!app.dirty() && !app.layout.picker_visible);
+        assert!(
+            app.messages
+                .message
+                .as_ref()
+                .is_some_and(|(m, _)| m.contains("Discarded"))
+        );
+        press(&mut app, "u");
+        assert_eq!(
+            app.editor.palette, before,
+            "the discarded steps aren't undoable"
+        );
+        // the same edit, then Enter: kept (and undoable)
+        press(&mut app, "\nKK\n");
+        assert_ne!(app.editor.palette, before);
+        assert!(app.dirty() && app.focus == Focus::List);
+        let kept = app.editor.palette.clone();
+        // the hex box: Esc discards whatever the session changed
+        press(&mut app, "\nJ#abcdef");
+        press(&mut app, "\x1b");
+        assert_eq!(app.editor.palette, kept);
+        // only Enter keeps: every other way out of the picker discards
+        for leave in [" 4", " 1", " cp"] {
+            press(&mut app, "\nJ");
+            assert_ne!(app.editor.palette, kept);
+            press(&mut app, leave);
+            assert_eq!(app.editor.palette, kept, "left with {leave:?}");
+            press(&mut app, " 4");
+        }
+        // the hex box: Tab past the last control (back to the list) discards too
+        press(&mut app, "\n#abcdef\t");
+        assert_eq!(app.editor.palette, kept);
+    }
+
+    #[test]
+    fn editing_a_base_colour_moves_its_unpinned_derived_colours_live() {
+        let mut app = test_app(temp_store("live-derive"), Start::Named("One".into()));
+        let i = app.keys.iter().position(|k| *k == "red").unwrap();
+        app.select_key(i);
+        app.open_picker();
+        let before = app.editor.palette.get("bg_visual_red");
+        app.editor.palette.set("bg_diff_red", Rgb(1, 1, 1)); // pinned now
+        press(&mut app, "lll"); // in the picker, before Enter
+        assert!(app.editor.in_edit_session(), "not kept yet");
+        assert_ne!(
+            app.editor.palette.get("bg_visual_red"),
+            before,
+            "derived follows live"
+        );
+        assert_eq!(
+            app.editor.palette.get("bg_diff_red"),
+            Rgb(1, 1, 1),
+            "pinned stays"
+        );
+        std::fs::remove_dir_all(app.store.dir.clone()).unwrap();
+    }
+}
