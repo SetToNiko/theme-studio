@@ -1,7 +1,7 @@
 //! The live terminal behind the preview: the hidden programs and their draft palette.
 //!
-//! [`Preview`] starts nvim (your config), an interactive shell (starship) and yazi
-//! in hidden terminals ([`pane::Pane`]) and writes the draft palette to a colours
+//! [`crate::preview_term::Preview`] starts nvim (your config), an interactive shell (starship) and yazi
+//! in hidden terminals ([`crate::preview_term::pane::Pane`]) and writes the draft palette to a colours
 //! file that they read. `ui/desktop_preview.rs` draws their screens with the draft
 //! palette, so nothing has to be reloaded except nvim, which re-reads the draft
 //! colours file itself. The frame and click targets of the Preview pane are in

@@ -38,9 +38,9 @@
         # The package. Building the studio also runs its tests (cargo test).
         build = theme-studio;
 
-        # Formatting: rustfmt follows the `mod` lines from main.rs.
+        # Formatting: rustfmt follows the `mod` lines from lib.rs.
         fmt = pkgs.runCommand "theme-studio-fmt" { nativeBuildInputs = [ pkgs.rustfmt ]; } ''
-          rustfmt --check --edition 2024 ${./studio/src}/main.rs
+          rustfmt --check --edition 2024 ${./studio/src}/lib.rs ${./studio/src}/main.rs
           touch $out
         '';
 
