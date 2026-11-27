@@ -18,7 +18,8 @@ use crate::model::color::Rgb;
 use crate::model::palette::Palette;
 use crate::model::store::TerminalMap;
 use crate::preview_term::pane::{Pane, TermColors};
-use crate::preview_term::{PaneId, Preview};
+use crate::preview_term::preview::Preview;
+use crate::preview_term::types::PaneId;
 use crate::system::desktop::Roles;
 
 /// The i3 border of window `id`: the number and name on it, and the colour

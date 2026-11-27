@@ -18,7 +18,7 @@ use super::widgets::to_u16;
 use crate::app::App;
 use crate::app::state::hit::{BorderId, Target};
 use crate::app::state::nav::Page;
-use crate::preview_term::Mode as PreviewMode;
+use crate::preview_term::types::Mode as PreviewMode;
 
 /// The Main page: fonts, colour list, picker and preview, then the
 /// draggable borders between them.

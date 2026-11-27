@@ -7,7 +7,7 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
 use crate::app::state::nav::Page;
-use crate::preview_term::PaneId;
+use crate::preview_term::types::PaneId;
 
 /// Something on screen that a click can hit; the draw code records one per
 /// clickable area in the [`HitMap`].

@@ -1,7 +1,7 @@
 //! Tests of layout and messages: window sizes, panes, borders, number keys, status line, and toggles.
 
 use super::*;
-use crate::preview_term::PaneId;
+use crate::preview_term::types::PaneId;
 use std::time::Duration;
 
 #[test]
