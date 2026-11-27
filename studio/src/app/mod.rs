@@ -30,7 +30,7 @@ use anyhow::Result;
 pub type Term = ratatui::Terminal<ratatui::backend::CrosstermBackend<crate::system::out::Out>>;
 use ratatui::layout::Rect;
 
-use crate::fonts::FontsTab;
+use crate::fonts::tab::state::FontsTab;
 use crate::keymap::key::Key;
 use crate::keymap::map::Keymap;
 use crate::model::color::Rgb;
@@ -103,9 +103,9 @@ pub struct App {
     pub presets: Vec<Keymap>,
     pub settings: crate::config::settings::Settings,
     /// The Download fonts page.
-    pub dl: crate::fonts::download_page::DlPage,
+    pub dl: crate::fonts::pages::download::DlPage,
     /// The Fonts page's Tournament tab (made on first use).
-    pub tour_page: Option<crate::fonts::tournament_page::TourPage>,
+    pub tour_page: Option<crate::fonts::pages::tournament::TourPage>,
     /// The Settings page's tabs and selections.
     pub settings_page: crate::settings_page::SettingsPage,
     /// Keys of a sequence typed so far (e.g. the leader), waiting for the rest.
@@ -228,7 +228,7 @@ impl App {
             config_dir: config.dir.clone(),
             settings: config.settings.clone(),
             settings_page: crate::settings_page::SettingsPage::default(),
-            dl: crate::fonts::download_page::DlPage::default(),
+            dl: crate::fonts::pages::download::DlPage::default(),
             tour_page: None,
             pending_keys: Vec::new(),
             store,

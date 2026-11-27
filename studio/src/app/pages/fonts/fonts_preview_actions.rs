@@ -8,8 +8,8 @@
 
 use crate::app::App;
 use crate::app::state::nav::{Overlay, Page};
-use crate::fonts::download_page::{DlRow, DlTab, mb};
-use crate::fonts::preview_page::FontPreview;
+use crate::fonts::pages::download::{DlRow, DlTab, mb};
+use crate::fonts::pages::preview::FontPreview;
 use crate::keymap::action::Action;
 use crate::model::samples::langs::LANGS;
 use crate::model::samples::{self, KINDS, Kind};

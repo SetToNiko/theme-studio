@@ -107,7 +107,7 @@ impl App {
         at: ratatui::layout::Rect,
         k: KeyEvent,
     ) -> Option<Overlay> {
-        let last = crate::fonts::preview_page::menu_items(menu).len() - 1;
+        let last = crate::fonts::pages::preview::menu_items(menu).len() - 1;
         let ctrl = k.modifiers.contains(KeyModifiers::CONTROL);
         match k.code {
             KeyCode::Esc => return Some(Overlay::None),

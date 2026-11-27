@@ -1,5 +1,5 @@
-//! The Fonts page's Tournament tab (`fonts/`, next to `download_page.rs` and
-//! `preview_page.rs`).
+//! The Fonts page's Tournament tab (`fonts/pages/`, next to `download.rs` and
+//! `preview.rs`).
 //!
 //! It covers choosing a pool, fetching its previews,
 //! playing the matches, and the results (model/tournament.rs has the bracket).

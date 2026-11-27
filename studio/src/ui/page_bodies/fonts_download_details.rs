@@ -11,7 +11,7 @@ use serde_json::{Map, Value};
 use super::fonts_download::status_span;
 use crate::app::App;
 use crate::app::state::hit::{Target, hover};
-use crate::fonts::download_page::{DlRow, DlStatus, mb};
+use crate::fonts::pages::download::{DlRow, DlStatus, mb};
 use crate::system::download::types::{Entry, Source};
 use crate::ui::widgets::to_u16;
 

@@ -11,7 +11,7 @@ use std::time::Duration;
 )]
 fn download_page_lists_searches_and_removes() {
     use crate::app::state::hit::Target as T;
-    use crate::fonts::download_page::{DlRow, DlStatus, DlTab};
+    use crate::fonts::pages::download::{DlRow, DlStatus, DlTab};
     use crate::system::download::types::{Catalogue, Entry, Source};
     let store = temp_store("dl");
     let dir = store.dir.clone();
@@ -188,7 +188,7 @@ fn installed_fonts_preview_from_their_files() {
     )
     .unwrap();
     app.page = Page::Downloads;
-    app.dl.tab = crate::fonts::download_page::DlTab::Installed;
+    app.dl.tab = crate::fonts::pages::download::DlTab::Installed;
     app.dl.listed = None;
     app.dl.sel = 0;
     // the highlighted installed font is the preview's, with code by default
@@ -290,7 +290,7 @@ fn prefetching_keeps_the_main_loop_quick() {
 
 #[test]
 fn a_tournament_of_installed_fonts_from_setup_to_results() {
-    use crate::fonts::tournament_page::Stage;
+    use crate::fonts::pages::tournament::Stage;
     let store = temp_store("tournament");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));
@@ -305,7 +305,7 @@ fn a_tournament_of_installed_fonts_from_setup_to_results() {
         })
         .collect();
     app.page = Page::Downloads;
-    app.dl.tab = crate::fonts::download_page::DlTab::Tournament;
+    app.dl.tab = crate::fonts::pages::download::DlTab::Tournament;
     let screen = |app: &mut App| render(app, 160, 45);
     assert!(screen(&mut app).contains("Installed monospaced"));
     // the installed monospaced pool: what it takes, then it starts

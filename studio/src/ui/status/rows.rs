@@ -6,7 +6,7 @@
 use super::{Rows, hint, row_hints};
 use crate::app::App;
 use crate::app::state::nav::Focus;
-use crate::fonts::download_page::DlTab;
+use crate::fonts::pages::download::DlTab;
 use crate::fonts::types::{CHIPS, FontFocus};
 use crate::keymap::action::Action;
 use crate::keymap::action::Action as A;
@@ -38,7 +38,7 @@ pub(super) fn downloads_hints(app: &App) -> Vec<String> {
 /// The tournament rows: one list per stage, or the bracket view.
 // Long function (reason verified, phase 6): a pure data table: one key-hint list per tournament stage, plus the bracket view.
 pub(super) fn tournament_rows(app: &App) -> Rows<'static> {
-    use crate::fonts::tournament_page::Stage;
+    use crate::fonts::pages::tournament::Stage;
     let stage = app.tour_page.as_ref().map_or(Stage::Setup, |t| t.stage);
     let bracket = app.tour_page.as_ref().is_some_and(|t| t.bracket);
     match stage {

@@ -11,8 +11,8 @@ use std::path::PathBuf;
 
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Overlay, Page};
-use crate::fonts::download_page::DlTab;
-use crate::fonts::tournament_page::{POOLS, SIZES, SetupRow, Stage, TourPage};
+use crate::fonts::pages::download::DlTab;
+use crate::fonts::pages::tournament::{POOLS, SIZES, SetupRow, Stage, TourPage};
 use crate::keymap::action::Action;
 use crate::model::tournament::{self, Entrant, Tournament};
 use crate::system::download;

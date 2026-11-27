@@ -16,7 +16,7 @@ use super::fonts_download_preview::draw_preview;
 use super::rows::{RowLook, draw_selectable_row, follow, row_rect};
 use crate::app::App;
 use crate::app::state::hit::{Target, hover, hover_line, hover_row};
-use crate::fonts::download_page::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb};
+use crate::fonts::pages::download::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb};
 use crate::ui::truncate;
 use crate::ui::widgets::{to_u8, to_u16};
 
