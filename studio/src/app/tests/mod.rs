@@ -76,7 +76,7 @@ fn press(app: &mut App, keys: &str) {
 
 fn render(app: &mut App, w: u16, h: u16) -> String {
     let mut t = Terminal::new(TestBackend::new(w, h)).unwrap();
-    t.draw(|f| crate::ui::draw(f, app)).unwrap();
+    t.draw(|f| crate::ui::screen::frame::draw(f, app)).unwrap();
     let buf = t.backend().buffer().clone();
     (0..h)
         .map(|y| {

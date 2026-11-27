@@ -1,14 +1,16 @@
-//! Pane chrome shared by the pages: the border colour and the clickable title.
+//! Pane chrome shared by the pages: the border colour, the bordered block and
+//! the clickable title.
 //!
-//! Split from `widgets.rs` because these two helpers need `app` state
+//! Split from `widgets.rs` because these helpers need `app` state
 //! (keyboard focus, mouse hover, hit areas). `widgets.rs` must stay free of
 //! `app`: `desktop_preview.rs` uses it, and `app` uses `ui`, so a `widgets`
 //! to `app` edge would be a cycle (scripts/dev/module-cycles.py). Like
-//! `widgets.rs`, this file must NOT use `ui/mod.rs` or any page file.
+//! `widgets.rs`, this file must NOT use any page file.
 
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 use ratatui::text::Line;
+use ratatui::widgets::Block;
 
 use crate::app::App;
 use crate::app::state::hit::{Target, hover};
@@ -39,4 +41,11 @@ pub fn pane_title(app: &mut App, area: Rect, title: Line<'static>, pane: u8) -> 
     } else {
         title
     }
+}
+
+/// A bordered pane block with `title`; the border follows [`pane_border`].
+pub fn focused_block(app: &App, area: Rect, title: Line<'static>, focused: bool) -> Block<'static> {
+    Block::bordered()
+        .title(title)
+        .border_style(pane_border(app, area, focused))
 }

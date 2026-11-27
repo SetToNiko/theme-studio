@@ -161,7 +161,7 @@ fn run_in_terminal(mut app: App) -> Result<()> {
         ratatui_image::picker::Picker::from_query_stdio()
             .unwrap_or_else(|_| ratatui_image::picker::Picker::halfblocks()),
     );
-    let result = app.run(&mut terminal, ui::draw);
+    let result = app.run(&mut terminal, ui::screen::frame::draw);
     restore_terminal(enhanced);
     result
 }

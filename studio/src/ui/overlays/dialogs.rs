@@ -1,6 +1,6 @@
 //! Dialog overlays: help, the unsaved-changes box, save as, prompts, key lists and dropdowns.
 //!
-//! [`draw_overlay`] picks the drawing function for the overlay that is open.
+//! [`draw_overlay`](crate::ui::overlays::dialogs::draw_overlay) picks the drawing function for the overlay that is open.
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -8,14 +8,14 @@ use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
-use super::{centered, popup};
+use super::boxes::{centered, popup};
 use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::{Capture, Overlay, Pending};
 use crate::app::{App, open_matches};
 use crate::keymap::key::Key;
 use crate::model::color::Rgb;
 use crate::ui::widgets::to_u16;
-use crate::ui::{swatch, truncate};
+use crate::ui::widgets::{swatch, truncate};
 
 /// Draws the open overlay (if any), on top of the page.
 pub fn draw_overlay(f: &mut Frame, app: &mut App, area: Rect) {

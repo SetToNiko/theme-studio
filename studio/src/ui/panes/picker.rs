@@ -16,7 +16,7 @@ use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::{Focus, Side};
 use crate::model::color::{self, Rgb};
 use crate::model::palette;
-use crate::ui::focused_block;
+use crate::ui::pane_chrome::focused_block;
 use crate::ui::pane_chrome::pane_title;
 use crate::ui::widgets::{f64_to_u16, panel_number, to_u16};
 
