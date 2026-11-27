@@ -43,6 +43,10 @@ let
       ];
     };
     cargoLock.lockFile = studio + "/Cargo.lock";
+    # The check phase runs the tests with cargo-nextest. nextest does not run
+    # doc tests. Doc tests need a library target: a separate flake check runs
+    # them (docs/refactor-fixes/PLAN.md, step P1.3).
+    useNextest = true;
     # The data tests use studio/tests/fixtures in the sandbox. Tests that need
     # jq, ImageMagick, fontconfig, or a pty skip themselves there.
     meta.mainProgram = "theme-studio";

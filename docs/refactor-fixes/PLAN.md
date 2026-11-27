@@ -88,16 +88,16 @@ Each Rust step runs the checks for each change of the conventions, after P0.1. E
 
 ### Phase 0: Foundation and safety net
 - [x] P0.1 Dev tools: add the flake input `rust-overlay`. Add `cargo-nextest`, `cargo-mutants`, `cargo-fuzz`, `tokei`, and a nightly cargo only for `cargo +nightly fuzz` to the dev shell. | Wave: 1 | Depends: none | Owns: flake.nix, flake.lock | Target: criterion 9. | Check: each tool runs in `nix develop`. `nix flake check` passes.
-- [ ] P0.2 Gate tests: the package build runs `cargo nextest run`. A new check runs `cargo test --doc`. | Wave: 2 | Depends: P0.1 | Owns: flake.nix | Target: criterion 9. | Check: `nix flake check` passes. The test count stays 195.
+- [x] P0.2 Gate tests: the package build runs `cargo nextest run` (`useNextest`). The doc-test check moves to P1.3: a binary crate has no doc tests. | Wave: 2 | Depends: P0.1 | Owns: packaging/nix/package.nix | Target: criterion 9. | Check: `nix flake check` passes. nextest gives 191 passed, 4 skipped.
 - [ ] P0.3 Lines of code: `file-limits.sh` counts lines of code (no empty lines, no comment lines, no `/* */` lines) before the `#[cfg(test)]` module. Limit 500. | Wave: 3 | Depends: P0.1 | Owns: scripts/dev/file-limits.sh | Target: criterion 1. | Check: the count agrees with `tokei` for 5 sample files. `nix flake check` passes.
 - [ ] P0.4 Gate `mod-layout`: a script fails on a `mod.rs` with a bad line. A bad line is not empty, not a comment, and not a declaration. A declaration without `///` above it is also bad. A ratchet: the count of bad files must not increase (baseline 22, `docs/refactor/lint-baseline.txt`). | Wave: 4 | Depends: P0.1 | Owns: scripts/dev/mod-layout.sh, scripts/dev/lint-counts.sh, docs/refactor/lint-baseline.txt, flake.nix | Target: criterion 2. | Check: the script gives 22 now. `nix flake check` passes.
 - [ ] P0.5 Safety net for `main.rs`: tests for the argument handling (`-h`, `--help`, `--new`, `--fonts`, a name) and for `--init-config`, with a temporary HOME and `XDG_*`, with no `set_var`. | Wave: 5 | Depends: P0.2 | Owns: studio/src/main.rs | Target: correctness. | Check: the tests pass on the unchanged code.
 Completes: criterion 9 (tools part). The coordinator measures the Phase 0 baselines of SUCCESS_CRITERIA.md (rows 1, 2, 7) after P0.4.
 
 ### Phase 1: Library target
-- [ ] P1.1 Library: add `lib.rs` with the module declarations of `main.rs`, each with `///`. Move the argument handling, `--init-config`, and the start into `cli.rs` (`pub fn run`). `main.rs` calls `theme_studio::cli::run()`. The tests of P0.5 move with their functions. | Wave: 6 | Depends: P0.5 | Owns: studio/src/main.rs, studio/src/lib.rs, studio/src/cli.rs | Target: criteria 4, T3. | Check: `nix flake check` passes. The binary starts and `--help` gives the same text.
-- [ ] P1.2 Integration tests: `studio/tests/cli.rs` tests `cli` through its public API only. | Wave: 7 | Depends: P1.1 | Owns: studio/tests/cli.rs | Target: criterion 6. | Check: `cargo nextest run` passes.
-- [ ] P1.3 Gate `examples-doc`: a script fails when a `pub` item that `lib.rs` exports has no `# Examples`. Add `# Examples` with `?` to each public item of `cli`. | Wave: 7 | Depends: P1.1 | Owns: scripts/dev/examples-doc.sh, flake.nix, studio/src/cli.rs | Target: criterion 7, C-EXAMPLE. | Check: `cargo test --doc` passes. `nix flake check` passes.
+- [ ] P1.1 Library: add `lib.rs` with the module declarations of `main.rs`, each with `///`. Move the argument handling, `--init-config`, and the start into `cli.rs` (`pub fn run`). `main.rs` calls `theme_studio::cli::run()`. The tests of P0.5 move with their functions. The `fmt` gate formats `lib.rs` and `main.rs`. | Wave: 6 | Depends: P0.5 | Owns: studio/src/main.rs, studio/src/lib.rs, studio/src/cli.rs, flake.nix | Target: criteria 4, T3. | Check: `nix flake check` passes. The binary starts and `--help` gives the same text.
+- [ ] P1.2 Integration tests: `studio/tests/cli.rs` tests `cli` through its public API only. Add the `.rs` files of `studio/tests/` to the source set of the package. | Wave: 7 | Depends: P1.1 | Owns: studio/tests/cli.rs, packaging/nix/package.nix | Target: criterion 6. | Check: `cargo nextest run` passes.
+- [ ] P1.3 Gate `examples-doc`: a script fails when a `pub` item that `lib.rs` exports has no `# Examples`. Add `# Examples` with `?` to each public item of `cli`. Add a flake check that runs `cargo test --doc`. | Wave: 7 | Depends: P1.1 | Owns: scripts/dev/examples-doc.sh, flake.nix, studio/src/cli.rs | Target: criterion 7, C-EXAMPLE. | Check: `cargo test --doc` passes. `nix flake check` passes.
 Completes: criterion 4.
 
 ### Phase 2: `mod.rs` layout
@@ -160,6 +160,7 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 | Phase | Note | Decision | Reason |
 |---|---|---|---|
 | 0 | `cargo +nightly fuzz` needs rustup | The nightly toolchain and cargo-fuzz are in a separate dev shell `fuzz` | Nix has no rustup. The default shell keeps the rustc of nixpkgs. |
+| 0 | `cargo test --doc` fails in a binary crate ("no library targets") | P0.2 does nextest only. P1.3 adds the doc-test check. P1.1 changes the `fmt` gate. P1.2 adds `studio/tests/*.rs` to the package source. | The checks need `lib.rs`. The package source set had only `studio/tests/fixtures`. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
@@ -183,8 +184,9 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 ## 12. Shared files (parallel mode only)
 | File | Steps that change it | Rule |
 |---|---|---|
-| `flake.nix` | P0.1, P0.2, P0.4, P1.3 | each step is alone in its wave, or the only owner in its wave |
+| `flake.nix` | P0.1, P0.4, P1.1, P1.3 | each step is alone in its wave, or the only owner in its wave |
 | `lib.rs` | P1.1, P5.1 | one owner in each wave |
+| `packaging/nix/package.nix` | P0.2, P1.2 | one owner in each wave |
 | `app/mod.rs` | P2.8, P3.1, P3.9 | one owner in each wave |
 | `docs/refactor/lint-baseline.txt` | P0.4, each Phase 2 step, P3.9 | Phase 2 steps do not own it. Each step reports its new count. The coordinator writes the file after the merge of the wave. |
 | the `use` lines of the callers | each Phase 2 step | a step changes only the `use` lines of files outside `Owns`. The coordinator merges conflicts in `use` lines by hand (`kit:reference/parallel-rules.md`, section 6). |
