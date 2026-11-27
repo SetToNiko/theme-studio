@@ -30,6 +30,32 @@ that must pass, the rules, and a map of the modules for parallel work.
 To continue the open work on another machine, read
 [docs/refactor/HANDOFF.md](docs/refactor/HANDOFF.md): the state, the next steps, and the setup.
 
+## Refactor in progress
+
+A refactor runs on the branch `refactor/kit-rules`. It is not merged into
+`main` yet.
+
+- **State on 2026-11-27:** Phase 3 (test locations). Waves 1 to 13 are
+  merged. The next step is P3.11 (wave 14). It moves the last 9 tests out
+  of `studio/src/app/tests/`. P3.9 and the Phase 3 review come after it.
+- **Current state:** this note does not change with the refactor. The
+  plan on the branch, `docs/refactor-fixes/PLAN.md`, shows the current
+  state in its checked steps and its "Progress" table.
+
+To resume the refactor:
+
+```sh
+git fetch origin
+git switch refactor/kit-rules
+git pull
+claude    # start Claude Code in the project root
+```
+
+Then type `/refactor-kit` in the Claude Code session. The kit reads the
+plan and selects the next action. The kit needs the skills `refactor-kit`
+and `asd-ste100` in `~/.claude/skills/`. This repository does not
+include them.
+
 ## Install
 
 There are two ways to install Theme Studio. Both give you the commands
