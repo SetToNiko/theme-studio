@@ -31,6 +31,7 @@ pub struct Keymap {
 }
 
 impl Keymap {
+    /// Builds a keymap from (context, action, sequences) rows.
     ///
     /// # Errors
     /// Fails when one key sequence cannot be parsed (see `Key::parse_seq`).
