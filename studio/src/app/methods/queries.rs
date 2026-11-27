@@ -2,8 +2,8 @@
 
 use ratatui::layout::Rect;
 
-use super::app_state::App;
-use super::state::nav::Overlay;
+use crate::app::app_state::App;
+use crate::app::state::nav::Overlay;
 
 impl App {
     pub fn key(&self) -> &'static str {

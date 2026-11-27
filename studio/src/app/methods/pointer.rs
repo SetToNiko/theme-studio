@@ -2,12 +2,12 @@
 
 use std::io::Write;
 
-use super::app_state::App;
+use crate::app::app_state::App;
 
 impl App {
     /// The mouse pointer is a hand over anything clickable (OSC 22; Ghostty
     /// supports it, other terminals ignore it).
-    pub(super) fn update_pointer(&mut self) {
+    pub(in crate::app) fn update_pointer(&mut self) {
         let hand = self.hits.hovered().is_some();
         if hand != self.pointer_hand {
             self.pointer_hand = hand;

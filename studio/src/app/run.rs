@@ -17,7 +17,7 @@ use ratatui::crossterm::event::{
 use ratatui::crossterm::execute;
 
 use super::app_state::App;
-use super::pointer::set_pointer;
+use super::methods::pointer::set_pointer;
 use super::state::nav::Page;
 use crate::system;
 

@@ -1,11 +1,11 @@
 //! The font sample image: ask for a new one and show a finished one.
 
-use super::app_state::App;
+use crate::app::app_state::App;
 
 impl App {
     /// Asks for a new font sample when the fonts or colours changed, and
     /// shows a finished one.
-    pub(super) fn update_sample(&mut self) {
+    pub(in crate::app) fn update_sample(&mut self) {
         let fonts = self.fonts.shown_fonts();
         let sizes = [0, 1, 2].map(|r| self.fonts.effective_size(r, fonts[r].size));
         let markup =

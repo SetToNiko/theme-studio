@@ -1,7 +1,7 @@
 //! The `App` struct: the whole state of the studio.
 //!
 //! This file holds only the data. The methods of `App` are in the other files of this folder
-//! (`startup.rs`, `queries.rs`, `editing.rs`, and so on). Each of these files has its own
+//! (`startup.rs`, `methods/queries.rs`, `methods/editing.rs`, and so on). Each of these files has its own
 //! `impl App` block.
 
 use std::time::Instant;

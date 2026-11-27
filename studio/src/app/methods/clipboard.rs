@@ -2,11 +2,11 @@
 
 use std::io::Write;
 
-use super::app_state::App;
+use crate::app::app_state::App;
 
 impl App {
     /// Copies text to the system clipboard with OSC 52 (Ghostty supports it).
-    pub(super) fn copy(&mut self, text: &str) {
+    pub(in crate::app) fn copy(&mut self, text: &str) {
         let seq = format!(
             "\x1b]52;c;{}\x07",
             crate::model::encoding::base64(text.as_bytes())
