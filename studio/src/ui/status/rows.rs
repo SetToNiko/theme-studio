@@ -98,7 +98,7 @@ pub(super) fn settings_hints(app: &App) -> Vec<String> {
 /// The settings rows for the current tab.
 // Long function (reason verified, phase 6): a pure data table: one key-hint list per settings tab (the Keymaps tab has two).
 pub(super) fn settings_rows(app: &App) -> Rows<'static> {
-    use crate::settings_page::Tab;
+    use crate::settings_page::state::Tab;
     match app.settings_page.tab {
         Tab::Keymaps if app.settings_page.browse.is_some() => vec![
             (&[A::Down, A::Up], "presets"),

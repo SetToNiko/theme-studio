@@ -10,7 +10,8 @@ use crate::app::state::nav::{Capture, Deferred, Naming, Overlay};
 use crate::keymap::action::{Action, all_actions};
 use crate::keymap::key::{Key, display_seq};
 use crate::keymap::{context::Context, map::Keymap};
-use crate::settings_page::{KmRow, move_over};
+use crate::settings_page::rows::move_over;
+use crate::settings_page::state::KmRow;
 
 impl App {
     /// Keymaps tab rows: the preset, then each context's actions (those it

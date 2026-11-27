@@ -171,7 +171,7 @@ fn hover_look_is_configurable_and_pane_borders_light_up() {
     );
     // Behaviour tab: highlight on, in bg3; curly underline; bold text
     app.page = Page::Settings;
-    app.settings_page.tab = crate::settings_page::Tab::Behaviour;
+    app.settings_page.tab = crate::settings_page::state::Tab::Behaviour;
     let rows = behaviour_rows();
     let at = |r: BhRow| rows.iter().position(|x| *x == r).unwrap();
     app.settings_page.bh_sel = at(BhRow::Highlight(LookId::Hover));

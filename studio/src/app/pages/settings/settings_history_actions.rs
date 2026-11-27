@@ -15,7 +15,8 @@ use crate::app::state::steps::offset;
 use crate::keymap::action::Action;
 use crate::model::color::Rgb;
 use crate::model::history::{History, SnapshotInfo};
-use crate::settings_page::{Colours, DiffView, FILES, HistFocus, diff_lines};
+use crate::settings_page::diff::{Colours, DiffView, diff_lines};
+use crate::settings_page::state::{FILES, HistFocus};
 
 impl App {
     /// The selected file's versions (named first, then newest first);

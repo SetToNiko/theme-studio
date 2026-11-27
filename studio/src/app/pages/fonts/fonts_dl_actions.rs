@@ -191,7 +191,7 @@ impl App {
             .iter()
             .position(|(t, _)| *t == self.dl.tab)
             .unwrap_or(0);
-        self.dl.tab = DL_TABS[crate::settings_page::wrap(i, d, DL_TABS.len())].0;
+        self.dl.tab = DL_TABS[crate::settings_page::rows::wrap(i, d, DL_TABS.len())].0;
         // read the list again (it may have changed outside the studio)
         self.dl.listed = None;
         self.dl.sel = 0;
@@ -259,7 +259,7 @@ impl App {
             Action::Left | Action::Right if self.dl.tab == DlTab::Google => {
                 let d = if a == Action::Left { -1 } else { 1 };
                 self.dl.category =
-                    crate::settings_page::wrap(self.dl.category, d, CATEGORIES.len());
+                    crate::settings_page::rows::wrap(self.dl.category, d, CATEGORIES.len());
                 self.dl.sel = 0;
             }
             Action::Search => self.dl.searching = true,
@@ -267,7 +267,7 @@ impl App {
             Action::Delete => self.dl_remove(),
             Action::Back => self.page = Page::Main,
             _ => {
-                crate::settings_page::move_over(&mut self.dl.sel, &ok, a);
+                crate::settings_page::rows::move_over(&mut self.dl.sel, &ok, a);
             }
         }
     }

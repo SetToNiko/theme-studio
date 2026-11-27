@@ -15,7 +15,7 @@ use crate::keymap::action::Action;
 use crate::keymap::context::Context;
 use crate::keymap::key::display_seq;
 use crate::keymap::map::Keymap;
-use crate::settings_page::KmRow;
+use crate::settings_page::state::KmRow;
 use crate::ui::widgets::to_u16;
 /// Splits the tab area into the list and, when the width allows, the info column.
 fn split_keymaps_area(area: Rect) -> (Rect, Option<Rect>) {

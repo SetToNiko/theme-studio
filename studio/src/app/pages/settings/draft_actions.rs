@@ -74,21 +74,21 @@ impl App {
             return 0;
         };
         let live = self.live_as_draft();
-        let mut n = crate::settings_page::diff_lines(
+        let mut n = crate::settings_page::diff::diff_lines(
             &live.files()["settings"],
             &d.files()["settings"],
             false,
         )
         .iter()
-        .filter(|l| !matches!(l, crate::settings_page::DiffLine::Head { .. }))
+        .filter(|l| !matches!(l, crate::settings_page::diff::DiffLine::Head { .. }))
         .count();
-        n += crate::settings_page::diff_lines(
+        n += crate::settings_page::diff::diff_lines(
             &live.files()["keymaps"],
             &d.files()["keymaps"],
             false,
         )
         .iter()
-        .filter(|l| !matches!(l, crate::settings_page::DiffLine::Head { .. }))
+        .filter(|l| !matches!(l, crate::settings_page::diff::DiffLine::Head { .. }))
         .count();
         n.max(1)
     }
