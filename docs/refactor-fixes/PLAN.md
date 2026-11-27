@@ -175,7 +175,7 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 |---|---|
 | Plan | done |
 | Phase 0 safety net | done |
-| Phase 1 steps | open |
+| Phase 1 steps | done |
 | Phase 1 review | open |
 | Phase 2 steps | open |
 | Phase 2 review | open |
