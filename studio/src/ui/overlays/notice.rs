@@ -7,7 +7,7 @@ use ratatui::text::Line;
 use ratatui::widgets::{Block, Clear, Paragraph};
 
 use super::boxes::centered;
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::ui::widgets::to_u16;
 
 /// Draws the save notice in a box, when there is one.

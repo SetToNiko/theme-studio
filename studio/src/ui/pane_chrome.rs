@@ -12,7 +12,7 @@ use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::Block;
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Target, hover};
 use crate::ui::widgets::to_u16;
 

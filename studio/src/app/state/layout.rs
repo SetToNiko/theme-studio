@@ -1,8 +1,8 @@
 //! The window layout: pane sizes, draggable borders, and what is shown.
 //!
-//! [`Layout`] knows nothing about the rest of the studio (pages, palette,
+//! [`Layout`](crate::app::state::layout::Layout) knows nothing about the rest of the studio (pages, palette,
 //! fonts). It gets the focused pane's number as a parameter.
-//! [`App`](crate::app::App) calls it and then does the parts that need the rest of
+//! [`App`](crate::app::app_state::App) calls it and then does the parts that need the rest of
 //! the studio, such as moving the keyboard to another pane.
 
 use ratatui::layout::Rect;

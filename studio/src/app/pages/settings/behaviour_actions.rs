@@ -5,7 +5,7 @@
 //! `theme_keys`, `BhRow` helpers) stays in `settings_page/behaviour.rs`, which
 //! also tests these methods (it builds an `App`).
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{BhRow, Capture, Overlay};
 use crate::keymap::action::Action;
 use crate::model::palette::GROUPS;

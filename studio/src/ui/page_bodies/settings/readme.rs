@@ -6,7 +6,7 @@ use ratatui::style::{Color, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState};
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::Target;
 use crate::settings_page::readme::Doc;
 use crate::settings_page::state::SettingsPage;

@@ -9,7 +9,7 @@ use ratatui::widgets::{Block, Paragraph};
 
 use super::super::rows::{RowLook, draw_selectable_row, follow, row_rect};
 use super::values::{colour_span, value_spans};
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::Target;
 use crate::model::color::Rgb;
 use crate::model::history::SnapshotInfo;

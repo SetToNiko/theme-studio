@@ -9,9 +9,10 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
 use super::boxes::{centered, popup};
+use crate::app::app_state::App;
+use crate::app::persist::open_matches;
 use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::{Capture, Overlay, Pending};
-use crate::app::{App, open_matches};
 use crate::keymap::key::Key;
 use crate::model::color::Rgb;
 use crate::ui::widgets::to_u16;

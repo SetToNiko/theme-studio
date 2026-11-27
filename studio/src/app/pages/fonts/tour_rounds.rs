@@ -6,7 +6,7 @@
 //! for the same style). The set-up and fetching are in `tour_actions.rs`;
 //! `fonts/tournament_page.rs` keeps the tab's own data and the bracket is in `model/tournament.rs`.
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::fonts::pages::tournament::Stage;
 use crate::keymap::action::Action;
 use crate::model::samples::{self, Kind};

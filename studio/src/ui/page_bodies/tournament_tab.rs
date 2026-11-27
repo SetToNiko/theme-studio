@@ -7,7 +7,7 @@ use ratatui::style::{Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Target, cursor_line, hover_line};
 use crate::fonts::pages::tournament::{POOLS, SIZES, SetupRow, Stage};
 use crate::model::tournament::{Status, Tournament};

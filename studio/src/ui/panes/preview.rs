@@ -10,7 +10,7 @@ use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::Target;
 use crate::keymap::action::Action;
 use crate::keymap::context::Context;

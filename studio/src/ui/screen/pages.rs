@@ -10,7 +10,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{BorderId, Target};
 use crate::app::state::nav::Page;
 use crate::preview_term::types::Mode as PreviewMode;

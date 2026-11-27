@@ -1,8 +1,8 @@
 //! The status-line message, the save confirmation box, and the hover note.
 //!
-//! [`Messages`] holds what the user is told and when it goes away. It knows
+//! [`Messages`](crate::app::state::messages::Messages) holds what the user is told and when it goes away. It knows
 //! nothing about the rest of the studio. The settings it needs (how long a
-//! message stays) come in as parameters. [`App`](crate::app::App) calls it.
+//! message stays) come in as parameters. [`App`](crate::app::app_state::App) calls it.
 
 use std::time::{Duration, Instant};
 

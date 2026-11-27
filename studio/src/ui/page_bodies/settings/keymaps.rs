@@ -8,7 +8,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use super::super::rows::{RowLook, draw_selectable_row, follow, row_rect};
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::Target;
 use crate::keymap::action::Action;
 use crate::keymap::context::Context;

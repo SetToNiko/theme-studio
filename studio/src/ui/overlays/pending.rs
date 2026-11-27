@@ -6,7 +6,7 @@ use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::ui::widgets::to_u16;
 
 /// While a sequence is half typed (e.g. after the leader): what can follow.

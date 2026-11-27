@@ -1,7 +1,7 @@
 //! Tests of the Settings page: tabs, behaviour rows, keymap presets, the guide, and failed saves.
 
-use super::state::nav::Pending;
 use super::*;
+use crate::app::state::nav::Pending;
 use crate::keymap::action::Action;
 use crate::keymap::context::Context;
 use std::fmt::Write as _;

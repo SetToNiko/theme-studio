@@ -9,7 +9,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
 use super::{behaviour, history, keymaps, readme};
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::{Target, hover_line, hover_row};
 use crate::settings_page::state::{TABS, Tab};
 use crate::ui::widgets::{to_u8, to_u16};

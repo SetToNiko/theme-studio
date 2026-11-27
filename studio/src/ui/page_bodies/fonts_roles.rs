@@ -10,7 +10,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::hit::Target;
 use crate::fonts::presets::ROLE_USE;
 use crate::fonts::types::{ROLE_NAMES, ROLE_NEEDS};

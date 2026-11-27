@@ -2,16 +2,11 @@
 //!
 //! `main.rs` calls [`crate::cli::run`]. It does the job that the arguments name, or starts the terminal UI.
 
-use std::io::stdout;
-
 use anyhow::Result;
-use ratatui::crossterm::event::{
-    DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
-    KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
-};
-use ratatui::crossterm::execute;
 
-use crate::app::{self, App, Start, Term};
+use crate::app::app_state::App;
+use crate::app::run::{restore_terminal, setup_terminal};
+use crate::app::startup::Start;
 use crate::fonts::presets::FontStore;
 use crate::model::store::Store;
 use crate::model::theme::{Theme, ThemeStore};
@@ -164,44 +159,4 @@ fn run_in_terminal(mut app: App) -> Result<()> {
     let result = app.run(&mut terminal, ui::screen::frame::draw);
     restore_terminal(enhanced);
     result
-}
-
-/// Takes over the terminal: raw mode, the alternate screen, the mouse, and the paste events.
-///
-/// The second value is `true` when the terminal speaks the kitty keyboard protocol.
-/// [`restore_terminal`] needs it.
-///
-/// # Errors
-/// Fails when the terminal cannot be made, or the mouse and paste events cannot be turned on.
-fn setup_terminal() -> Result<(Term, bool)> {
-    // raw mode, the alternate screen and the panic hook; drawing goes
-    // through system::out::Out (for the hover underline styles)
-    drop(ratatui::init());
-    let terminal = ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(
-        system::out::Out::default(),
-    ))?;
-    execute!(stdout(), EnableMouseCapture, EnableBracketedPaste)?;
-    // The kitty keyboard protocol (Ghostty, kitty, foot, WezTerm…), so keys
-    // like Ctrl+Shift+Z, Ctrl+1 or Ctrl+I (not Tab) arrive as themselves.
-    let enhanced = ratatui::crossterm::terminal::supports_keyboard_enhancement().unwrap_or(false);
-    if enhanced {
-        let _ = execute!(
-            stdout(),
-            PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
-        );
-    }
-    Ok((terminal, enhanced))
-}
-
-/// Gives the terminal back to the shell: the mouse pointer, the key protocol, the events, and the
-/// screen.
-///
-/// `enhanced` is the second value of [`setup_terminal`].
-fn restore_terminal(enhanced: bool) {
-    app::set_pointer("default");
-    if enhanced {
-        let _ = execute!(stdout(), PopKeyboardEnhancementFlags);
-    }
-    let _ = execute!(stdout(), DisableMouseCapture, DisableBracketedPaste);
-    ratatui::restore();
 }

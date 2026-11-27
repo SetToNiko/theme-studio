@@ -14,7 +14,7 @@ use ratatui::widgets::Paragraph;
 use super::context::context_hints;
 use super::fit::fit_hints;
 use super::hint::{general_hints, hint};
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::keymap::action::Action as A;
 use crate::ui::screen::tabs::draw_tabs;
 use crate::ui::widgets::{to_u16, truncate};

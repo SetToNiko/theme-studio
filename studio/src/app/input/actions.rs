@@ -4,21 +4,22 @@
 //! in another file of the same crate. `app/mod.rs` has the other `App`
 //! methods and the struct itself.
 //!
-//! [`App::on_key`] is the entry point. It sends the key to `handle_key`,
+//! [`App::on_key`](crate::app::app_state::App::on_key) is the entry point. It sends the key to `handle_key`,
 //! which checks, in this order: the notice box, a focused preview window,
 //! Ctrl+C, the pop-ups, the text fields, and last the keymap. The keymap
-//! turns the keys into an [`Action`]. [`App::run_action`] then does what the
+//! turns the keys into an [`Action`](crate::keymap::action::Action)(crate::keymap::action::Action). [`App::run_action`](crate::app::app_state::App::run_action) then does what the
 //! action means. One `match` sends each action to the method of its group:
 //! the view (windows and panes), the theme files, the other pages, or the
 //! fonts column. What is left goes to the colours column (`run_colours`).
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
+use crate::app::app_state::App;
 use crate::app::state::nav::{ColourRow, Focus, For, Overlay, Page, Pending, Side};
-use crate::app::{App, PreviewMode};
 use crate::keymap::action::{Action, ActionGroup};
 use crate::keymap::key::Key;
 use crate::keymap::{context::Context, lookup::Lookup};
+use crate::preview_term::types::Mode as PreviewMode;
 
 impl App {
     pub(in crate::app) fn on_key(&mut self, k: KeyEvent) {

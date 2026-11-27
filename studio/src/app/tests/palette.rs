@@ -1,7 +1,7 @@
 //! Tests of palette editing: the picker, pinning, derived colours, and the palette list.
 
-use super::state::nav::{ColourRow, Pending};
 use super::*;
+use crate::app::state::nav::{ColourRow, Pending};
 
 #[test]
 fn picker_edits_follow_through_derived_keys_and_undo() {

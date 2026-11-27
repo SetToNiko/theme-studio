@@ -9,7 +9,7 @@
 //! page tabs focus, the keymap contexts that follow the focus, and the
 //! resize-mode keys (they move the borders of the focused pane).
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{Focus, Page, Side};
 use crate::app::state::steps::offset;
 use crate::keymap::action::{Action, ActionGroup};

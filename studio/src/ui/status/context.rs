@@ -2,7 +2,7 @@
 
 use super::hint::hint;
 use super::rows::{colours_hints, downloads_hints, fonts_hints, settings_hints};
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{Focus, Page, Side};
 use crate::fonts::types::FontFocus;
 use crate::keymap::action::Action as A;

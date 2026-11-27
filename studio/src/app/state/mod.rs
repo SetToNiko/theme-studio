@@ -7,9 +7,15 @@
 //! - `messages.rs`: the status and error messages that the UI shows.
 //! - `steps.rs`: index arithmetic for list cursors (no `as` casts).
 
+/// What is clickable where on screen.
 pub mod hit;
+/// Pane sizes, borders, and drag state.
 pub(super) mod layout;
+/// The status and error messages.
 pub(super) mod messages;
+/// Where the user is: page, focus, pop-up.
 pub mod nav;
+/// The palette being edited and its undo history.
 pub(super) mod palette_editor;
+/// Index arithmetic for list cursors.
 pub(super) mod steps;

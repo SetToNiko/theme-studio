@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use serde_json::Value;
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::Page;
 use crate::fonts::pages::download::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb, norm};
 use crate::keymap::action::Action;

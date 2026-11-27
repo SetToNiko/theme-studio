@@ -1,7 +1,7 @@
 //! The hint text: one hint from the keys of the active keymap, and the
 //! general hints that follow the hints of the control.
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::Page;
 use crate::keymap::action::Action;
 use crate::keymap::action::Action as A;

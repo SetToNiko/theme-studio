@@ -129,8 +129,8 @@ pub fn theme_keys() -> Vec<&'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::app::App;
-    use crate::app::Start;
+    use crate::app::app_state::App;
+    use crate::app::startup::Start;
     use crate::app::state::hit::Underline;
     use crate::app::state::nav::{Capture, Overlay};
     use crate::config::settings::{LookSettings, Settings};

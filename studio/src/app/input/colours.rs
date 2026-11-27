@@ -5,12 +5,12 @@
 //! methods and the struct itself.
 //!
 //! The colour list shows a row per group and a row per colour of the open
-//! groups ([`ColourRow`]). This file moves the list cursor, selects colours,
+//! groups ([`ColourRow`](crate::app::state::nav::ColourRow)). This file moves the list cursor, selects colours,
 //! and handles the keys and pasted text that type a hex colour.
 
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
-use crate::app::App;
+use crate::app::app_state::App;
 use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
 use crate::app::state::steps::{offset, to_i32, wrapped};
 use crate::keymap::action::Action;
