@@ -1,8 +1,15 @@
 //! Tests of font downloads and previews: the download page, installed fonts, prefetching, and the tournament.
 
-use super::*;
+use crate::app::app_state::App;
+use crate::app::startup::Start;
+use crate::app::state::nav::{Overlay, Page};
+use crate::app::test_support::*;
 use crate::keymap::context::Context;
+use crate::model::store::Store;
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
+use serde_json::Map;
 use std::time::Duration;
+use std::time::Instant;
 
 #[test]
 #[expect(

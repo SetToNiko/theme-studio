@@ -1,7 +1,10 @@
 //! Tests of the Fonts page: roles, families, presets, and sizes.
 
-use super::*;
+use crate::app::startup::Start;
 use crate::app::state::nav::Pending;
+use crate::app::state::nav::{Focus, Overlay, Side};
+use crate::app::test_support::*;
+use crate::model::store::to_jq_string;
 
 #[test]
 #[expect(

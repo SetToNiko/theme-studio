@@ -1,9 +1,18 @@
 //! Tests of the Settings page: tabs, behaviour rows, keymap presets, the guide, and failed saves.
 
-use super::*;
+use crate::app::app_state::App;
+use crate::app::startup::Start;
 use crate::app::state::nav::Pending;
+use crate::app::state::nav::{Overlay, Page};
+use crate::app::test_support::*;
 use crate::keymap::action::Action;
 use crate::keymap::context::Context;
+use crate::keymap::key::Key;
+use crate::model::color::Rgb;
+use crate::model::store::Store;
+use ratatui::Terminal;
+use ratatui::backend::TestBackend;
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
 use std::fmt::Write as _;
 
 #[test]

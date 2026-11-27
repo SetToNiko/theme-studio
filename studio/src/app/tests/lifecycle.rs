@@ -1,7 +1,15 @@
 //! Tests of the app lifecycle: saving, opening and forking themes, and quitting.
 
-use super::*;
+use crate::app::startup::Start;
 use crate::app::state::nav::Pending;
+use crate::app::state::nav::{Focus, Overlay, Side};
+use crate::app::test_support::*;
+use crate::keymap::map::Keymap;
+use crate::model::color::Rgb;
+use crate::model::palette::Palette;
+use crate::model::store::Store;
+use crate::model::theme::ThemeStore;
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 #[test]
 fn themes_save_open_and_fork() {
