@@ -138,6 +138,14 @@
           touch $out
         '';
 
+        # Folder size gate: no folder in studio/src with more than 10 modules
+        # (scripts/dev/folder-limit.sh). The self-test checks the count first.
+        folder-limit = pkgs.runCommand "theme-studio-folder-limit" { } ''
+          bash ${./scripts/dev/folder-limit.sh} --selftest
+          bash ${./scripts/dev/folder-limit.sh} ${./studio/src}
+          touch $out
+        '';
+
         # Golden-file tests of the switch scripts (tests/scripts/run.sh).
         # The tools are the ones that the tests link into their own PATH.
         scripts =
