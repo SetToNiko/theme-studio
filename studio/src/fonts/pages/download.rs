@@ -71,7 +71,7 @@ pub struct DlPage {
     /// The installed-fonts list as last read (None: read it again).
     pub(crate) listed: Option<serde_json::Map<String, Value>>,
     /// The preview pane (made on first use).
-    pub preview: Option<crate::fonts::preview_page::FontPreview>,
+    pub preview: Option<crate::fonts::pages::preview::FontPreview>,
     /// After this download (id), fill these roles from the family (a
     /// Nerd Font fetched for roles that had no fitting face).
     pub fill_after: Option<(String, String, Vec<usize>)>,

@@ -280,7 +280,7 @@ fn draw_ask(f: &mut Frame, app: &mut App, area: Rect, question: &str) {
 /// The dropdown list that hangs under the preview title text that opened it.
 fn draw_menu(f: &mut Frame, app: &mut App, area: Rect, menu: u8, sel: usize, at: Rect) {
     // hangs under the title text that opened it
-    let items = crate::fonts::preview_page::menu_items(menu);
+    let items = crate::fonts::pages::preview::menu_items(menu);
     let widest = items.iter().map(|s| s.chars().count()).max().unwrap_or(4);
     let w = (to_u16(widest) + 4).min(area.width);
     let h = (to_u16(items.len()) + 2).min(area.bottom().saturating_sub(at.y + 1));

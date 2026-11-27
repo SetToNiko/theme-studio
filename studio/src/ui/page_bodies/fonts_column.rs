@@ -15,7 +15,7 @@ use super::rows::follow;
 use crate::app::App;
 use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::Side;
-use crate::fonts::FontsTab;
+use crate::fonts::tab::state::FontsTab;
 use crate::fonts::types::{CHIPS, FontFocus, ROLE_NAMES, ROLE_NEEDS, Row};
 use crate::ui::pane_chrome::pane_title;
 use crate::ui::truncate;

@@ -13,7 +13,7 @@ use serde_json::Value;
 
 use crate::app::App;
 use crate::app::state::nav::Page;
-use crate::fonts::download_page::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb, norm};
+use crate::fonts::pages::download::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb, norm};
 use crate::keymap::action::Action;
 use crate::system::download;
 use crate::system::download::types::{Catalogue, Entry, Msg, Source};

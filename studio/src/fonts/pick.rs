@@ -6,8 +6,8 @@
 //! its fitting face. A pick sets `picked`, so the app saves and applies it
 //! straight away.
 
-use crate::fonts::FontsTab;
 use crate::fonts::filters::{NerdKind, Spacing};
+use crate::fonts::tab::state::FontsTab;
 use crate::fonts::types::{FontFocus, Installed, ROLE_NAMES, ROLE_NEEDS, Row, fits};
 
 /// Letters and digits only, lower case: how family names are compared.

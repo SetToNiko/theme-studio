@@ -30,7 +30,9 @@ fn preview_title(
     let label = KINDS
         .iter()
         .find(|(k, _)| *k == kind)
-        .map_or("README", |(_, l)| crate::fonts::preview_page::kind_label(l));
+        .map_or("README", |(_, l)| {
+            crate::fonts::pages::preview::kind_label(l)
+        });
     let mut menus = vec![(0u8, format!("{label} ▾"))];
     if kind == Kind::Code {
         menus.push((1, format!("{} ▾", LANGS[pv.lang].0)));

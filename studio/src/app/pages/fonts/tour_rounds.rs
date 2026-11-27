@@ -7,7 +7,7 @@
 //! `fonts/tournament_page.rs` keeps the tab's own data and the bracket is in `model/tournament.rs`.
 
 use crate::app::App;
-use crate::fonts::tournament_page::Stage;
+use crate::fonts::pages::tournament::Stage;
 use crate::keymap::action::Action;
 use crate::model::samples::{self, Kind};
 use crate::model::tournament::{self, Tournament};
