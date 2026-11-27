@@ -426,3 +426,101 @@ fn switch_tab(p: &mut SettingsPage, d: i32) {
     let i = TABS.iter().position(|(t, _)| *t == p.tab).unwrap_or(0);
     p.tab = TABS[wrap(i, d, TABS.len())].0;
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::startup::Start;
+    use crate::app::state::nav::Page;
+    use crate::app::test_support::*;
+    use std::fmt::Write as _;
+
+    #[test]
+    fn settings_tabs_take_the_keyboard_at_the_list_edge() {
+        let store = temp_store("tab-focus");
+        let dir = store.dir.clone();
+        crate::model::history::init_for_test(dir.join("history"));
+        let mut app = test_app(store, Start::Named("One".into()));
+        app.page = Page::Settings;
+        // top (the default): up from the first row reaches the tabs
+        press(&mut app, "k");
+        assert!(app.settings_page.tabs_focused);
+        press(&mut app, "l");
+        assert_eq!(
+            app.settings_page.tab,
+            crate::settings_page::state::Tab::Behaviour
+        );
+        assert!(render(&mut app, 160, 45).contains("back to the list"));
+        press(&mut app, "j");
+        assert!(!app.settings_page.tabs_focused);
+        // the first row is the first group's title (groups fold open / shut)
+        assert_eq!(
+            crate::settings_page::behaviour::behaviour_rows()[app.settings_page.bh_sel],
+            crate::app::state::nav::BhRow::Header("Keys")
+        );
+        press(&mut app, "jk");
+        assert!(!app.settings_page.tabs_focused);
+        // tabs at the bottom: down from the last row reaches them
+        app.settings.layout.inner_tabs = "bottom".into();
+        press(&mut app, "G");
+        assert!(!app.settings_page.tabs_focused);
+        press(&mut app, "j");
+        assert!(app.settings_page.tabs_focused);
+        press(&mut app, "l");
+        assert_eq!(
+            app.settings_page.tab,
+            crate::settings_page::state::Tab::History
+        );
+        press(&mut app, "k");
+        assert!(!app.settings_page.tabs_focused);
+        let screen = render(&mut app, 160, 45);
+        let lines: Vec<&str> = screen.lines().collect();
+        assert!(
+            lines[lines.len() - 3].contains("Keymaps"),
+            "tabs at the bottom:\n{screen}"
+        );
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn the_readme_tab_renders_scrolls_and_jumps_between_headings() {
+        let store = temp_store("readme");
+        let dir = store.dir.clone();
+        let mut app = test_app(store, Start::Named("One".into()));
+        // the guide isn't next to the temp configs: give the tab its text
+        let mut md = String::from("# Guide\n\nFirst part.\n\n");
+        for i in 0..60 {
+            writeln!(md, "- line {i}").unwrap();
+        }
+        md += "\n## Second\n\n| a | b |\n| - | - |\n| `x` | y |\n";
+        app.settings_page.readme = Some((None, Ok(md)));
+        app.page = Page::Settings;
+        press(&mut app, "]]]");
+        assert_eq!(
+            app.settings_page.tab,
+            crate::settings_page::state::Tab::Readme
+        );
+        let screen = render(&mut app, 120, 30);
+        assert!(
+            screen.contains("README") && screen.contains("Guide") && screen.contains("• line 0"),
+            "{screen}"
+        );
+        assert!(
+            screen.contains("} /{ headings") || screen.contains("}/{ headings"),
+            "{screen}"
+        );
+        press(&mut app, "}");
+        let second = app.settings_page.readme_scroll;
+        assert!(second > 60);
+        let screen = render(&mut app, 120, 30);
+        assert!(
+            screen.lines().nth(3).is_some_and(|l| l.contains("Second")),
+            "{screen}"
+        );
+        press(&mut app, "{");
+        assert_eq!(app.settings_page.readme_scroll, 0);
+        // at the top, up goes on to the tab strip
+        press(&mut app, "k");
+        assert!(app.settings_page.tabs_focused);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}

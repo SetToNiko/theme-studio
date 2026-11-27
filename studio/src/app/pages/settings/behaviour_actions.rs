@@ -308,3 +308,138 @@ fn cycle(cur: &str, opts: &[&str], d: i32) -> String {
     let i = opts.iter().position(|o| *o == cur).unwrap_or(0);
     opts[wrap(i, d, opts.len())].to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::app_state::App;
+    use crate::app::startup::Start;
+    use crate::app::state::nav::{Overlay, Page};
+    use crate::app::test_support::*;
+    use crate::keymap::action::Action;
+
+    #[test]
+    fn settings_behaviour_tab_edits_then_saves() {
+        use crate::app::state::nav::BhRow;
+        use crate::settings_page::behaviour::behaviour_rows;
+        let store = temp_store("settings-behaviour");
+        let dir = store.dir.clone();
+        crate::model::history::init_for_test(dir.join("history"));
+        let mut app = test_app(store, Start::Named("One".into()));
+        app.page = Page::Settings;
+        render(&mut app, 160, 45);
+        click_on(&mut app, crate::app::state::hit::Target::SettingsTab(1));
+        let screen = render(&mut app, 160, 45);
+        assert!(
+            screen.contains("Page tabs") && screen.contains("‹ bottom ›"),
+            "{screen}"
+        );
+        let rows = behaviour_rows();
+        let on_disk =
+            |dir: &std::path::Path| crate::config::load::load(&dir.join("studio-config"), false);
+        app.settings_page.bh_sel = rows.iter().position(|r| *r == BhRow::Tabs).unwrap();
+        press(&mut app, "l");
+        assert_eq!(app.show_draft(|a| a.settings.layout.tabs.clone()), "top");
+        assert_eq!(app.settings.layout.tabs, "bottom", "not live yet");
+        // changing it back leaves nothing unsaved
+        render(&mut app, 160, 45);
+        let i = app.settings_page.bh_sel;
+        click_on(&mut app, crate::app::state::hit::Target::SettingsRow(i));
+        assert!(app.settings_page.draft.is_none());
+        // again, then the Save button
+        press(&mut app, "l");
+        render(&mut app, 160, 45);
+        click_on(
+            &mut app,
+            crate::app::state::hit::Target::SettingsButton('s'),
+        );
+        assert_eq!(app.settings.layout.tabs, "top");
+        assert_eq!(on_disk(&dir).settings.layout.tabs, "top");
+        // the current pane sizes become the default when saved
+        app.layout.sizes.fonts_width = 0.4;
+        app.settings_page.bh_sel = rows.iter().position(|r| *r == BhRow::SaveSizes).unwrap();
+        press(&mut app, "\ns");
+        assert_eq!(on_disk(&dir).settings.layout.sizes.fonts_width, 0.4);
+        // the Discard button drops changes
+        app.settings_page.bh_sel = rows.iter().position(|r| *r == BhRow::Tabs).unwrap();
+        press(&mut app, "l");
+        render(&mut app, 160, 45);
+        click_on(
+            &mut app,
+            crate::app::state::hit::Target::SettingsButton('d'),
+        );
+        assert!(app.settings_page.draft.is_none());
+        assert_eq!(app.settings.layout.tabs, "top");
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn behaviour_tab_sets_up_prefetching() {
+        use crate::app::state::nav::BhRow;
+        use crate::settings_page::behaviour::behaviour_rows;
+        let store = temp_store("prefetch-rows");
+        let dir = store.dir.clone();
+        let mut app = test_app(store, Start::Named("One".into()));
+        app.settings_page.bh_closed.clear();
+        let at = |r: BhRow| behaviour_rows().iter().position(|x| *x == r).unwrap();
+        let run = |app: &mut App, r: BhRow| {
+            app.with_draft(|a| {
+                a.settings_page.bh_sel = at(r);
+                a.run_behaviour_tab(Action::Confirm);
+            });
+        };
+        // prefetching: off by default, monospace chosen; edits wait for Save
+        assert!(!app.settings.fonts_page.prefetch);
+        run(&mut app, BhRow::Prefetch);
+        run(&mut app, BhRow::PrefetchCategory(5));
+        assert!(!app.settings.fonts_page.prefetch, "not live before Save");
+        app.settings_save();
+        assert!(app.settings.fonts_page.prefetch);
+        assert_eq!(
+            app.settings.fonts_page.prefetch_categories,
+            ["monospace", "nerd font"]
+        );
+        // with the catalogue, each category shows what it takes
+        let nerd = crate::system::download::types::Source::Nerd {
+            asset: "Hack".into(),
+            url: String::new(),
+            size: 40_000_000,
+        };
+        let mut hack = crate::system::download::types::Entry {
+            id: "hack".into(),
+            family: "Hack".into(),
+            category: "nerd font".into(),
+            license: String::new(),
+            weights: vec![400],
+            italic: false,
+            variable: false,
+            source: nerd,
+            subset: "latin".into(),
+        };
+        app.dl.catalogue = Some(crate::system::download::types::Catalogue {
+            nerd: vec![hack.clone()],
+            ..Default::default()
+        });
+        assert_eq!(
+            app.behaviour_value(BhRow::PrefetchCategory(5)),
+            "yes  (1 font: 40.0 MB to fetch, about 2.5 MB kept)"
+        );
+        hack.category = "monospace".into();
+        hack.source = crate::system::download::types::Source::Google;
+        app.dl.catalogue.as_mut().unwrap().google = vec![hack];
+        assert_eq!(
+            app.behaviour_value(BhRow::PrefetchCategory(0)),
+            "yes  (1 font, about 100 KB)"
+        );
+        // Clear asks first (the answer isn't given here: it would delete
+        // the real folder)
+        run(&mut app, BhRow::ClearPreviews);
+        assert!(matches!(
+            app.overlay,
+            Overlay::Ask {
+                then: crate::app::state::nav::Deferred::ClearPreviews,
+                ..
+            }
+        ));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
