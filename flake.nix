@@ -100,8 +100,9 @@
         '';
 
         # Doc gate: each function that returns Result has a `# Errors` section
-        # (scripts/dev/errors-doc.sh).
+        # (scripts/dev/errors-doc.sh). The self-test checks the script first.
         errors-doc = pkgs.runCommand "theme-studio-errors-doc" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          bash ${./scripts/dev/errors-doc.sh} --selftest
           bash ${./scripts/dev/errors-doc.sh} ${./studio/src}
           touch $out
         '';
@@ -121,8 +122,10 @@
         });
 
         # Examples gate: each pub item that lib.rs exports has a `# Examples`
-        # section (scripts/dev/examples-doc.sh).
+        # section (scripts/dev/examples-doc.sh). The self-test checks the script
+        # first.
         examples-doc = pkgs.runCommand "theme-studio-examples-doc" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          bash ${./scripts/dev/examples-doc.sh} --selftest
           bash ${./scripts/dev/examples-doc.sh} ${./studio/src}
           touch $out
         '';
