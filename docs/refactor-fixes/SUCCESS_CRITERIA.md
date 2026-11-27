@@ -4,7 +4,7 @@
 
 | # | Criterion | Measure command | Baseline | Target |
 |---|---|---|---|---|
-| 1 | `file-limits.sh` counts lines of code | Compare the count of `scripts/dev/file-limits.sh` with `tokei` (Code column) for each file in `studio/src/`. | The gate counts all lines. 114 of 114 files differ. Example: `app/input/actions.rs` has 474 lines and 391 lines of code. `tokei`: Phase 0. | 0 files differ |
+| 1 | `file-limits.sh` counts lines of code | `scripts/dev/file-limits.sh --selftest`, and `--list` against `tokei` as a cross-check | The gate counted all lines (example: `app/input/actions.rs`, 474 lines, 391 lines of code). Phase 0 (P0.3): the self-test passes. The count agrees with `tokei` on 104 of 114 files. The 10 other files have char literals such as `'"'`, which `tokei` misreads. | the self-test passes in the gate |
 | 2 | Each `mod.rs` holds only declarations, each with `///` | The gate `mod-layout` (Phase 0). Now: a `grep` for lines that are not empty, not a comment, and not a `mod` declaration. | 12 of 22 files have other lines. 22 of 22 files have a declaration without `///`. | 0 of 22 |
 | 3 | The smallest visibility | `grep -rE '^\s*pub (fn\|struct\|enum\|trait\|const\|static\|type\|mod) ' studio/src \| wc -l` | 656 `pub` items. No library API. | Only the library API is `pub`. The plan sets the number. |
 | 4 | Library target | `test -f studio/src/lib.rs` | no | yes. `main.rs` uses only the library. |

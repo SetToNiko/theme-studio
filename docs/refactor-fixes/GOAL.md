@@ -9,7 +9,7 @@ After this refactor, Theme Studio obeys the new rules of the refactor kit. The n
 The kit changed after the first refactor (kit commits `bca1c95`, `06de00d`, `8271127`). Each next refactor must obey the new rules, and agents must not fix the layout in each step. Now 12 of 22 `mod.rs` files hold code (`keymap/mod.rs`: 650 lines), and the crate has no library target.
 
 ## Success criteria
-1. `scripts/dev/file-limits.sh` counts lines of code only. Empty lines and comment lines do not count. Its count agrees with `tokei` (Code column) for each file.
+1. `scripts/dev/file-limits.sh` counts lines of code only. Empty lines and comment lines do not count. The gate runs its self-test: a sample with each difficult case. `tokei` is a cross-check only, because it misreads Rust char literals.
 2. Each `mod.rs` holds only a `//!` header and module declarations, with a `///` comment on each declaration. A gate in `nix flake check` checks it.
 3. Each module and item has the smallest visibility that works. `pub` is only on the API of the library target.
 4. `studio/src/lib.rs` exists. `main.rs` uses only the library.

@@ -96,9 +96,10 @@
           touch $out
         '';
 
-        # File size gate: no .rs file over 500 production lines
-        # (scripts/dev/file-limits.sh).
+        # File size gate: no .rs file over 500 production lines of code
+        # (scripts/dev/file-limits.sh). The self-test checks the count first.
         file-limits = pkgs.runCommand "theme-studio-file-limits" { } ''
+          bash ${./scripts/dev/file-limits.sh} --selftest
           bash ${./scripts/dev/file-limits.sh} ${./studio/src}
           touch $out
         '';
