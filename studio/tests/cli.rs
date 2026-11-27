@@ -1,8 +1,10 @@
-//! Characterization tests for the command line of the `theme-studio` binary.
+//! Tests for the public API of `theme_studio::cli`.
 //!
-//! Each test runs the real binary with `std::process::Command`. It tests only
-//! the arguments that end before the terminal starts: `-h`, `--help`,
-//! `--init-config`, and a name that the studio cannot load.
+//! The binary `theme-studio` only calls [`theme_studio::cli::run`]. Each test
+//! runs the real binary with `std::process::Command`, because `run` reads the
+//! process arguments and the process environment. It tests only the arguments
+//! that end before the terminal starts: `-h`, `--help`, `--init-config`, and a
+//! name that the studio cannot load.
 //! The tests record the CURRENT behaviour, also where it looks incorrect.
 //!
 //! Safety: each run gets its own temporary folder. The folder holds `HOME`, the
@@ -148,6 +150,11 @@ fn read(path: &Path) -> String {
 }
 
 #[test]
+fn run_has_the_signature_of_a_function_that_returns_a_result() {
+    let _: fn() -> anyhow::Result<()> = theme_studio::cli::run;
+}
+
+#[test]
 fn short_help_flag_prints_usage_and_exits_zero() {
     let sb = Sandbox::new();
     let run = sb.run(&["-h"]);
@@ -190,7 +197,7 @@ fn help_after_the_fonts_flag_still_prints_usage() {
 
 #[test]
 fn help_is_ignored_when_it_is_not_the_first_argument() {
-    // INCORRECT BEHAVIOUR (studio/src/main.rs:64): only the first argument is
+    // INCORRECT BEHAVIOUR (studio/src/cli.rs, in `run`): only the first argument is
     // tested for `--help`. `theme-studio nosuch --help` treats `nosuch` as a name.
     let sb = Sandbox::new();
     sb.copy_fixtures();
@@ -350,7 +357,7 @@ fn unknown_name_fails_with_an_error_and_exit_code_one() {
 
 #[test]
 fn unknown_option_is_taken_as_a_name() {
-    // INCORRECT BEHAVIOUR (studio/src/main.rs:121): an argument that starts with
+    // INCORRECT BEHAVIOUR (studio/src/cli.rs, in `run`): an argument that starts with
     // `--` but is not known is looked up as a palette name. The error does not
     // say that the option is unknown.
     let sb = Sandbox::new();
