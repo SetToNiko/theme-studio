@@ -145,7 +145,7 @@ impl App {
         App::with_config(
             store,
             start,
-            crate::config::load(&crate::model::paths::studio_config_dir(), true),
+            crate::config::load::load(&crate::model::paths::studio_config_dir(), true),
         )
     }
 
@@ -155,7 +155,11 @@ impl App {
     /// # Errors
     /// Fails when a palette named on the command line cannot be loaded and no
     /// theme has that name either.
-    pub fn with_config(store: Store, start: Start, config: crate::config::Loaded) -> Result<App> {
+    pub fn with_config(
+        store: Store,
+        start: Start,
+        config: crate::config::load::Loaded,
+    ) -> Result<App> {
         let active = Store::active_name();
         let system_palette = active.as_ref().and_then(|n| store.load(n).ok());
         // a name on the command line: a theme, or a palette
@@ -179,7 +183,7 @@ impl App {
         (name, palette, is_new): (String, Palette, bool),
         active: Option<String>,
         system_palette: Option<Palette>,
-        config: crate::config::Loaded,
+        config: crate::config::load::Loaded,
     ) -> App {
         let terminal = store.terminal_map().ok();
         let preview = Preview::new(&store.desktop);

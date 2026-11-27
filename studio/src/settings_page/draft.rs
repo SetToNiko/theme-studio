@@ -30,7 +30,7 @@ pub fn keymaps_value(presets: &[Keymap], active: &str) -> Value {
     let mut m = Map::new();
     m.insert(
         "version".into(),
-        Value::from(crate::config::KEYMAPS_VERSION),
+        Value::from(crate::config::keymaps_file::KEYMAPS_VERSION),
     );
     m.insert("active".into(), Value::String(active.to_string()));
     m.insert("presets".into(), Value::Object(obj));
@@ -71,7 +71,7 @@ mod tests {
         // saving records history: keep it in the temp folder
         crate::model::history::init_for_test(dir.join("history"));
         let config_dir = dir.join("studio-config");
-        let config = crate::config::Loaded {
+        let config = crate::config::load::Loaded {
             keymap: Keymap::vim(),
             presets: Keymap::builtin(),
             settings: Settings::default(),
@@ -101,7 +101,10 @@ mod tests {
     fn keymaps_value_lists_version_active_name_and_each_preset() {
         let presets = Keymap::builtin();
         let v = keymaps_value(&presets, "vim");
-        assert_eq!(v["version"], Value::from(crate::config::KEYMAPS_VERSION));
+        assert_eq!(
+            v["version"],
+            Value::from(crate::config::keymaps_file::KEYMAPS_VERSION)
+        );
         assert_eq!(v["active"], "vim");
         let obj = v["presets"].as_object().unwrap();
         assert_eq!(obj.len(), presets.len());
@@ -214,7 +217,7 @@ mod tests {
         assert!(dir.join("settings.json").exists());
         // the keymaps did not change: keymaps.json is not written
         assert!(!dir.join("keymaps.json").exists());
-        let loaded = crate::config::load(&dir, false);
+        let loaded = crate::config::load::load(&dir, false);
         assert_eq!(loaded.settings.font_list.hide_bitmap, want);
         assert_eq!(
             app.messages.message,
@@ -233,7 +236,7 @@ mod tests {
         assert!(dir.join("keymaps.json").exists());
         assert!(!dir.join("settings.json").exists());
         assert_eq!(app.keymap.leader, comma);
-        assert_eq!(crate::config::load(&dir, false).keymap.leader, comma);
+        assert_eq!(crate::config::load::load(&dir, false).keymap.leader, comma);
     }
 
     #[test]

@@ -93,7 +93,7 @@ pub fn run() -> Result<()> {
 /// A problem with one file prints a warning and does not stop the other files.
 fn init_config() {
     let dir = model::paths::studio_config_dir();
-    let loaded = config::load(&dir, true);
+    let loaded = config::load::load(&dir, true);
     // palettes.json / fonts.json to their current file formats too
     let store = Store::locate();
     let fonts = FontStore {

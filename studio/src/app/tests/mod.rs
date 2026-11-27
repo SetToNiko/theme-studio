@@ -49,7 +49,7 @@ fn temp_store(tag: &str) -> Store {
 /// An app whose preview never starts nvim, the shell or yazi.
 fn test_app(store: Store, start: Start) -> App {
     // the shipped defaults, never your ~/.config/theme-studio
-    let config = crate::config::Loaded {
+    let config = crate::config::load::Loaded {
         keymap: Keymap::vim(),
         presets: Keymap::builtin(),
         settings: crate::config::settings::Settings::default(),

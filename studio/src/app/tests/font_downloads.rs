@@ -367,7 +367,7 @@ fn studio_applies_fonts_like_font_switch() {
         store.dir.display(),
         store.share.display()
     );
-    let config = crate::config::load(&crate::model::paths::studio_config_dir(), false);
+    let config = crate::config::load::load(&crate::model::paths::studio_config_dir(), false);
     let mut app = App::with_config(store, Start::Active, config).unwrap();
     app.preview.set_headless();
     app.fonts.refresh_installed();

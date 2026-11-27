@@ -138,7 +138,8 @@ impl App {
             }
         }
         if before["settings"] != after["settings"]
-            && let Err(e) = crate::config::save_settings(&self.config_dir, &self.settings)
+            && let Err(e) =
+                crate::config::settings_file::save_settings(&self.config_dir, &self.settings)
         {
             errors.push(format!("settings.json: {e:#}"));
         }
