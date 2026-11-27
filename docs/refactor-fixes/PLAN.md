@@ -76,7 +76,7 @@ Advanced techniques that the refactor adds:
 | 16 | `ARCHITECTURE.md` lines 58, 111, 192, `CONTRIBUTING.md` lines 140, 232, 328 | the documents name `preview_term/mod.rs`. After P2.3, the code of that file is in `preview.rs`, `types.rs`, `bar.rs`, and `drafts.rs`. | documentation | L |
 | 17 | `ARCHITECTURE.md` lines 107, 183, 440, 522, 524, 534, 623, `CONTRIBUTING.md` line 235, `docs/refactor/BEFORE_AFTER.md` lines 34, 37, 38, 40, 49, 89, 90, 95, 111, the `//!` and `///` comments of `ui/page_bodies/fonts_download_preview.rs`, `ui/page_bodies/tournament_tab.rs`, and 7 files in `app/pages/` | the texts name `config/mod.rs`, `settings_page/mod.rs`, and `fonts/{download,preview,tournament}_page.rs`. After wave 9, this code is in the child modules of `config/`, `settings_page/`, `fonts/tab/`, and `fonts/pages/`. | documentation | L |
 | 18 | `app/mod.rs` lines 14 and 51 (the `//!` header) | the text names `ui::draw`. After P2.7, the function is `ui::screen::frame::draw`. P2.8 owns the file. | documentation | L |
-| 19 | `ARCHITECTURE.md` lines 31, 32, 49, 56, 221, 240, 474, 526, 563, 615, 617, 637, `CONTRIBUTING.md` lines 133, 168, 182, 245, 262, 330 | the texts name `ui::draw`. They also name `app/mod.rs` for `App`, `set_hsv`, `build`, `migrate_files`, the pointer, and the clipboard. After wave 11, this code is in `app/app_state.rs`, `app/editing.rs`, `app/startup.rs`, `app/pointer.rs`, `app/clipboard.rs`, and `ui::screen::frame::draw`. The file lists do not name the new files of `app/`. | documentation | L |
+| 19 | `ARCHITECTURE.md` lines 31, 32, 49, 56, 221, 240, 474, 526, 563, 615, 617, 637, `CONTRIBUTING.md` lines 133, 168, 182, 245, 262, 330 | the texts name `ui::draw`. They also name `app/mod.rs` for `App`, `set_hsv`, `build`, `migrate_files`, the pointer, and the clipboard. After wave 11, this code is in `app/app_state.rs`, `app/methods/editing.rs`, `app/startup.rs`, `app/methods/pointer.rs`, `app/methods/clipboard.rs`, and `ui::screen::frame::draw`. The file lists do not name the new files of `app/`. | documentation | L |
 
 Findings 6 to 10 are in scope only when a step already changes the file (GOAL.md, scope).
 
@@ -164,6 +164,13 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 
 ## 9. Architecture notes (pending)
 <!-- The review action adds notes here. The revise action processes them. -->
+- Phase 2 | Add a gate `folder-limit`: 10 modules or fewer in each folder, `mod.rs` not counted. The gate skips data folders such as `model/samples/code/`. No gate found the 12 modules of `app/` after P2.8. | more modular | `scripts/dev/`, `flake.nix` | S | before P3.1, or P3.9
+- Phase 2 | `keymap/action.rs` (lines 117, 262, 266) uses `crate::fonts::types::{CHIPS, ROLE_NAMES}`, and `fonts` depends on `keymap`. This is a cycle, and the `cycles` gate does not find it. Move the 2 constants into `keymap` or `model`. Examine `scripts/dev/module-cycles.py`: it possibly reads only `use` lines. | more modular | `keymap/`, `fonts/types.rs`, `scripts/dev/module-cycles.py` | S | P4.3, P4.4
+- Phase 2 | `settings_page/behaviour.rs:7` and `settings_page/keymap_presets.rs:13` import `crate::app::state::{nav, hit}`. A feature folder must not depend on `app`. Move the shared types (`BhRow`, `LookId`, `HitMap`, `Target`, `hover_line`) into a lower layer that `app`, `ui`, and `settings_page` import. | more modular | `app/state/`, `settings_page/`, `ui/` | M | P4.1, P4.2, P4.3
+- Phase 2 | `App` has about 45 public fields, and `App::build` sets all of them in one struct literal. Put related fields into sub-structs, for example `ThemeSession` and `OpenState`. | simpler | `app/app_state.rs`, `app/startup.rs`, all `impl App` files | L | after Phase 5
+- Phase 2 | Merge small files: `config/files.rs` (2 helpers) into `config/load.rs` or `config/settings_file.rs`. Merge `system/download/channel.rs` (17 lines) and `system/download/files.rs` (38 lines) into `system/download/types.rs`. | simpler | `config/`, `system/download/` | S | P4.3, P4.5
+- Phase 2 | Rename `ui/screen/pages.rs` to a name that says what it draws, for example `page_layouts.rs`. The name `pages` also names the folder `app/pages/`. | simpler | `ui/screen/` | S | P4.2
+- Phase 2 | Make the submodules of `ui/` `pub(crate)` or private. `ui::screen::frame::draw` stays the only interface for `app` and `cli.rs`. P4.2 possibly covers this already. | simpler | `ui/` | S | P4.2
 
 ## 10. Plan changelog
 | Phase | Note | Decision | Reason |
@@ -195,7 +202,7 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 | Phase 1 steps | done |
 | Phase 1 review | done |
 | Phase 2 steps | done |
-| Phase 2 review | open |
+| Phase 2 review | done |
 | Phase 3 steps | open |
 | Phase 3 review | open |
 | Phase 4 steps | open |
