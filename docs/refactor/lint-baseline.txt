@@ -2,4 +2,4 @@
 clippy 0
 shellcheck 0
 cycles 0
-mod-layout 14
+mod-layout 8

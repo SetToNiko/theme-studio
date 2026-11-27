@@ -75,6 +75,7 @@ Advanced techniques that the refactor adds:
 | 15 | each `mod.rs` with intra-doc links in its `//!` header | a `///` on the parent declaration makes rustdoc resolve the `//!` links in the parent scope. Short links such as `[`Pane`]` then fail. | criterion 2, gate `doc` | M |
 | 16 | `ARCHITECTURE.md` lines 58, 111, 192, `CONTRIBUTING.md` lines 140, 232, 328 | the documents name `preview_term/mod.rs`. After P2.3, the code of that file is in `preview.rs`, `types.rs`, `bar.rs`, and `drafts.rs`. | documentation | L |
 | 17 | `ARCHITECTURE.md` lines 107, 183, 440, 522, 524, 534, 623, `CONTRIBUTING.md` line 235, `docs/refactor/BEFORE_AFTER.md` lines 34, 37, 38, 40, 49, 89, 90, 95, 111, the `//!` and `///` comments of `ui/page_bodies/fonts_download_preview.rs`, `ui/page_bodies/tournament_tab.rs`, and 7 files in `app/pages/` | the texts name `config/mod.rs`, `settings_page/mod.rs`, and `fonts/{download,preview,tournament}_page.rs`. After wave 9, this code is in the child modules of `config/`, `settings_page/`, `fonts/tab/`, and `fonts/pages/`. | documentation | L |
+| 18 | `app/mod.rs` lines 14 and 51 (the `//!` header) | the text names `ui::draw`. After P2.7, the function is `ui::screen::frame::draw`. P2.8 owns the file. | documentation | L |
 
 Findings 6 to 10 are in scope only when a step already changes the file (GOAL.md, scope).
 
