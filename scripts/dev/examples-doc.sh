@@ -83,61 +83,18 @@ fi
 
 dir="${1:-studio/src}"
 
-python3 - "$dir" <<'PY'
+# shellcheck source=lib/doc-items.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/doc-items.sh"
+
+{
+    doc_items_python
+    cat <<'PY'
 import os
-import re
 import sys
 
 ITEM = re.compile(r'^\s*pub\s+(?:const\s+)?(?:async\s+)?(?:unsafe\s+)?(?:extern\s+"[^"]*"\s+)?(fn|struct|enum|trait|const|static|type|union)\s+(\w+)')
 PUB_MOD = re.compile(r'^\s*pub\s+mod\s+(\w+)\s*;')
 INLINE_MOD = re.compile(r'^\s*pub\s+mod\s+(\w+)\s*\{')
-
-
-def production_lines(path):
-    with open(path, encoding="utf-8") as source:
-        lines = source.read().split("\n")
-    for i, line in enumerate(lines):
-        if line.strip() == "#[cfg(test)]" and i + 1 < len(lines) and re.match(r'\s*mod tests\b', lines[i + 1]):
-            return lines[:i]
-    return lines
-
-
-def attribute_start(lines, end):
-    # The `#[` line of a multi-line attribute that ends on line `end`, or None.
-    j = end - 1
-    while j >= 0:
-        text = lines[j].strip()
-        if text.startswith("#["):
-            return j
-        if text == "" or text.startswith("///") or text.endswith((";", "{", "}")):
-            return None
-        j -= 1
-    return None
-
-
-def skip_attributes(lines, i):
-    # Go up from line `i` over the attributes. Return the first other line.
-    while i >= 0:
-        text = lines[i].strip()
-        if text.startswith("#["):
-            i -= 1
-        elif text.endswith("]"):
-            start = attribute_start(lines, i)
-            if start is None:
-                return i
-            i = start - 1
-        else:
-            return i
-    return i
-
-
-def has_examples(lines, start):
-    i = skip_attributes(lines, start - 1)
-    while i >= 0 and lines[i].strip().startswith("///"):
-        if lines[i].strip().startswith("/// # Examples"):
-            return True
-        i -= 1
-    return False
 
 
 def module_file(folder, name):
@@ -172,10 +129,11 @@ while queue:
         if path.endswith("lib.rs"):
             continue
         item = ITEM.match(line)
-        if item and not has_examples(lines, number):
+        if item and not has_doc_section(lines, number, "# Examples", False):
             failures.append(f"{path}:{number + 1}: pub {item.group(1)} {item.group(2)} has no # Examples")
 
 if failures:
     print("\n".join(failures))
     sys.exit(1)
 PY
+} | python3 - "$dir"
