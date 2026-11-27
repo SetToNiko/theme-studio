@@ -61,20 +61,16 @@ fi
 
 dir="${1:-studio/src}"
 
-python3 - "$dir" <<'PY'
+# shellcheck source=lib/doc-items.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/doc-items.sh"
+
+{
+    doc_items_python
+    cat <<'PY'
 import os
-import re
 import sys
 
 FN = re.compile(r'^\s*(?:pub(?:\([^)]*\))?\s+)?(?:const\s+)?(?:async\s+)?(?:unsafe\s+)?fn\s+(\w+)')
-
-
-def production_lines(path):
-    lines = open(path, encoding="utf-8").read().split("\n")
-    for i, line in enumerate(lines):
-        if line.strip() == "#[cfg(test)]" and i + 1 < len(lines) and re.match(r'\s*mod tests\b', lines[i + 1]):
-            return lines[:i]
-    return lines
 
 
 def signature(lines, start):
@@ -100,44 +96,6 @@ def returns_result(sig):
     return after is not None and re.match(r'(?:\w+::)*Result\b', after.group(1)) is not None
 
 
-def attribute_start(lines, end):
-    # The `#[` line of a multi-line attribute that ends on line `end`, or None.
-    j = end - 1
-    while j >= 0:
-        text = lines[j].strip()
-        if text.startswith("#["):
-            return j
-        if text == "" or text.startswith("///") or text.endswith((";", "{", "}")):
-            return None
-        j -= 1
-    return None
-
-
-def skip_attributes(lines, i):
-    # Go up from line `i` over the attributes and the `//` comments. Return the first other line.
-    while i >= 0:
-        text = lines[i].strip()
-        if text.startswith("#[") or text.startswith("//") and not text.startswith("///"):
-            i -= 1
-        elif text.endswith("]"):
-            start = attribute_start(lines, i)
-            if start is None:
-                return i
-            i = start - 1
-        else:
-            return i
-    return i
-
-
-def has_errors_doc(lines, start):
-    i = skip_attributes(lines, start - 1)
-    while i >= 0 and lines[i].strip().startswith("///"):
-        if lines[i].strip().startswith("/// # Errors"):
-            return True
-        i -= 1
-    return False
-
-
 bad = []
 for root, _, files in os.walk(sys.argv[1]):
     if "tests" in root.split(os.sep):
@@ -149,10 +107,11 @@ for root, _, files in os.walk(sys.argv[1]):
         lines = production_lines(path)
         for i, line in enumerate(lines):
             m = FN.match(line)
-            if m and returns_result(signature(lines, i)) and not has_errors_doc(lines, i):
+            if m and returns_result(signature(lines, i)) and not has_doc_section(lines, i, "# Errors", True):
                 bad.append(f"{path}:{i + 1}: fn {m.group(1)} returns Result but has no `# Errors` doc")
 
 for b in sorted(bad):
     print(b)
 sys.exit(1 if bad else 0)
 PY
+} | python3 - "$dir"

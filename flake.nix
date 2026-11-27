@@ -76,7 +76,7 @@
         # Shellcheck gate: any finding in a script fails the check. A disabled
         # finding needs a comment with the reason on the line before.
         shellcheck = pkgs.runCommand "theme-studio-shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-          shellcheck ${./scripts}/*.sh ${./scripts}/lib/*.sh ${./scripts}/dev/*.sh ${./tests/scripts}/run.sh ${./tests/install}/run.sh ${./install.sh}
+          shellcheck -x -P SCRIPTDIR ${./scripts}/*.sh ${./scripts}/lib/*.sh ${./scripts}/dev/*.sh ${./scripts}/dev/lib/*.sh ${./tests/scripts}/run.sh ${./tests/install}/run.sh ${./install.sh}
           touch $out
         '';
 
@@ -102,8 +102,8 @@
         # Doc gate: each function that returns Result has a `# Errors` section
         # (scripts/dev/errors-doc.sh). The self-test checks the script first.
         errors-doc = pkgs.runCommand "theme-studio-errors-doc" { nativeBuildInputs = [ pkgs.python3 ]; } ''
-          bash ${./scripts/dev/errors-doc.sh} --selftest
-          bash ${./scripts/dev/errors-doc.sh} ${./studio/src}
+          bash ${./scripts/dev}/errors-doc.sh --selftest
+          bash ${./scripts/dev}/errors-doc.sh ${./studio/src}
           touch $out
         '';
 
@@ -125,8 +125,8 @@
         # section (scripts/dev/examples-doc.sh). The self-test checks the script
         # first.
         examples-doc = pkgs.runCommand "theme-studio-examples-doc" { nativeBuildInputs = [ pkgs.python3 ]; } ''
-          bash ${./scripts/dev/examples-doc.sh} --selftest
-          bash ${./scripts/dev/examples-doc.sh} ${./studio/src}
+          bash ${./scripts/dev}/examples-doc.sh --selftest
+          bash ${./scripts/dev}/examples-doc.sh ${./studio/src}
           touch $out
         '';
 
