@@ -2,14 +2,21 @@
 //! progress, and a week-long cache for the font lists.
 
 use std::path::Path;
-use std::process::Stdio;
+use std::process::{Command, Stdio};
 use std::time::{Duration, SystemTime};
 
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
 
-use super::low;
 use crate::model::paths::download_cache_dir;
+
+/// A command at a lower priority (nice), so downloads, unpacking and font
+/// scans in the background never slow the studio, nvim or the shell.
+pub(in crate::system) fn low(program: &str) -> Command {
+    let mut c = Command::new("nice");
+    c.args(["-n", "10", program]);
+    c
+}
 
 /// GETs a URL's body (small JSON answers).
 ///

@@ -7,9 +7,11 @@ use std::sync::mpsc::Sender;
 
 use anyhow::{Context, Result, anyhow};
 
+use super::channel::notify;
+use super::files::{remove_dir_if_present, remove_file_if_present};
 use super::install::install_nerd;
-use super::net::fetch;
-use super::{Entry, Msg, Source, low, notify, remove_dir_if_present, remove_file_if_present};
+use super::net::{fetch, low};
+use super::types::{Entry, Msg, Source};
 use crate::model::paths::{
     SYSTEM_FONTCONFIG, download_cache_dir, installed_fonts_dir, preview_cache_dir,
 };

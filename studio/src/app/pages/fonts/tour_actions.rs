@@ -15,7 +15,8 @@ use crate::fonts::download_page::DlTab;
 use crate::fonts::tournament_page::{POOLS, SIZES, SetupRow, Stage, TourPage};
 use crate::keymap::action::Action;
 use crate::model::tournament::{self, Entrant, Tournament};
-use crate::system::download::{self, Entry};
+use crate::system::download;
+use crate::system::download::types::Entry;
 
 impl App {
     pub fn tour(&mut self) -> &mut TourPage {

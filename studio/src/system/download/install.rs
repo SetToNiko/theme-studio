@@ -8,8 +8,10 @@ use std::sync::mpsc::Sender;
 use anyhow::{Context, Result, anyhow, bail};
 use serde_json::{Value, json};
 
-use super::net::{fetch, get};
-use super::{Entry, Msg, Source, low, notify, remove_dir_if_present, remove_file_if_present};
+use super::channel::notify;
+use super::files::{remove_dir_if_present, remove_file_if_present};
+use super::net::{fetch, get, low};
+use super::types::{Entry, Msg, Source};
 
 /// The google/fonts folders to look in: the license's first.
 pub fn google_dirs(e: &Entry) -> Vec<String> {
@@ -302,7 +304,7 @@ fn refresh_font_cache(program: &str, root: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::super::catalogue::{parse_fontsource, parse_nerd};
-    use super::super::channel_pair;
+    use super::super::channel::channel_pair;
     use super::super::net::cached;
     use super::*;
     use std::time::Duration;

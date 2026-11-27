@@ -6,7 +6,8 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 
 use serde_json::Value;
 
-use crate::system::download::{self, Catalogue, Msg};
+use crate::system::download;
+use crate::system::download::types::{Catalogue, Msg};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DlTab {
@@ -80,7 +81,7 @@ pub struct DlPage {
 
 impl Default for DlPage {
     fn default() -> Self {
-        let (tx, rx) = download::channel_pair();
+        let (tx, rx) = download::channel::channel_pair();
         DlPage {
             tab: DlTab::Google,
             sel: 0,

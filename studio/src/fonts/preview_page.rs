@@ -15,7 +15,7 @@ use crate::fonts::render::SampleRenderer;
 use crate::model::color::Rgb;
 use crate::model::samples::langs::LANGS;
 use crate::model::samples::{self, KINDS, Kind};
-use crate::system::download::{Entry, Source};
+use crate::system::download::types::{Entry, Source};
 
 /// How long the highlight rests on a font before its preview is fetched.
 const PAUSE: Duration = Duration::from_millis(150);

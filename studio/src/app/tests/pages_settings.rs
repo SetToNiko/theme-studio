@@ -528,12 +528,12 @@ fn behaviour_tab_sets_up_prefetching() {
         ["monospace", "nerd font"]
     );
     // with the catalogue, each category shows what it takes
-    let nerd = crate::system::download::Source::Nerd {
+    let nerd = crate::system::download::types::Source::Nerd {
         asset: "Hack".into(),
         url: String::new(),
         size: 40_000_000,
     };
-    let mut hack = crate::system::download::Entry {
+    let mut hack = crate::system::download::types::Entry {
         id: "hack".into(),
         family: "Hack".into(),
         category: "nerd font".into(),
@@ -544,7 +544,7 @@ fn behaviour_tab_sets_up_prefetching() {
         source: nerd,
         subset: "latin".into(),
     };
-    app.dl.catalogue = Some(crate::system::download::Catalogue {
+    app.dl.catalogue = Some(crate::system::download::types::Catalogue {
         nerd: vec![hack.clone()],
         ..Default::default()
     });
@@ -553,7 +553,7 @@ fn behaviour_tab_sets_up_prefetching() {
         "yes  (1 font: 40.0 MB to fetch, about 2.5 MB kept)"
     );
     hack.category = "monospace".into();
-    hack.source = crate::system::download::Source::Google;
+    hack.source = crate::system::download::types::Source::Google;
     app.dl.catalogue.as_mut().unwrap().google = vec![hack];
     assert_eq!(
         app.behaviour_value(BhRow::PrefetchCategory(0)),

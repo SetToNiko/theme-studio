@@ -15,7 +15,8 @@ use crate::app::App;
 use crate::app::state::nav::Page;
 use crate::fonts::download_page::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb, norm};
 use crate::keymap::action::Action;
-use crate::system::download::{self, Catalogue, Entry, Msg, Source};
+use crate::system::download;
+use crate::system::download::types::{Catalogue, Entry, Msg, Source};
 
 impl App {
     /// fonts-installed.json (a setting; default next to settings.json).
@@ -24,7 +25,7 @@ impl App {
         if p.is_empty() {
             self.config_dir.join("fonts-installed.json")
         } else {
-            download::expand(p)
+            download::files::expand(p)
         }
     }
 

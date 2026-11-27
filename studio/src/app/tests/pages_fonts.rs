@@ -230,7 +230,7 @@ fn a_family_fills_every_role() {
 #[test]
 fn a_family_without_fitting_faces_offers_its_nerd_font() {
     use crate::fonts::types::{Installed, Row};
-    use crate::system::download::{Catalogue, Entry, Source};
+    use crate::system::download::types::{Catalogue, Entry, Source};
     let store = temp_store("offer");
     let dir = store.dir.clone();
     let mut app = test_app(store, Start::Named("One".into()));

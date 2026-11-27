@@ -12,7 +12,7 @@ use super::fonts_download::status_span;
 use crate::app::App;
 use crate::app::state::hit::{Target, hover};
 use crate::fonts::download_page::{DlRow, DlStatus, mb};
-use crate::system::download::{Entry, Source};
+use crate::system::download::types::{Entry, Source};
 use crate::ui::widgets::to_u16;
 
 /// The weights of a font as text: "variable, 100–900", "400–700 (3 weights)" or one weight.

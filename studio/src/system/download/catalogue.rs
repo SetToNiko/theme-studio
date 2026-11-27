@@ -5,8 +5,9 @@ use std::sync::mpsc::Sender;
 
 use serde_json::Value;
 
+use super::channel::notify;
 use super::net::cached;
-use super::{Catalogue, Entry, Msg, Source, notify};
+use super::types::{Catalogue, Entry, Msg, Source};
 
 /// Fontsource's font list.
 pub fn parse_fontsource(v: &Value) -> Vec<Entry> {
