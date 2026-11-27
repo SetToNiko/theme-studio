@@ -87,7 +87,7 @@ Step format: `- [ ] P<phase>.<n> <title>: <what changes> | Wave: <n> | Depends: 
 Each Rust step runs the checks for each change of the conventions, after P0.1. Each `Owns` path starts at the repository root. In the step text, a path without a folder is in `studio/src/`.
 
 ### Phase 0: Foundation and safety net
-- [ ] P0.1 Dev tools: add the flake input `rust-overlay`. Add `cargo-nextest`, `cargo-mutants`, `cargo-fuzz`, `tokei`, and a nightly cargo only for `cargo +nightly fuzz` to the dev shell. | Wave: 1 | Depends: none | Owns: flake.nix, flake.lock | Target: criterion 9. | Check: each tool runs in `nix develop`. `nix flake check` passes.
+- [x] P0.1 Dev tools: add the flake input `rust-overlay`. Add `cargo-nextest`, `cargo-mutants`, `cargo-fuzz`, `tokei`, and a nightly cargo only for `cargo +nightly fuzz` to the dev shell. | Wave: 1 | Depends: none | Owns: flake.nix, flake.lock | Target: criterion 9. | Check: each tool runs in `nix develop`. `nix flake check` passes.
 - [ ] P0.2 Gate tests: the package build runs `cargo nextest run`. A new check runs `cargo test --doc`. | Wave: 2 | Depends: P0.1 | Owns: flake.nix | Target: criterion 9. | Check: `nix flake check` passes. The test count stays 195.
 - [ ] P0.3 Lines of code: `file-limits.sh` counts lines of code (no empty lines, no comment lines, no `/* */` lines) before the `#[cfg(test)]` module. Limit 500. | Wave: 3 | Depends: P0.1 | Owns: scripts/dev/file-limits.sh | Target: criterion 1. | Check: the count agrees with `tokei` for 5 sample files. `nix flake check` passes.
 - [ ] P0.4 Gate `mod-layout`: a script fails on a `mod.rs` with a bad line. A bad line is not empty, not a comment, and not a declaration. A declaration without `///` above it is also bad. A ratchet: the count of bad files must not increase (baseline 22, `docs/refactor/lint-baseline.txt`). | Wave: 4 | Depends: P0.1 | Owns: scripts/dev/mod-layout.sh, scripts/dev/lint-counts.sh, docs/refactor/lint-baseline.txt, flake.nix | Target: criterion 2. | Check: the script gives 22 now. `nix flake check` passes.
@@ -136,7 +136,7 @@ Completes: criterion 3.
 
 ### Phase 5: Fuzz targets
 Each step of this phase: give each parser in its list a pure `&str` or `&[u8]` part if it reads a file. Add a wrapper in `fuzzing.rs` and a target in `studio/fuzz/`. Run each new target for 60 seconds. Add each crash input as a unit test.
-- [ ] P5.1 Fuzz crate: `studio/fuzz/` (cargo-fuzz), `#[cfg(fuzzing)] pub mod fuzzing;` in `lib.rs` with its comment, `fuzzing.rs`, `scripts/dev/fuzz-all.sh`, the first target `Rgb::parse`. | Wave: 16 | Depends: P4.6 | Owns: studio/fuzz/, studio/src/lib.rs, studio/src/fuzzing.rs, scripts/dev/fuzz-all.sh, studio/src/model/color.rs | Target: criterion 10. | Check: `cargo +nightly fuzz run rgb_parse -- -max_total_time=60` gives no crash. `nix flake check` passes.
+- [ ] P5.1 Fuzz crate: `studio/fuzz/` (cargo-fuzz), `#[cfg(fuzzing)] pub mod fuzzing;` in `lib.rs` with its comment, `fuzzing.rs`, `scripts/dev/fuzz-all.sh`, the first target `Rgb::parse`. | Wave: 16 | Depends: P4.6 | Owns: studio/fuzz/, studio/src/lib.rs, studio/src/fuzzing.rs, scripts/dev/fuzz-all.sh, studio/src/model/color.rs | Target: criterion 10. | Check: `nix develop .#fuzz --command cargo fuzz run rgb_parse -- -max_total_time=60` gives no crash. `nix flake check` passes.
 - [ ] P5.2 Keymap and config parsers: `Key::parse_seq`, `Action::from_id`, `Context::from_id`, `Keymap::from_json`, `parse_settings`, the keymaps-file parse, `Underline::parse`, `readme::render`. | Wave: 17 | Depends: P5.1 | Owns: studio/fuzz/, studio/src/fuzzing.rs, studio/src/keymap/, studio/src/config/, studio/src/settings_page/, studio/src/app/state/hit.rs | Target: criterion 10. | Check: as P5.1, for each new target.
 - [ ] P5.3 Model and font JSON: `Palette::from_json`, `Theme::from_json`, `Preset::from_json`, the store and tournament JSON loads. | Wave: 18 | Depends: P5.2 | Owns: studio/fuzz/, studio/src/fuzzing.rs, studio/src/model/, studio/src/fonts/presets.rs | Target: criterion 10. | Check: as P5.2.
 - [ ] P5.4 System parsers and arguments: `parse_fontsource`, `parse_nerd`, `read_i3`, `read_rasi`, `read_bar`, `parse_i3blocks`, `scan_families`, `sri`, the CLI arguments. | Wave: 19 | Depends: P5.3 | Owns: studio/fuzz/, studio/src/fuzzing.rs, studio/src/system/, studio/src/fonts/installed.rs, studio/src/cli.rs | Target: criterion 10. | Check: as P5.2. `scripts/dev/fuzz-all.sh 60` gives no crash.
@@ -159,6 +159,7 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 ## 10. Plan changelog
 | Phase | Note | Decision | Reason |
 |---|---|---|---|
+| 0 | `cargo +nightly fuzz` needs rustup | The nightly toolchain and cargo-fuzz are in a separate dev shell `fuzz` | Nix has no rustup. The default shell keeps the rustc of nixpkgs. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->

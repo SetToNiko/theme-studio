@@ -11,7 +11,7 @@ description: Gives the stack, commands, refactor settings, coding rules, and doc
 - Lint: `cd studio && nix develop .. --command cargo clippy --all-targets -- -D warnings` · `cargo fmt --check` · counts: `scripts/dev/lint-counts.sh`
 - Test style: unit tests in a `#[cfg(test)] mod tests` at the end of the file of the tested function. Integration tests in `studio/tests/`. snake_case names that state the behavior. Script behavior: a golden case in `tests/scripts/run.sh`.
 - Naming: Rust standard. Scripts: kebab-case files, snake_case functions. British spelling as in the code (colour, behaviour).
-- Tools not available yet: cargo-nextest, cargo-mutants, cargo-fuzz, a nightly toolchain (only for cargo-fuzz), tokei. Phase 0 adds them to the dev shell.
+- Tools not available yet: none. The nightly toolchain and cargo-fuzz are only in the dev shell `fuzz` (`nix develop .#fuzz`).
 
 ## Refactor settings
 - Refactor folder: `docs/refactor-fixes/`
@@ -55,7 +55,7 @@ Rust:
   1. `cargo nextest run` and `cargo test --doc`.
   2. `cargo llvm-cov nextest --show-missing-lines`: each changed function has a test. The total coverage never decreases.
   3. `git diff > <tmp>/step.diff`, then `cargo mutants --in-diff <tmp>/step.diff --test-tool nextest --output <tmp>`. Add a test for each MISSED mutant, or give the reason.
-  4. `cargo +nightly fuzz run <target> -- -max_total_time=60` for each changed function that parses outside input (files, arguments, network, user).
+  4. `nix develop .#fuzz --command cargo fuzz run <target> -- -max_total_time=60` (in `studio/`) for each changed function that parses outside input (files, arguments, network, user).
 - Measure: function length with `lizard -l rust` (the NLOC column). File length with `tokei` (the Code column).
 Bash:
 - `shellcheck` with zero warnings (gate). Exception: `# shellcheck disable=SCxxxx  # reason: ...` on the line above.
