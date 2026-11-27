@@ -21,8 +21,8 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-use crate::keymap::Context;
 use crate::keymap::action::Action;
+use crate::keymap::context::Context;
 use crate::model::color::Rgb;
 use crate::model::history::SnapshotInfo;
 

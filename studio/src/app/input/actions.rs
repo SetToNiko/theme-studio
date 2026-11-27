@@ -18,7 +18,7 @@ use crate::app::state::nav::{ColourRow, Focus, For, Overlay, Page, Pending, Side
 use crate::app::{App, PreviewMode};
 use crate::keymap::action::{Action, ActionGroup};
 use crate::keymap::key::Key;
-use crate::keymap::{Context, Lookup};
+use crate::keymap::{context::Context, lookup::Lookup};
 
 impl App {
     pub(in crate::app) fn on_key(&mut self, k: KeyEvent) {

@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context as _, Result};
 use serde_json::{Map, Value};
 
-use crate::keymap::Keymap;
+use crate::keymap::map::Keymap;
 
 pub mod settings;
 use settings::Settings;
@@ -286,7 +286,7 @@ mod tests {
     use crate::fonts::filters::Spacing;
     use crate::keymap::action::Action;
     use crate::keymap::key::Key;
-    use crate::keymap::{Context, Lookup};
+    use crate::keymap::{context::Context, lookup::Lookup};
     use crate::model::store::to_jq_string;
 
     fn temp(tag: &str) -> PathBuf {
@@ -493,7 +493,7 @@ mod migrate_tests {
         assert!(d.get("use-for-mono").is_none());
         assert_eq!(
             km.key_for(
-                &[crate::keymap::Context::Downloads],
+                &[crate::keymap::context::Context::Downloads],
                 crate::keymap::action::Action::UseFor(0)
             )
             .as_deref(),

@@ -7,8 +7,8 @@ use std::path::PathBuf;
 
 use ratatui::layout::Rect;
 
-use crate::keymap::Context;
 use crate::keymap::action::Action;
+use crate::keymap::context::Context;
 use crate::keymap::key::Key;
 use crate::model::color::Rgb;
 

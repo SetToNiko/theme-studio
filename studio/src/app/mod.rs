@@ -31,8 +31,8 @@ pub type Term = ratatui::Terminal<ratatui::backend::CrosstermBackend<crate::syst
 use ratatui::layout::Rect;
 
 use crate::fonts::FontsTab;
-use crate::keymap::Keymap;
 use crate::keymap::key::Key;
+use crate::keymap::map::Keymap;
 use crate::model::color::Rgb;
 use crate::model::palette::{self, GROUPS, Palette};
 use crate::model::store::{Store, TerminalMap};

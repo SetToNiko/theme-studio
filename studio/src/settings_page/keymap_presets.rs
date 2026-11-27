@@ -13,7 +13,7 @@ use ratatui::widgets::{Block, Borders, Paragraph};
 use crate::app::state::hit::{HitMap, Target, hover_line};
 use crate::keymap::action::{Action, all_actions};
 use crate::keymap::key::display_seq;
-use crate::keymap::{Context, Keymap};
+use crate::keymap::{context::Context, map::Keymap};
 use crate::settings_page::SettingsPage;
 
 /// A line of the difference between two keymaps.

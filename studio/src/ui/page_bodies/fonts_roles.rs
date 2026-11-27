@@ -51,7 +51,7 @@ pub(super) fn draw_roles(
         fix_key: app
             .keymap
             .key_for(
-                &[crate::keymap::Context::FontRoles],
+                &[crate::keymap::context::Context::FontRoles],
                 crate::keymap::action::Action::FixRoleFont,
             )
             .map(|k| friendly(&k)),

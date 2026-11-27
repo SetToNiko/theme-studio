@@ -1,6 +1,6 @@
 //! A key press in Vim notation: parsing (`<C-r>`, `<leader>sp`) and display.
 //!
-//! [`Key`] is one normalised key press. [`display_seq`] shows a whole
+//! `Key` is one normalised key press. `display_seq` shows a whole
 //! sequence of keys for the help screen and the leader popup.
 
 use anyhow::{Result, anyhow, bail};
@@ -180,4 +180,66 @@ pub fn display_seq(keys: &[Key], leader: Key) -> String {
             }
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_and_displays_vim_notation() {
+        let l = Key::new(KeyCode::Char(' '), KeyModifiers::NONE);
+        let k = |s| Key::parse_seq(s, l).unwrap();
+        assert_eq!(k("gg").len(), 2);
+        assert_eq!(k("<leader>cp")[0], l);
+        assert_eq!(
+            k("<C-r>")[0],
+            Key::new(KeyCode::Char('r'), KeyModifiers::CONTROL)
+        );
+        assert_eq!(
+            k("<S-Tab>")[0],
+            Key::new(KeyCode::BackTab, KeyModifiers::NONE)
+        );
+        assert_eq!(k("<F12>")[0], Key::new(KeyCode::F(12), KeyModifiers::NONE));
+        assert_eq!(k("<C-x><C-s>").len(), 2);
+        assert_eq!(k("<C-S-z>"), k("<C-Z>"));
+        for s in [
+            "j", "<C-r>", "<S-Tab>", "<F5>", "<CR>", "<Esc>", "<S-Up>", "<M-x>", "<C-Z>",
+            "<Space>", "#",
+        ] {
+            assert_eq!(
+                display_seq(&k(s), Key::new(KeyCode::Char('\\'), KeyModifiers::NONE)),
+                s,
+                "round trip"
+            );
+        }
+        assert_eq!(display_seq(&k("<leader>sp"), l), "<leader>sp");
+        assert!(Key::parse_seq("<nope>", l).is_err());
+    }
+
+    #[test]
+    fn key_events_are_normalised() {
+        let e = |c, m| Key::from_event(KeyEvent::new(c, m));
+        assert_eq!(
+            e(KeyCode::Char('J'), KeyModifiers::SHIFT),
+            Key::new(KeyCode::Char('J'), KeyModifiers::NONE)
+        );
+        assert_eq!(
+            e(KeyCode::BackTab, KeyModifiers::SHIFT),
+            Key::new(KeyCode::BackTab, KeyModifiers::NONE)
+        );
+        assert_eq!(
+            e(KeyCode::Up, KeyModifiers::SHIFT),
+            Key::new(KeyCode::Up, KeyModifiers::SHIFT)
+        );
+    }
+
+    #[test]
+    fn only_a_leading_leader_shows_as_leader() {
+        let cc = Key::new(KeyCode::Char('c'), KeyModifiers::CONTROL);
+        let k = |s| Key::parse_seq(s, cc).unwrap();
+        assert_eq!(display_seq(&k("<C-x><C-c>"), cc), "<C-x><C-c>");
+        assert_eq!(display_seq(&k("<leader><C-c>"), cc), "<leader><C-c>");
+        assert_eq!(display_seq(&k("<leader>sp"), cc), "<leader>sp");
+    }
 }
