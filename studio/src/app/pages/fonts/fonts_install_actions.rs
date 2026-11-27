@@ -12,7 +12,8 @@ use serde_json::Value;
 use crate::app::App;
 use crate::app::state::nav::{Deferred, Overlay};
 use crate::fonts::download_page::{DlRow, DlStatus, norm};
-use crate::system::download::{self, Entry, Msg, Source};
+use crate::system::download;
+use crate::system::download::types::{Entry, Msg, Source};
 
 impl App {
     /// An install of job `id` ended. Records it, and tells the user when the

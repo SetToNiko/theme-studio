@@ -2,7 +2,7 @@
 //! `font-switch`). They write the system's colour and font files and restart
 //! i3 and Ghostty. Nothing else in the studio runs them.
 //!
-//! In tests the scripts never run: [`switch_command`] gives a harmless
+//! In tests the scripts never run: `switch_command` gives a harmless
 //! command that fails with "... is off in tests". A test that means it sets
 //! `THEME_STUDIO_REAL_SWITCH`.
 

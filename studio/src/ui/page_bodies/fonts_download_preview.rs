@@ -11,7 +11,7 @@ use crate::app::App;
 use crate::app::state::hit::{Target, hover};
 use crate::model::samples::langs::LANGS;
 use crate::model::samples::{KINDS, Kind};
-use crate::system::download::Entry;
+use crate::system::download::types::Entry;
 use crate::ui::widgets::to_u16;
 
 /// The title of the preview box, with the clickable dropdowns: " Preview  Code ▾

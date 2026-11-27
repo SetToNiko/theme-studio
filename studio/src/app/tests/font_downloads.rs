@@ -12,7 +12,7 @@ use std::time::Duration;
 fn download_page_lists_searches_and_removes() {
     use crate::app::state::hit::Target as T;
     use crate::fonts::download_page::{DlRow, DlStatus, DlTab};
-    use crate::system::download::{Catalogue, Entry, Source};
+    use crate::system::download::types::{Catalogue, Entry, Source};
     let store = temp_store("dl");
     let dir = store.dir.clone();
     crate::model::history::init_for_test(dir.join("history"));
@@ -219,7 +219,7 @@ fn installed_fonts_preview_from_their_files() {
 
 #[test]
 fn prefetching_keeps_the_main_loop_quick() {
-    use crate::system::download::{Catalogue, Entry, Msg, Source};
+    use crate::system::download::types::{Catalogue, Entry, Msg, Source};
     use std::sync::mpsc::Sender;
     // downloads answer at once (no network)
     #[expect(

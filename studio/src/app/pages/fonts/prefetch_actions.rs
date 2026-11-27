@@ -8,7 +8,8 @@
 
 use crate::app::App;
 use crate::app::state::nav::Page;
-use crate::system::download::{self, Msg};
+use crate::system::download;
+use crate::system::download::types::Msg;
 use crate::system::prefetch::queue;
 
 impl App {

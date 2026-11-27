@@ -13,7 +13,8 @@ use crate::fonts::preview_page::FontPreview;
 use crate::keymap::action::Action;
 use crate::model::samples::langs::LANGS;
 use crate::model::samples::{self, KINDS, Kind};
-use crate::system::download::{self, Entry, Source};
+use crate::system::download;
+use crate::system::download::types::{Entry, Source};
 
 impl App {
     pub(crate) fn pv(&mut self) -> &mut FontPreview {
