@@ -383,3 +383,59 @@ pub(in crate::app) fn swatches(v: &serde_json::Value) -> Vec<Rgb> {
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::startup::Start;
+    use crate::app::test_support::*;
+
+    #[test]
+    fn palette_list_hangs_from_its_row_and_previews() {
+        use crate::app::state::hit::Target as T;
+        let store = temp_store("palette-menu");
+        let dir = store.dir.clone();
+        let mut app = test_app(store, Start::Named("One".into()));
+        let one_red = app.editor.palette.get("red");
+        let down = |app: &mut App| app.on_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
+        // the title names it; the dropdown is the pane's first row
+        let s = render(&mut app, 160, 45);
+        assert!(s.contains("Palette: One ") && s.contains(" One ▾ "), "{s}");
+        // a click on the row opens the list, hanging under it
+        click_on(&mut app, T::PaletteMenu);
+        assert!(matches!(app.overlay, Overlay::Open { .. }));
+        render(&mut app, 160, 45);
+        let pane = app.layout.palette_pane.unwrap();
+        assert_eq!(app.hits.rect_of(T::OverlayRow(0)).unwrap().y, pane.y + 5);
+        // moving shows the highlighted palette; it isn't an unsaved edit
+        down(&mut app);
+        assert_eq!(app.editor.palette.get("red"), Rgb(200, 0, 0));
+        assert_eq!(app.name, "One");
+        assert!(!app.dirty());
+        assert!(render(&mut app, 160, 45).contains("Palette: One "));
+        // Esc puts it back
+        press(&mut app, "\x1b");
+        assert!(matches!(app.overlay, Overlay::None));
+        assert_eq!(app.editor.palette.get("red"), one_red);
+        assert!(app.open_original.is_none());
+        // <leader>op opens the same list; Enter keeps the highlighted one
+        press(&mut app, " op");
+        down(&mut app);
+        press(&mut app, "\n");
+        assert_eq!(app.name, "Two");
+        assert_eq!(app.editor.palette.get("red"), Rgb(200, 0, 0));
+        assert!(!app.dirty());
+        // with unsaved edits, choosing still asks first (about the real palette)
+        press(&mut app, "#111111\n");
+        assert!(app.dirty());
+        let edited = app.editor.palette.clone();
+        press(&mut app, " op");
+        app.on_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE));
+        assert_ne!(app.editor.palette, edited);
+        assert!(app.dirty());
+        press(&mut app, "\n");
+        assert!(matches!(app.overlay, Overlay::Confirm(Pending::Open(_))));
+        assert_eq!(app.editor.palette, edited);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
