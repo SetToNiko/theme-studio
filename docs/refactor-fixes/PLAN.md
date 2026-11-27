@@ -49,7 +49,7 @@ Key numbers: 9 top-level modules and `main.rs`. 114 production files. 0 files ov
   - config JSON: `Keymap::from_json`, `parse_settings`, the keymaps-file parse
   - data JSON: `Palette::from_json`, `Theme::from_json`, `Preset::from_json`, the store and tournament JSON loads
   - downloads: `parse_fontsource`, `parse_nerd`, `sri`
-  - desktop and system: `read_i3`, `read_rasi`, `read_bar`, `parse_i3blocks`, `scan_families` (fc-list text), the CLI arguments
+  - desktop and system: `read_i3`, `read_rasi`, `read_bar`, `parse_i3blocks`, `scan_families` (fc-list text), the CLI arguments (`cli::parse_args`)
 - Gates: `file-limits` (lines of code), `mod-layout`, `examples-doc`, `[lints.rust] unreachable_pub = "warn"` (criterion 3), and nextest with `cargo test --doc` in the package build.
 
 Advanced techniques that the refactor adds:
@@ -112,7 +112,8 @@ Each step of this phase: move the code of each `mod.rs` in its folders into chil
 - [ ] P2.5 `settings_page/`: `state.rs`, `diff.rs`, `rows.rs`. | Wave: 9 | Depends: P2.1 | Owns: studio/src/settings_page/ | Target: criteria 2, 5. | Check: as P2.1.
 - [ ] P2.6 `fonts/`: `fonts/tab/` (tab, list, presets, keys) and `fonts/pages/` (download, preview, tournament). | Wave: 9 | Depends: P2.2, P2.3 | Owns: studio/src/fonts/ | Target: criteria 2, 5, folder limit. | Check: as P2.1.
 - [ ] P2.7 `ui/`: `ui/mod.rs` code to `frame.rs` and `tabs.rs`, the helpers to `pane_chrome.rs` and `widgets.rs`. One group folder keeps `ui/` at 10 modules. `status/`, `overlays/`, `page_bodies/settings/` code to child modules. One `truncate` (finding 6). | Wave: 10 | Depends: P2.5, P2.6 | Owns: studio/src/ui/ | Target: criteria 2, 5, folder limit. | Check: as P2.1.
-- [ ] P2.8 `app/`: `app/mod.rs` code to `app_state.rs`, `startup.rs`, `pointer.rs`, `queries.rs`, `sample.rs`, `editing.rs`, `clipboard.rs`. `Term` to `run.rs`. `open_matches` to `persist.rs`. `///` in each `app/` subfolder except `app/tests/`. | Wave: 10 | Depends: P2.4, P2.5, P2.6 | Owns: studio/src/app/ | Target: criterion 2. | Check: as P2.1.
+- [ ] P2.8 `app/`: `app/mod.rs` code to `app_state.rs`, `startup.rs`, `pointer.rs`, `queries.rs`, `sample.rs`, `editing.rs`, `clipboard.rs`. `Term` to `run.rs`. Move `setup_terminal` and `restore_terminal` from `cli.rs` to `run.rs`, next to `Term`. `run_in_terminal` stays in `cli.rs`, because it uses `ui::draw`. `open_matches` to `persist.rs`. `///` in each `app/` subfolder except `app/tests/`. | Wave: 10 | Depends: P2.4, P2.5, P2.6 | Owns: studio/src/app/, studio/src/cli.rs | Target: criterion 2, T5. | Check: as P2.1.
+- [ ] P2.9 Doc gates: move the item scanner of `errors-doc.sh` and `examples-doc.sh` into one shared file `scripts/dev/lib/doc-items.sh`. The two gates source it. They stay two gates, each with one rule. The self-tests do not change. `flake.nix` gives each gate the folder `scripts/dev`, not one file. This step is not a `mod.rs` step. | Wave: 8 | Depends: P1.3 | Owns: scripts/dev/lib/doc-items.sh, scripts/dev/errors-doc.sh, scripts/dev/examples-doc.sh, flake.nix | Target: T2, T4 (commit `fadb431` fixed the same bug in the two copies). | Check: the two self-tests pass. `nix flake check` passes. `shellcheck` gives zero warnings.
 Completes: none (criterion 2 completes in P3.9).
 
 ### Phase 3: Test locations
@@ -139,10 +140,10 @@ Completes: criterion 3.
 
 ### Phase 5: Fuzz targets
 Each step of this phase: give each parser in its list a pure `&str` or `&[u8]` part if it reads a file. Add a wrapper in `fuzzing.rs` and a target in `studio/fuzz/`. Run each new target for 60 seconds. Add each crash input as a unit test.
-- [ ] P5.1 Fuzz crate: `studio/fuzz/` (cargo-fuzz), `#[cfg(fuzzing)] pub mod fuzzing;` in `lib.rs` with its comment, `fuzzing.rs`, `scripts/dev/fuzz-all.sh`, the first target `Rgb::parse`. | Wave: 16 | Depends: P4.6 | Owns: studio/fuzz/, studio/src/lib.rs, studio/src/fuzzing.rs, scripts/dev/fuzz-all.sh, studio/src/model/color.rs | Target: criterion 10. | Check: `nix develop .#fuzz --command cargo fuzz run rgb_parse -- -max_total_time=60` gives no crash. `nix flake check` passes.
+- [ ] P5.1 Fuzz crate: `studio/fuzz/` (cargo-fuzz), `#[cfg(fuzzing)] pub mod fuzzing;` in `lib.rs` with its comment, `fuzzing.rs`, `scripts/dev/fuzz-all.sh`, the first target `Rgb::parse`. The `//!` header of `lib.rs` gets a usage line and a `no_run` example (C-CRATE-DOC). | Wave: 16 | Depends: P4.6 | Owns: studio/fuzz/, studio/src/lib.rs, studio/src/fuzzing.rs, scripts/dev/fuzz-all.sh, studio/src/model/color.rs | Target: criterion 10. | Check: `nix develop .#fuzz --command cargo fuzz run rgb_parse -- -max_total_time=60` gives no crash. `nix flake check` passes.
 - [ ] P5.2 Keymap and config parsers: `Key::parse_seq`, `Action::from_id`, `Context::from_id`, `Keymap::from_json`, `parse_settings`, the keymaps-file parse, `Underline::parse`, `readme::render`. | Wave: 17 | Depends: P5.1 | Owns: studio/fuzz/, studio/src/fuzzing.rs, studio/src/keymap/, studio/src/config/, studio/src/settings_page/, studio/src/app/state/hit.rs | Target: criterion 10. | Check: as P5.1, for each new target.
 - [ ] P5.3 Model and font JSON: `Palette::from_json`, `Theme::from_json`, `Preset::from_json`, the store and tournament JSON loads. | Wave: 18 | Depends: P5.2 | Owns: studio/fuzz/, studio/src/fuzzing.rs, studio/src/model/, studio/src/fonts/presets.rs | Target: criterion 10. | Check: as P5.2.
-- [ ] P5.4 System parsers and arguments: `parse_fontsource`, `parse_nerd`, `read_i3`, `read_rasi`, `read_bar`, `parse_i3blocks`, `scan_families`, `sri`, the CLI arguments. | Wave: 19 | Depends: P5.3 | Owns: studio/fuzz/, studio/src/fuzzing.rs, studio/src/system/, studio/src/fonts/installed.rs, studio/src/cli.rs | Target: criterion 10. | Check: as P5.2. `scripts/dev/fuzz-all.sh 60` gives no crash.
+- [ ] P5.4 System parsers and arguments: `parse_fontsource`, `parse_nerd`, `read_i3`, `read_rasi`, `read_bar`, `parse_i3blocks`, `scan_families`, `sri`, the CLI arguments. For the CLI arguments, add `pub(crate) fn parse_args(&[String])` to `cli.rs`. It returns a command enum and keeps the current behavior (findings 13 and 14 too). `run` calls it. Unit tests go at the end of `cli.rs`. Add no public API. | Wave: 19 | Depends: P5.3 | Owns: studio/fuzz/, studio/src/fuzzing.rs, studio/src/system/, studio/src/fonts/installed.rs, studio/src/cli.rs | Target: criterion 10. | Check: as P5.2. `scripts/dev/fuzz-all.sh 60` gives no crash.
 Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 
 ## 7. Out of scope
@@ -152,18 +153,13 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 - Other Linux distributions, and a security review: HANDOFF.md step 4.
 - The 16 files with 300 to 400 lines of code: they are under the limit of 500.
 - Findings 6 to 10 outside the files that a step changes.
+- The move of the `--init-config` migration code (`init_config`, `make_first_theme`) from `cli.rs` into the modules that own the stores (Phase 1 review, note 3).
 
 ## 8. Outcome
 <!-- The final action completes this section. -->
 
 ## 9. Architecture notes (pending)
 <!-- The review action adds notes here. The revise action processes them. -->
-- Phase 1 | Move the terminal setup (`setup_terminal`, `restore_terminal`) from `cli.rs` next to `Term` (P2.8), so `cli.rs` only parses arguments.
-- Phase 1 | Add a pure argument parser or `run_with(args)`, for in-process tests of `cli` and for the fuzz target "the CLI arguments" (P5.4). This adds public API.
-- Phase 1 | Move the migration code of `--init-config` (`init_config`, `make_first_theme`) into the modules that own the stores, for example one `migrate_all` function.
-- Phase 1 | Merge `errors-doc.sh` and `examples-doc.sh` into one doc-lint script with one shared item scanner.
-- Phase 1 | Replace the regex scanner of the doc gates with rustdoc JSON. It needs the nightly toolchain. High cost.
-- Phase 1 | C-CRATE-DOC: the `//!` header of `lib.rs` has no example and no usage line. For the documentation action.
 
 ## 10. Plan changelog
 | Phase | Note | Decision | Reason |
@@ -174,6 +170,12 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 | 0 | A unit test in `main.rs` cannot run `main()` with arguments | P0.5 writes integration tests that run the binary, and adds `studio/tests/*.rs` to the package source (from P1.2) | Cargo gives `CARGO_BIN_EXE_theme-studio` only to integration tests. The tests stay valid after P1.1. |
 | 1 | P1.1 replied NEEDS for `preview_term/mod.rs`. Rustdoc merges the `///` of `mod preview_term;` in `lib.rs` with the `//!` header of the child module and resolves the links in the parent scope. The `doc` gate fails with 2 unresolved links. | Release `studio/src/preview_term/mod.rs` to P1.1. The 2 links get `crate::` paths. | Approved by the user. P2.3 and P4.4 own the file too, but they run in later waves. P1.1 stays one atomic commit. |
 | 1 | P1.2 replied NEEDS for `studio/tests/command_line.rs`. `cli::run` reads `std::env::args()` and the environment. An in-process test gets the arguments of the test harness, and the rules forbid `set_var`. The tests of P0.5 already run the binary. | Release `studio/tests/command_line.rs` to P1.2. P1.2 renames it to `studio/tests/cli.rs` and adds a test of the type of `cli::run`. | Approved by the user. No other open step owns the file. A new file would copy the 17 tests of P0.5. |
+| 1 | Move `setup_terminal` and `restore_terminal` from `cli.rs` next to `Term` | ACCEPT: P2.8 | The type, its setup, and its restore are in one file. `run_in_terminal` stays in `cli.rs`, because `app/` must not depend on `ui/`. |
+| 1 | A pure argument parser or `run_with(args)` | ACCEPT, changed: `pub(crate) fn parse_args` in P5.4, no `run_with` | The fuzz target needs a pure function. Unit tests in `cli.rs` give the tests in the same process. No new public API. |
+| 1 | Move the `--init-config` migration code into the modules that own the stores | DEFER: section 7 | It helps no success criterion. `cli.rs` has 207 lines, and each function is short. A `migrate_all` in another module adds one jump for the reader. |
+| 1 | Merge `errors-doc.sh` and `examples-doc.sh` | ACCEPT, changed: P2.9, one shared scanner, two gates | Commit `fadb431` fixed the same bug in the two copies (T4). Two gates keep one rule for each gate. |
+| 1 | Replace the regex scanner of the doc gates with rustdoc JSON | REJECT | It needs the nightly toolchain in the gates. Criterion 9 permits the nightly toolchain only for cargo-fuzz. |
+| 1 | C-CRATE-DOC: the `//!` header of `lib.rs` has no example and no usage line | ACCEPT: P5.1 | P5.1 already changes `lib.rs`. Criterion 8 needs it. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
@@ -197,7 +199,7 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 ## 12. Shared files (parallel mode only)
 | File | Steps that change it | Rule |
 |---|---|---|
-| `flake.nix` | P0.1, P0.4, P1.1, P1.3 | each step is alone in its wave, or the only owner in its wave |
+| `flake.nix` | P0.1, P0.4, P1.1, P1.3, P2.9 | each step is alone in its wave, or the only owner in its wave |
 | `lib.rs` | P1.1, P5.1 | one owner in each wave |
 | `packaging/nix/package.nix` | P0.2, P0.5 | one owner in each wave |
 | `app/mod.rs` | P2.8, P3.1, P3.9 | one owner in each wave |
