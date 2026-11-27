@@ -72,6 +72,7 @@ Advanced techniques that the refactor adds:
 | 12 | about 30 parsers (section 3) | no fuzz target | criterion 10 | M |
 | 13 | `main.rs:64` | only the first argument is checked for `--help`, so `nosuch --help` gives the error for an unknown name. Test: `help_is_ignored_when_it_is_not_the_first_argument` | T3 (behavior, not fixed: pure refactor) | L |
 | 14 | `main.rs:121` | an unknown option such as `--bogus` is taken as a name: "no palette named '--bogus'". The error does not say that a theme name is also valid. Test: `unknown_option_is_taken_as_a_name` | T7 (behavior, not fixed: pure refactor) | L |
+| 15 | each `mod.rs` with intra-doc links in its `//!` header | a `///` on the parent declaration makes rustdoc resolve the `//!` links in the parent scope. Short links such as `[`Pane`]` then fail. | criterion 2, gate `doc` | M |
 
 Findings 6 to 10 are in scope only when a step already changes the file (GOAL.md, scope).
 
@@ -97,7 +98,7 @@ Each Rust step runs the checks for each change of the conventions, after P0.1. E
 Completes: criterion 9. The coordinator measures the Phase 0 baselines of SUCCESS_CRITERIA.md (rows 1, 2, 7) after P0.4.
 
 ### Phase 1: Library target
-- [ ] P1.1 Library: add `lib.rs` with the module declarations of `main.rs`, each with `///`. Move the argument handling, `--init-config`, and the start into `cli.rs` (`pub fn run`). `main.rs` calls `theme_studio::cli::run()`. The tests of P0.5 do not change. The `fmt` gate formats `lib.rs` and `main.rs`. | Wave: 6 | Depends: P0.5 | Owns: studio/src/main.rs, studio/src/lib.rs, studio/src/cli.rs, flake.nix | Target: criteria 4, T3. | Check: `nix flake check` passes. The binary starts and `--help` gives the same text.
+- [ ] P1.1 Library: add `lib.rs` with the module declarations of `main.rs`, each with `///`. Move the argument handling, `--init-config`, and the start into `cli.rs` (`pub fn run`). `main.rs` calls `theme_studio::cli::run()`. The tests of P0.5 do not change. The `fmt` gate formats `lib.rs` and `main.rs`. | Wave: 6 | Depends: P0.5 | Owns: studio/src/main.rs, studio/src/lib.rs, studio/src/cli.rs, flake.nix, studio/src/preview_term/mod.rs | Target: criteria 4, T3. | Check: `nix flake check` passes. The binary starts and `--help` gives the same text.
 - [ ] P1.2 Integration tests: `studio/tests/cli.rs` tests `cli` through its public API only. | Wave: 7 | Depends: P1.1 | Owns: studio/tests/cli.rs | Target: criterion 6. | Check: `cargo nextest run` passes.
 - [ ] P1.3 Gate `examples-doc`: a script fails when a `pub` item that `lib.rs` exports has no `# Examples`. Add `# Examples` with `?` to each public item of `cli`. Add a flake check that runs `cargo test --doc`. | Wave: 7 | Depends: P1.1 | Owns: scripts/dev/examples-doc.sh, flake.nix, studio/src/cli.rs | Target: criterion 7, C-EXAMPLE. | Check: `cargo test --doc` passes. `nix flake check` passes.
 Completes: criterion 4.
@@ -165,6 +166,7 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 | 0 | `cargo test --doc` fails in a binary crate ("no library targets") | P0.2 does nextest only. P1.3 adds the doc-test check. P1.1 changes the `fmt` gate. P1.2 adds `studio/tests/*.rs` to the package source. | The checks need `lib.rs`. The package source set had only `studio/tests/fixtures`. |
 | 0 | `tokei` misreads Rust char literals: 10 of 114 files differ | Criterion 1 uses the self-test of `file-limits.sh`. `tokei` is a cross-check only. | Approved by the user. |
 | 0 | A unit test in `main.rs` cannot run `main()` with arguments | P0.5 writes integration tests that run the binary, and adds `studio/tests/*.rs` to the package source (from P1.2) | Cargo gives `CARGO_BIN_EXE_theme-studio` only to integration tests. The tests stay valid after P1.1. |
+| 1 | P1.1 replied NEEDS for `preview_term/mod.rs`. Rustdoc merges the `///` of `mod preview_term;` in `lib.rs` with the `//!` header of the child module and resolves the links in the parent scope. The `doc` gate fails with 2 unresolved links. | Release `studio/src/preview_term/mod.rs` to P1.1. The 2 links get `crate::` paths. | Approved by the user. P2.3 and P4.4 own the file too, but they run in later waves. P1.1 stays one atomic commit. |
 
 ## 11. Progress
 <!-- The kit updates this table after each action. -->
