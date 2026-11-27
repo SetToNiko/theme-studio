@@ -158,6 +158,12 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 
 ## 9. Architecture notes (pending)
 <!-- The review action adds notes here. The revise action processes them. -->
+- Phase 1 | Move the terminal setup (`setup_terminal`, `restore_terminal`) from `cli.rs` next to `Term` (P2.8), so `cli.rs` only parses arguments.
+- Phase 1 | Add a pure argument parser or `run_with(args)`, for in-process tests of `cli` and for the fuzz target "the CLI arguments" (P5.4). This adds public API.
+- Phase 1 | Move the migration code of `--init-config` (`init_config`, `make_first_theme`) into the modules that own the stores, for example one `migrate_all` function.
+- Phase 1 | Merge `errors-doc.sh` and `examples-doc.sh` into one doc-lint script with one shared item scanner.
+- Phase 1 | Replace the regex scanner of the doc gates with rustdoc JSON. It needs the nightly toolchain. High cost.
+- Phase 1 | C-CRATE-DOC: the `//!` header of `lib.rs` has no example and no usage line. For the documentation action.
 
 ## 10. Plan changelog
 | Phase | Note | Decision | Reason |
@@ -176,7 +182,7 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 | Plan | done |
 | Phase 0 safety net | done |
 | Phase 1 steps | done |
-| Phase 1 review | open |
+| Phase 1 review | done |
 | Phase 2 steps | open |
 | Phase 2 review | open |
 | Phase 3 steps | open |
