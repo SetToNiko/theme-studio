@@ -34,6 +34,9 @@ If you receive no mode, or "Mode: guides", use the process below in the project 
    - **README.md:** the setup, the build and test commands, the usage, and a link to ARCHITECTURE.md.
    - **Doc comments:** only on public interfaces and extension points.
 
+## Language rules
+Obey the section "Language rules" of the project-conventions skill in each action. It can name a guidelines file (for Rust: `.claude/skills/project-conventions/rust-api-guidelines.md`) and checks for each change. Read the guidelines file before you start. Run each check for each change on the code that you write or change.
+
 ## Rules
 - Use the docs style of the project-conventions skill.
 - If the audience possibly does not know a term, define it where it first occurs, or add a link to the glossary.

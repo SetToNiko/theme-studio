@@ -10,7 +10,7 @@ TEST_CMD="nix flake check"
 PLAN_FILE="docs/refactor-fixes/PLAN.md"
 
 # The branch that collects the merged steps.
-INTEGRATION_BRANCH="refactor/small-fixes"
+INTEGRATION_BRANCH="refactor/kit-rules"
 
 # The folder for the worktrees, relative to the project root.
 # It is outside the project, so the worktrees do not appear in "git status".

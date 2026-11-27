@@ -25,6 +25,9 @@ You simplify the code of one refactor step. The refactorer wrote it. You make it
    - the comments that explain techniques, reasons, and wiring
 4. Run the test command. If a test fails, undo your last change.
 
+## Language rules
+Obey the section "Language rules" of the project-conventions skill in each action. It can name a guidelines file (for Rust: `.claude/skills/project-conventions/rust-api-guidelines.md`) and checks for each change. Read the guidelines file before you start. Run each check for each change on the code that you write or change.
+
 ## Rules
 - Do not change files outside the diff.
 - Do not add features, dependencies, or new abstractions.

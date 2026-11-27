@@ -1,35 +1,36 @@
-# Refactor Goal: Theme Studio, small fixes
-
-Draft pack: small-fixes-round
+# Refactor Goal: Theme Studio, the new kit rules
 
 <!-- The refactor-kit setup wrote this file. You can edit it. Keep it shorter than approximately 40 lines. -->
 
 ## Goal
-After this refactor, the open items of `CONTRIBUTING.md` section 7 that are not about the terminal have a fix. Each feature folder obeys the dependency direction. The scripts and the studio use the same path rules, and tests check them.
+After this refactor, Theme Studio obeys the new rules of the refactor kit. The next refactors (small fixes, terminal independence) then start from code that obeys the kit.
 
 ## Reason
-The first refactor (`docs/refactor/`) left 8 small open items. Some items are bugs: `themes-switch` can leave the desktop half-switched, and an uninstall can remove the preview fonts. Some tests do not run or do not exist. The terminal-independence refactor (handoff step 2) starts after these fixes, from clean code.
+The kit changed after the first refactor (kit commits `bca1c95`, `06de00d`, `8271127`). Each next refactor must obey the new rules, and agents must not fix the layout in each step. Now 12 of 22 `mod.rs` files hold code (`keymap/mod.rs`: 650 lines), and the crate has no library target.
 
 ## Success criteria
-1. No production code in `studio/src/settings_page/` uses `crate::app`. `BhRow` and `LookId` are in `settings_page`. `draw_browse` is in `ui/page_bodies/settings/` and gets the hit types as arguments.
-2. `themes-switch` with a missing palette exits 1 and changes no file. The golden case `themes-switch-missing-palette` shows this.
-3. The preview fonts are in `$XDG_CACHE_HOME/theme-studio/previews`. At start, the studio moves an old `$XDG_DATA_HOME/theme-studio/previews` folder one time. The install test shows that no install and no uninstall touches the previews folder.
-4. The test `real_configs_parse` reads `store.desktop`. It runs when the desktop configs exist.
-5. All XDG base folders in `paths.rs` use one rule: use the variable only if it is an absolute path, else use the default under `HOME`. `scripts/lib/paths.sh` uses the same rule. Each path function has a test. A test compares `paths.sh` with `paths.rs` for each path that both files give.
-6. `draft_changes` returns 0 when only keys outside "settings" and "keymaps" differ. The `Confirm` action on a Gap row does not move the cursor.
-7. `docs/plan.md` and `docs/migration.md` are in `docs/archive/`, with a note at the top. Each open item from them is in `CONTRIBUTING.md` section 7.
-8. `main.rs` `--init-config` has a test.
-9. `CONTRIBUTING.md` section 7 does not list the fixed items. `nix flake check` passes.
+1. `scripts/dev/file-limits.sh` counts lines of code only. Empty lines and comment lines do not count. Its count agrees with `tokei` (Code column) for each file.
+2. Each `mod.rs` holds only a `//!` header and module declarations, with a `///` comment on each declaration. A gate in `nix flake check` checks it.
+3. Each module and item has the smallest visibility that works. `pub` is only on the API of the library target.
+4. `studio/src/lib.rs` exists. `main.rs` uses only the library.
+5. Unit tests are in a `#[cfg(test)] mod tests` at the end of the file of the tested function. No `tests.rs` file and no test folder are in `studio/src/`.
+6. Integration tests are in `studio/tests/`. They use only the public API. Each public module has at least one integration test.
+7. Each public item has `# Examples` (C-EXAMPLE). The examples use `?`, not `unwrap`. `cargo test --doc` passes.
+8. The code obeys the checklist `.claude/skills/project-conventions/rust-api-guidelines.md`. The final review finds no open item. A deviation is a verified exception with the item ID.
+9. The dev shell has cargo-nextest, cargo-mutants, cargo-fuzz, tokei, and a nightly toolchain only for cargo-fuzz. `nix flake check` runs `cargo nextest run` and `cargo test --doc`.
+10. `studio/fuzz/` has one fuzz target for each function that parses outside input. The plan lists the functions. Each target runs 60 seconds with no crash.
+11. Line coverage is not lower than the baseline. `nix flake check` passes.
 
 ## Scope
-- In scope: the 8 fixes of `docs/refactor/HANDOFF.md`, section 2, step 1. Findings 16, 17, 18, 19, 20, 25, 26, 29 of `docs/refactor/PLAN.md`. The documents that these fixes change.
+- In scope: `studio/src/`, `studio/tests/`, `studio/fuzz/`, the dev shell and the gates in `flake.nix` and `scripts/dev/`, and the documents that the new layout changes (`CONTRIBUTING.md`, `ARCHITECTURE.md`).
 - Out of scope:
-  - Terminal independence and note N1 (the `Preview` type in two folders): handoff step 2.
-  - The preview of each app: handoff step 3.
-  - Support for other Linux distributions, and a security review: handoff step 4.
+  - The 9 small fixes: the next refactor. HANDOFF.md, section 3, step 1, lists them. Commit `7f78141` has their goal.
+  - Terminal independence and note N1: HANDOFF.md step 2.
+  - The preview for each app: HANDOFF.md step 3.
+  - Other Linux distributions, and a security review: HANDOFF.md step 4.
 
 ## New behavior and removals
-No new features. No removals. Each bug fix is a `[bug fix]` step with a test that fails before the fix. The new previews folder (criterion 3) and the XDG rule (criterion 5) are `[behavior]` steps. Each commit message lists the changed behavior.
+No new features. No removals. A pure refactor.
 
 ## Constraints
 - The project works after each step: `nix flake check` passes.
@@ -38,9 +39,13 @@ No new features. No removals. Each bug fix is a `[bug fix]` step with a test tha
 
 ## Verification
 1. `nix flake check` after each step and after each merge. Decide by the exit code.
-2. Rust tests: 195 tests, 4 ignored. The number of ignored tests and of "skipped:" lines must not increase.
-3. Script golden cases (`tests/scripts/run.sh`) change only in `[bug fix]` and `[behavior]` steps, and only for that change.
-4. Manual check on the laptop after the last step: open the studio, show a font preview, and switch a theme.
+2. The number of tests does not decrease. The number of ignored tests and of "skipped:" lines does not increase. `SUCCESS_CRITERIA.md` gives the baseline.
+3. The script golden cases (`tests/scripts/run.sh`) do not change.
+4. After Phase 0: the checks for each change (nextest, doc tests, llvm-cov, mutants, fuzz) on each step.
+5. The reviewer checks that each changed file groups its code by purpose.
+6. Manual check on the laptop after the last step: open the studio, show a font preview, and switch a theme.
 
 ## Contributor guide
-`CONTRIBUTING.md`. This refactor applies all of its settings.
+`CONTRIBUTING.md`. This refactor applies all of its settings, except the settings that the new rules replace:
+- the test locations (`app/tests/`): the new rule puts the tests in the file of the tested function, or in `studio/tests/`
+- the file limit that counts all lines: the new rule counts lines of code only
