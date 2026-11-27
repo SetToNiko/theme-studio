@@ -4,7 +4,7 @@
 # The other scripts load this file. You do not run it.
 
 # The command that runs all tests. It must exit with 0 when all tests pass.
-TEST_CMD="git add --intent-to-add --all && nix flake check"
+TEST_CMD="nix flake check"
 
 # The plan file, relative to the project root.
 PLAN_FILE="docs/refactor-fixes/PLAN.md"

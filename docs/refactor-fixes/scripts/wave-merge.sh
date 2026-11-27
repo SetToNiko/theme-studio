@@ -45,6 +45,9 @@ for step in "$@"; do
   if [ ! -d "$path" ]; then skip_step "$step" "no worktree at $path"; continue; fi
 
   # a. Test and commit in the worktree.
+  # Some test commands see only the files that git tracks (example: nix flake check).
+  # Thus, record each new file as intent-to-add before the tests. This stages no content.
+  git -C "$path" add --intent-to-add --all
   if ! (cd "$path" && bash -c "$TEST_CMD") > "$log" 2>&1; then
     skip_step "$step" "tests fail in the worktree. Log: $log"
     continue
