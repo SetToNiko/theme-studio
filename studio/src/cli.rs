@@ -11,9 +11,11 @@ use ratatui::crossterm::event::{
 };
 use ratatui::crossterm::execute;
 
-use crate::app::{self, App, Start};
+use crate::app::{self, App, Start, Term};
+use crate::fonts::presets::FontStore;
 use crate::model::store::Store;
-use crate::{config, fonts, model, system, ui};
+use crate::model::theme::{Theme, ThemeStore};
+use crate::{config, model, system, ui};
 
 const USAGE: &str = "\
 Usage: theme-studio [--fonts] [THEME | PALETTE | --new]
@@ -43,8 +45,8 @@ More: docs/theme-studio.md (also the Settings page's README tab)";
 /// Starts the studio, or does the job that the command line names (`--help`, `--init-config`).
 ///
 /// # Errors
-/// Fails when the start palette cannot be loaded (see `App::new`), or the terminal cannot be set
-/// up, or the main loop fails.
+/// Fails when the palette or theme that the command line names cannot be loaded, the terminal
+/// cannot be set up, or the main loop fails.
 ///
 /// # Examples
 ///
@@ -68,60 +70,13 @@ pub fn run() -> Result<()> {
         }
         Some("--new") => Start::New,
         Some("--init-config") => {
-            let dir = model::paths::studio_config_dir();
-            let loaded = config::load(&dir, true);
-            // palettes.json / fonts.json to their current file formats too
-            let store = Store::locate();
-            let fonts = fonts::presets::FontStore {
-                dir: store.dir.clone(),
-                share: store.share.clone(),
-            };
-            // themes.json: the first theme, from the active palette and fonts
-            let themes = model::theme::ThemeStore {
-                dir: store.dir.clone(),
-            };
-            if !themes.exists()
-                && let (Some(p), Some(f)) = (
-                    Store::active_name(),
-                    fonts::presets::FontStore::active_name(),
-                )
-            {
-                match themes.save(
-                    &p,
-                    &model::theme::Theme {
-                        palette: p.clone(),
-                        sizes: fonts.load(&f).ok().map(|preset| preset.sizes()),
-                        fonts: f,
-                    },
-                ) {
-                    Ok(()) => {
-                        let _ = model::theme::ThemeStore::set_active(&p);
-                        println!("themes.json: made the theme \"{p}\"");
-                    }
-                    Err(e) => eprintln!("warning: themes.json: {e:#}"),
-                }
-            }
-            for (what, r) in [
-                ("palettes.json", store.migrate()),
-                // before fonts.json: it takes the sizes from the presets
-                ("themes.json", themes.migrate(&fonts)),
-                ("fonts.json", fonts.migrate()),
-            ] {
-                match r {
-                    Ok(Some(v)) => println!("{what}: updated to version {v}"),
-                    Ok(None) => {}
-                    Err(e) => eprintln!("warning: {what}: {e:#}"),
-                }
-            }
-            println!("{}", dir.display());
-            for w in loaded.warnings {
-                eprintln!("warning: {w}");
-            }
+            init_config();
             return Ok(());
         }
         Some(name) => Start::Named(name.to_string()),
         None => Start::Active,
     };
+
     // preview fonts moved from ~/.cache to ~/.local/share
     system::download::preview::migrate_previews();
     // Load before taking over the terminal, so errors print normally.
@@ -129,11 +84,100 @@ pub fn run() -> Result<()> {
     if fonts_tab {
         app.open_fonts_tab();
     }
+    run_in_terminal(app)
+}
 
+/// Does the job of `--init-config`: writes the missing settings files and updates the data files.
+///
+/// It also makes the first theme when `themes.json` does not exist. It prints the settings folder.
+/// A problem with one file prints a warning and does not stop the other files.
+fn init_config() {
+    let dir = model::paths::studio_config_dir();
+    let loaded = config::load(&dir, true);
+    // palettes.json / fonts.json to their current file formats too
+    let store = Store::locate();
+    let fonts = FontStore {
+        dir: store.dir.clone(),
+        share: store.share.clone(),
+    };
+    let themes = ThemeStore {
+        dir: store.dir.clone(),
+    };
+    if !themes.exists() {
+        make_first_theme(&themes, &fonts);
+    }
+
+    for (what, r) in [
+        ("palettes.json", store.migrate()),
+        // before fonts.json: it takes the sizes from the presets
+        ("themes.json", themes.migrate(&fonts)),
+        ("fonts.json", fonts.migrate()),
+    ] {
+        match r {
+            Ok(Some(v)) => println!("{what}: updated to version {v}"),
+            Ok(None) => {}
+            Err(e) => eprintln!("warning: {what}: {e:#}"),
+        }
+    }
+
+    println!("{}", dir.display());
+    for w in loaded.warnings {
+        eprintln!("warning: {w}");
+    }
+}
+
+/// Makes the first theme in `themes.json`, from the active palette and the active font preset.
+///
+/// It does nothing when there is no active palette or no active font preset. When the save fails,
+/// it prints a warning.
+fn make_first_theme(themes: &ThemeStore, fonts: &FontStore) {
+    let (Some(p), Some(f)) = (Store::active_name(), FontStore::active_name()) else {
+        return;
+    };
+    let theme = Theme {
+        palette: p.clone(),
+        sizes: fonts.load(&f).ok().map(|preset| preset.sizes()),
+        fonts: f,
+    };
+    match themes.save(&p, &theme) {
+        Ok(()) => {
+            let _ = ThemeStore::set_active(&p);
+            println!("themes.json: made the theme \"{p}\"");
+        }
+        Err(e) => eprintln!("warning: themes.json: {e:#}"),
+    }
+}
+
+/// Runs the main loop of `app` in the terminal, and then gives the terminal back to the shell.
+///
+/// # Errors
+/// Fails when the terminal cannot be set up, or the main loop fails. When the setup fails, the
+/// terminal is not restored.
+fn run_in_terminal(mut app: App) -> Result<()> {
+    let (mut terminal, enhanced) = setup_terminal()?;
+    // Which image protocol the terminal speaks (kitty graphics in Ghostty);
+    // asked now, before key events are read. Half blocks if it won't say.
+    app.picker = Some(
+        ratatui_image::picker::Picker::from_query_stdio()
+            .unwrap_or_else(|_| ratatui_image::picker::Picker::halfblocks()),
+    );
+    let result = app.run(&mut terminal, ui::draw);
+    restore_terminal(enhanced);
+    result
+}
+
+/// Takes over the terminal: raw mode, the alternate screen, the mouse, and the paste events.
+///
+/// The second value is `true` when the terminal speaks the kitty keyboard protocol.
+/// [`restore_terminal`] needs it.
+///
+/// # Errors
+/// Fails when the terminal cannot be made, or the mouse and paste events cannot be turned on.
+fn setup_terminal() -> Result<(Term, bool)> {
     // raw mode, the alternate screen and the panic hook; drawing goes
     // through system::out::Out (for the hover underline styles)
     drop(ratatui::init());
-    let mut terminal = ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(
+    let terminal = ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(
         system::out::Out::default(),
     ))?;
     execute!(stdout(), EnableMouseCapture, EnableBracketedPaste)?;
@@ -146,18 +190,18 @@ pub fn run() -> Result<()> {
             PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
         );
     }
-    // Which image protocol the terminal speaks (kitty graphics in Ghostty);
-    // asked now, before key events are read. Half blocks if it won't say.
-    app.picker = Some(
-        ratatui_image::picker::Picker::from_query_stdio()
-            .unwrap_or_else(|_| ratatui_image::picker::Picker::halfblocks()),
-    );
-    let result = app.run(&mut terminal, ui::draw);
+    Ok((terminal, enhanced))
+}
+
+/// Gives the terminal back to the shell: the mouse pointer, the key protocol, the events, and the
+/// screen.
+///
+/// `enhanced` is the second value of [`setup_terminal`].
+fn restore_terminal(enhanced: bool) {
     app::set_pointer("default");
     if enhanced {
         let _ = execute!(stdout(), PopKeyboardEnhancementFlags);
     }
     let _ = execute!(stdout(), DisableMouseCapture, DisableBracketedPaste);
     ratatui::restore();
-    result
 }
