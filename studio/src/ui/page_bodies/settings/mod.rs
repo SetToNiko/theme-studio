@@ -26,7 +26,7 @@ use crate::app::state::hit::{Target, hover, hover_line, hover_row};
 use crate::keymap::action::Action;
 use crate::keymap::context::Context;
 use crate::model::color::Rgb;
-use crate::settings_page::{TABS, Tab};
+use crate::settings_page::state::{TABS, Tab};
 use crate::ui::widgets::{to_u8, to_u16};
 
 fn colour_span(c: Rgb, text: &str) -> Span<'static> {

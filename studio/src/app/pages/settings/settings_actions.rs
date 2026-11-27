@@ -16,7 +16,8 @@ use crate::app::state::steps::{offset, to_i32};
 use crate::keymap::action::Action;
 use crate::keymap::key::Key;
 use crate::model::history::History;
-use crate::settings_page::{FILES, HistFocus, KmRow, SettingsPage, TABS, Tab, ends, wrap};
+use crate::settings_page::rows::{ends, wrap};
+use crate::settings_page::state::{FILES, HistFocus, KmRow, SettingsPage, TABS, Tab};
 
 impl App {
     // ----- shared ----------------------------------------------------------

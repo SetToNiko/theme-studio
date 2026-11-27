@@ -8,8 +8,8 @@ use ratatui::widgets::{Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarStat
 
 use crate::app::App;
 use crate::app::state::hit::Target;
-use crate::settings_page::SettingsPage;
 use crate::settings_page::readme::Doc;
+use crate::settings_page::state::SettingsPage;
 
 /// Reads the guide at `path` again when the file changed, and drops the
 /// rendered copy then.

@@ -10,7 +10,7 @@ use crate::app::state::nav::{BhRow, Capture, Overlay};
 use crate::keymap::action::Action;
 use crate::model::palette::GROUPS;
 use crate::settings_page::behaviour::{selectable_ends, theme_keys, visible_behaviour_rows};
-use crate::settings_page::wrap;
+use crate::settings_page::rows::wrap;
 
 impl App {
     /// The cursor is on the first (`up`) or last selectable row.
@@ -27,7 +27,7 @@ impl App {
             self.settings_page.bh_sel = selectable_ends(&rows).0;
         }
         let ok: Vec<bool> = rows.iter().map(|r| r.selectable()).collect();
-        if crate::settings_page::move_over(&mut self.settings_page.bh_sel, &ok, a) {
+        if crate::settings_page::rows::move_over(&mut self.settings_page.bh_sel, &ok, a) {
             return;
         }
         let d = match a {

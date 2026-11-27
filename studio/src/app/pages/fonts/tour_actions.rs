@@ -289,7 +289,7 @@ impl App {
             Action::Bottom => t.sel = last,
             Action::Left | Action::Right if row == SetupRow::Size => {
                 let d = if a == Action::Left { -1 } else { 1 };
-                t.size = crate::settings_page::wrap(t.size, d, SIZES.len());
+                t.size = crate::settings_page::rows::wrap(t.size, d, SIZES.len());
             }
             Action::Confirm => match row {
                 SetupRow::Pool(p) => self.tour_ask(p),

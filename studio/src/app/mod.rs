@@ -107,7 +107,7 @@ pub struct App {
     /// The Fonts page's Tournament tab (made on first use).
     pub tour_page: Option<crate::fonts::tournament_page::TourPage>,
     /// The Settings page's tabs and selections.
-    pub settings_page: crate::settings_page::SettingsPage,
+    pub settings_page: crate::settings_page::state::SettingsPage,
     /// Keys of a sequence typed so far (e.g. the leader), waiting for the rest.
     pub pending_keys: Vec<Key>,
     /// What the Open / Save as pop-up is for.
@@ -231,7 +231,7 @@ impl App {
             presets: config.presets,
             config_dir: config.dir.clone(),
             settings: config.settings.clone(),
-            settings_page: crate::settings_page::SettingsPage::default(),
+            settings_page: crate::settings_page::state::SettingsPage::default(),
             dl: crate::fonts::download_page::DlPage::default(),
             tour_page: None,
             pending_keys: Vec::new(),

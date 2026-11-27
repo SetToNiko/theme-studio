@@ -13,7 +13,8 @@ use crate::app::App;
 use crate::app::state::hit::Target;
 use crate::model::color::Rgb;
 use crate::model::history::SnapshotInfo;
-use crate::settings_page::{DiffLine, DiffView, FILES, HistFocus};
+use crate::settings_page::diff::{DiffLine, DiffView};
+use crate::settings_page::state::{FILES, HistFocus};
 
 pub(super) fn draw_history(f: &mut Frame, app: &mut App, area: Rect) {
     let narrow = area.width < 110;
