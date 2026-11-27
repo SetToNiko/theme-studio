@@ -47,7 +47,7 @@ Priority: correctness > audience test > readability > maintainability, modularit
 
 ## Language rules
 Rust:
-- Module layout (hard, gate `mod-layout`): a `mod.rs` holds a `//!` header and module declarations (`mod`, `pub mod`, `pub(crate) mod`, `pub(super) mod`, `pub(in <path>) mod`), each with a `///` comment. No `use`, no code, no `pub use`, no tests, no other attribute. Use the smallest visibility that works. `pub` only on the API of the library.
+- Module layout (hard, gate `mod-layout`): a `mod.rs` holds a `//!` header and module declarations (`mod`, `pub mod`, `pub(crate) mod`, `pub(super) mod`, `pub(in <path>) mod`), each with a `///` comment. No `use`, no code, no `pub use`, no tests. The only permitted attribute is `#[cfg(test)]`, on the line between the `///` comment and its declaration. Use the smallest visibility that works. `pub` only on the API of the library.
 - Tests (hard): unit tests at the end of the file of the tested function. Integration tests in `studio/tests/`, through the public API of `studio/src/lib.rs` only.
 - API guidelines (a MUST): `.claude/skills/project-conventions/rust-api-guidelines.md`. Read it before you start. Give the item ID (example: C-EXAMPLE) in each finding and in each exception.
 - Exceptions: `#[expect(<lint>, reason = "...")]`. Never `#[allow]` without a reason.
