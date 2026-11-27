@@ -396,6 +396,14 @@ pub fn cursor_line(line: ratatui::text::Line<'_>, style: Style) -> ratatui::text
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::app::startup::Start;
+    use crate::app::state::nav::{Overlay, Page, Side};
+    use crate::app::test_support::*;
+    use crate::model::color::Rgb;
+    use crate::model::palette::Palette;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+    use ratatui::crossterm::event::MouseEventKind;
 
     #[test]
     fn only_the_name_is_underlined() {
@@ -479,5 +487,126 @@ mod tests {
         // no cursor: one span, unchanged
         assert_eq!(cursor_spans(" ab  ".into(), red, Style::new()).len(), 1);
         assert_eq!(cursor_spans(" ab  ".into(), red, rev).len(), 3);
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one scenario: set the hover look, save it, then check each pane border in turn"
+    )]
+    fn hover_look_is_configurable_and_pane_borders_light_up() {
+        use crate::app::state::hit::{Target as T, Underline};
+        use crate::app::state::nav::{BhRow, LookId};
+        use crate::settings_page::behaviour::behaviour_rows;
+        use ratatui::style::{Color, Modifier};
+        let store = temp_store("hover-look");
+        let dir = store.dir.clone();
+        crate::model::history::init_for_test(dir.join("history"));
+        let mut app = test_app(store, Start::Named("One".into()));
+        // a system palette whose keys we know
+        let mut sys = Palette::blank();
+        sys.set("aqua", Rgb(1, 2, 3));
+        sys.set("bg3", Rgb(4, 5, 6));
+        sys.set("purple", Rgb(7, 8, 9));
+        app.system_palette = Some(sys);
+        assert_eq!(app.theme_colour("aqua"), Color::Rgb(1, 2, 3));
+        // the mouse over the colour list (without the keyboard: focus is
+        // yellow) lights its border in the pane colour
+        app.side = Side::Fonts;
+        let mut t = Terminal::new(TestBackend::new(200, 50)).unwrap();
+        t.draw(|f| crate::ui::screen::frame::draw(f, &mut app))
+            .unwrap();
+        let row = app.hits.rect_of(T::ColourRow(1)).unwrap();
+        mouse(&mut app, MouseEventKind::Moved, row.x + 2, row.y);
+        t.draw(|f| crate::ui::screen::frame::draw(f, &mut app))
+            .unwrap();
+        let buf = t.backend().buffer().clone();
+        assert_eq!(
+            buf[(row.x - 1, row.y)].fg,
+            Color::Rgb(1, 2, 3),
+            "pane border in aqua"
+        );
+        // Behaviour tab: highlight on, in bg3; curly underline; bold text
+        app.page = Page::Settings;
+        app.settings_page.tab = crate::settings_page::state::Tab::Behaviour;
+        let rows = behaviour_rows();
+        let at = |r: BhRow| rows.iter().position(|x| *x == r).unwrap();
+        app.settings_page.bh_sel = at(BhRow::Highlight(LookId::Hover));
+        press(&mut app, "l");
+        app.settings_page.bh_sel = at(BhRow::HighlightColour(LookId::Hover));
+        press(&mut app, "\n");
+        assert!(matches!(app.overlay, Overlay::ChooseKey { .. }));
+        let screen = render(&mut app, 160, 45);
+        assert!(screen.contains("Colour from the active theme"), "{screen}");
+        // the list: move to bg3 and choose it
+        let target = crate::settings_page::behaviour::theme_keys()
+            .iter()
+            .position(|k| *k == "bg3")
+            .unwrap();
+        // moving previews; Esc puts the old colour back
+        press(&mut app, "j");
+        assert!(
+            matches!(app.overlay, Overlay::ChooseKey { .. }),
+            "stays open"
+        );
+        assert_ne!(
+            app.show_draft(|a| a.settings.hover.look.highlight_colour.clone()),
+            "bg3"
+        );
+        press(&mut app, "\x1b");
+        assert!(matches!(app.overlay, Overlay::None));
+        let before = app.show_draft(|a| a.settings.hover.look.highlight_colour.clone());
+        press(&mut app, "\n");
+        // move to bg3 with the keys, Enter keeps it
+        let at_now = crate::settings_page::behaviour::theme_keys()
+            .iter()
+            .position(|k| *k == before)
+            .unwrap();
+        let steps = if target >= at_now {
+            "j".repeat(target - at_now)
+        } else {
+            "k".repeat(at_now - target)
+        };
+        press(&mut app, &steps);
+        press(&mut app, "\n");
+        assert_eq!(
+            app.show_draft(|a| a.settings.hover.look.highlight_colour.clone()),
+            "bg3"
+        );
+        app.settings_page.bh_sel = at(BhRow::Underline(LookId::Hover));
+        press(&mut app, "l"); // single → double
+        app.settings_page.bh_sel = at(BhRow::TextWeight(LookId::Hover));
+        press(&mut app, "l");
+        // the derived-colour highlight is its own look
+        app.settings_page.bh_sel = at(BhRow::Underline(LookId::Derived));
+        press(&mut app, "l"); // off → single
+        press(&mut app, "s"); // save
+        let looks = app.looks(&app.settings);
+        assert_eq!(looks.hover.bg, Some(Color::Rgb(4, 5, 6)));
+        assert_eq!(looks.hover.underline.map(|u| u.0), Some(Underline::Double));
+        assert_eq!(looks.hover.weight, Modifier::BOLD);
+        assert_eq!(
+            looks.derived.underline.map(|u| u.0),
+            Some(Underline::Single)
+        );
+        assert_eq!(looks.preview, Color::Rgb(7, 8, 9));
+        // drawn: the marker that out::Out turns into a double underline
+        crate::app::state::hit::set_looks(looks);
+        let s = crate::app::state::hit::hover(ratatui::style::Style::new());
+        assert!(
+            s.add_modifier
+                .contains(Modifier::RAPID_BLINK | Modifier::BOLD)
+        );
+        let screen = render(&mut app, 160, 45);
+        assert!(
+            screen.contains("Sample:") && screen.contains("Derived colours"),
+            "{screen}"
+        );
+        // saved
+        let saved = crate::config::load::load(&dir.join("studio-config"), false);
+        assert_eq!(saved.settings.hover.look.underline, "double");
+        assert_eq!(saved.settings.colours.derived_highlight.underline, "single");
+        crate::app::state::hit::set_looks(crate::app::state::hit::Looks::default());
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }
