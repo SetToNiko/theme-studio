@@ -39,6 +39,7 @@ let
         (studio + "/Cargo.toml")
         (studio + "/Cargo.lock")
         (studio + "/src")
+        (lib.fileset.fileFilter (file: file.hasExt "rs") (studio + "/tests"))
         (studio + "/tests/fixtures")
       ];
     };
