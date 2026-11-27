@@ -312,3 +312,208 @@ impl App {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::app_state::App;
+    use crate::app::startup::Start;
+    use crate::app::state::nav::{Overlay, Page};
+    use crate::app::test_support::*;
+    use crate::keymap::context::Context;
+    use crate::model::store::Store;
+    use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
+    use serde_json::Map;
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one walk through the Download page (list, search, remove); each step uses the state the step before left"
+    )]
+    fn download_page_lists_searches_and_removes() {
+        use crate::app::state::hit::Target as T;
+        use crate::fonts::pages::download::{DlRow, DlStatus, DlTab};
+        use crate::system::download::types::{Catalogue, Entry, Source};
+        let store = temp_store("dl");
+        let dir = store.dir.clone();
+        crate::model::history::init_for_test(dir.join("history"));
+        let mut app = test_app(store, Start::Named("One".into()));
+        let entry = |id: &str, family: &str, cat: &str, source: Source| Entry {
+            id: id.into(),
+            family: family.into(),
+            category: cat.into(),
+            license: "OFL-1.1".into(),
+            weights: vec![400, 700],
+            italic: false,
+            variable: false,
+            source,
+            subset: "latin".into(),
+        };
+        app.dl.catalogue = Some(Catalogue {
+            google: vec![
+                entry("inter", "Inter", "sans-serif", Source::Google),
+                entry("roboto-mono", "Roboto Mono", "monospace", Source::Google),
+                entry("zen-loop", "Zen Loop", "display", Source::Google),
+            ],
+            nerd: vec![entry(
+                "nerd-heavydata",
+                "HeavyData Nerd Font",
+                "nerd font",
+                Source::Nerd {
+                    asset: "HeavyData".into(),
+                    url: "u".into(),
+                    size: 1,
+                },
+            )],
+            nerd_tag: "v3.5.1".into(),
+        });
+        app.on_key(KeyEvent::new(KeyCode::F(2), KeyModifiers::NONE));
+        assert_eq!(app.page, Page::Downloads);
+        assert_eq!(app.contexts()[0], Context::Downloads);
+        let screen = render(&mut app, 160, 45);
+        assert!(
+            screen.contains("Google Fonts")
+                && screen.contains("Roboto Mono")
+                && screen.contains("3 fonts"),
+            "{screen}"
+        );
+        // a category: right steps to Sans
+        press(&mut app, "l");
+        assert_eq!(app.dl_rows(), vec![DlRow::Entry(0)]);
+        press(&mut app, "h");
+        // search: / then typing; Enter leaves the box
+        press(&mut app, "/mono\n");
+        assert_eq!(app.dl_rows(), vec![DlRow::Entry(1)]);
+        assert!(render(&mut app, 160, 45).contains("Install"));
+        // the preview: Roboto Mono shows code; t / L / + change it
+        let screen = render(&mut app, 160, 45);
+        assert!(screen.contains("Preview  Code ▾  Rust ▾  12pt"), "{screen}");
+        press(&mut app, "L+");
+        assert!(render(&mut app, 160, 45).contains("Preview  Code ▾  Python ▾  13pt"));
+        // > pages through the code, < comes back
+        press(&mut app, ">");
+        let pv = app.dl.preview.as_ref().unwrap();
+        assert!(pv.page > 0 && pv.page == pv.step, "{} {}", pv.page, pv.step);
+        press(&mut app, "<");
+        assert_eq!(app.dl.preview.as_ref().unwrap().page, 0);
+        // the wheel over the preview moves three lines
+        render(&mut app, 160, 45);
+        let r = app
+            .hits
+            .rect_of(crate::app::state::hit::Target::DlPreview)
+            .unwrap();
+        mouse(&mut app, MouseEventKind::ScrollDown, r.x + 2, r.y + 2);
+        assert_eq!(app.dl.preview.as_ref().unwrap().page, 3);
+        // the language dropdown: a click opens it on the current one,
+        // a click on a row chooses (and starts at the top)
+        click_on(&mut app, crate::app::state::hit::Target::PreviewMenu(1));
+        assert!(matches!(
+            app.overlay,
+            Overlay::Menu {
+                menu: 1,
+                sel: 1,
+                ..
+            }
+        ));
+        assert!(render(&mut app, 160, 45).contains(" Haskell "));
+        click_on(&mut app, crate::app::state::hit::Target::OverlayRow(10));
+        assert_eq!(app.dl.preview.as_ref().unwrap().lang, 10);
+        assert_eq!(app.dl.preview.as_ref().unwrap().page, 0);
+        assert!(render(&mut app, 160, 45).contains("Code ▾  Haskell ▾"));
+        // the kind dropdown: keys move, Enter chooses; a click outside closes
+        click_on(&mut app, crate::app::state::hit::Target::PreviewMenu(0));
+        press(&mut app, "j\n");
+        assert!(matches!(app.overlay, Overlay::None));
+        assert!(render(&mut app, 160, 45).contains("Preview  Icons ▾  13pt"));
+        click_on(&mut app, crate::app::state::hit::Target::PreviewMenu(0));
+        mouse(&mut app, MouseEventKind::Down(MouseButton::Left), 1, 1);
+        assert!(matches!(app.overlay, Overlay::None));
+        app.dl.preview.as_mut().unwrap().kind = Some(crate::model::samples::Kind::Code);
+        press(&mut app, "t");
+        assert!(render(&mut app, 160, 45).contains("Preview  Icons"));
+        // a failed fetch says so
+        app.dl
+            .preview
+            .as_mut()
+            .unwrap()
+            .families
+            .insert("roboto-mono".into(), Err("offline".into()));
+        assert!(render(&mut app, 160, 45).contains("Couldn't fetch it: offline"));
+        app.dl.search.clear();
+        // something in the list counts as installed and can be removed
+        let list = app.installed_list_path();
+        let mut m = serde_json::Map::new();
+        m.insert(
+            "Zen Loop".into(),
+            serde_json::json!({"source": "google", "id": "zen-loop"}),
+        );
+        crate::system::download::list::write_list(&list, m).unwrap();
+
+        let zen = app.dl_entries()[2].clone();
+        let listed = crate::system::download::list::read_list(&list);
+        assert_eq!(app.dl_status(&zen, &listed), DlStatus::Listed);
+        // the Installed tab (a click) lists it; d removes it
+        render(&mut app, 160, 45);
+        click_on(&mut app, T::DlTab(2));
+        assert_eq!(app.dl.tab, DlTab::Installed);
+        assert_eq!(app.dl_rows(), vec![DlRow::Listed("Zen Loop".into())]);
+        press(&mut app, "d");
+        assert_eq!(crate::system::download::list::read_list(&list), Map::new());
+        assert_eq!(app.dl_rows(), []);
+        // Nerd Fonts tab, with the release (past the Tournament tab)
+        press(&mut app, "]");
+        assert_eq!(app.dl.tab, DlTab::Tournament);
+        press(&mut app, "]");
+        assert_eq!(app.dl.tab, DlTab::Google, "wraps around");
+        press(&mut app, "]");
+        assert!(render(&mut app, 160, 45).contains("release v3.5.1"));
+        // up from the first row reaches the tabs
+        press(&mut app, "k");
+        assert!(app.dl.tabs_focused);
+        press(&mut app, "j\x1b");
+        assert_eq!(app.page, Page::Main);
+        render(&mut app, 100, 40); // narrow
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// End to end against the real data and commands: re-picks the active
+    /// preset's current fonts through the studio, which saves (unchanged) and
+    /// applies them. Run with `NO_RESTART=1` so i3 and Ghostty aren't restarted:
+    /// `THEME_STUDIO_REAL_SWITCH=1 NO_RESTART=1 cargo test studio_applies_fonts --
+    /// --ignored --nocapture` (without the first, tests never run the scripts).
+    #[test]
+    #[ignore = "runs the real scripts; needs THEME_STUDIO_REAL_SWITCH=1"]
+    fn studio_applies_fonts_like_font_switch() {
+        use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+        let store = Store::locate();
+        eprintln!(
+            "data {} share {}",
+            store.dir.display(),
+            store.share.display()
+        );
+        let config = crate::config::load::load(&crate::model::paths::studio_config_dir(), false);
+        let mut app = App::with_config(store, Start::Active, config).unwrap();
+        app.preview.set_headless();
+        app.fonts.refresh_installed();
+        let key = |app: &mut App, c: KeyCode| app.on_key(KeyEvent::new(c, KeyModifiers::NONE));
+        for role in 0..3 {
+            app.focus_pane(1);
+            app.fonts.focus = crate::fonts::types::FontFocus::Slots;
+            app.fonts.slot = role;
+            let before = app.fonts.preset.fonts[role].clone();
+            key(&mut app, KeyCode::Enter); // the list, at the current font
+            eprintln!(
+                "role {role}: {} {}  highlighted {:?}",
+                before.family,
+                before.size,
+                app.fonts
+                    .highlighted()
+                    .map(|i| app.fonts.installed[i].family.clone())
+            );
+            key(&mut app, KeyCode::Enter); // use it
+            eprintln!(
+                "  -> {:?}  message {:?}",
+                app.fonts.preset.fonts[role], app.messages.message
+            );
+        }
+    }
+}

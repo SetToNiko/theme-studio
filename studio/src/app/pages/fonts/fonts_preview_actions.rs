@@ -325,3 +325,85 @@ fn listed_entry(name: String, id: String, category: String, nerd: bool) -> Entry
         subset: "latin".into(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::startup::Start;
+    use crate::app::state::nav::Page;
+    use crate::app::test_support::*;
+    use std::time::Duration;
+
+    #[test]
+    fn installed_fonts_preview_from_their_files() {
+        // a real font file to stand in (skipped without one, e.g. in the
+        // Nix build's sandbox)
+        let Some(file) = std::process::Command::new("fc-match")
+            .args(["-f", "%{file}", "monospace"])
+            .output()
+            .ok()
+            .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
+            .filter(|f| has_font_extension(f))
+        else {
+            eprintln!("skipped: no font file");
+            return;
+        };
+        let store = temp_store("installed-preview");
+        let dir = store.dir.clone();
+        let mut app = test_app(store, Start::Named("One".into()));
+        let fonts = crate::model::paths::installed_fonts_dir().join("test-mono");
+        std::fs::create_dir_all(&fonts).unwrap();
+        let ext = if has_extension(&file, "otf") {
+            "otf"
+        } else {
+            "ttf"
+        };
+        std::fs::copy(&file, fonts.join(format!("TestMono-Regular.{ext}"))).unwrap();
+        let list = app.installed_list_path();
+        std::fs::create_dir_all(list.parent().unwrap()).unwrap();
+        std::fs::write(
+        &list,
+        r#"{"version": 1, "fonts": {"Test Mono": {"source": "fontsource", "id": "test-mono"}}}"#,
+    )
+    .unwrap();
+        app.page = Page::Downloads;
+        app.dl.tab = crate::fonts::pages::download::DlTab::Installed;
+        app.dl.listed = None;
+        app.dl.sel = 0;
+        // the highlighted installed font is the preview's, with code by default
+        let e = app.preview_entry().unwrap();
+        assert_eq!(
+            (e.id.as_str(), e.category.as_str()),
+            ("test-mono", "monospace")
+        );
+        // its family comes from its files, without fetching anything
+        let start = std::time::Instant::now();
+        loop {
+            app.poll_downloads();
+            if let Some(r) = app
+                .dl
+                .preview
+                .as_ref()
+                .and_then(|p| p.families.get("test-mono"))
+            {
+                assert!(r.as_ref().is_ok_and(|f| !f.is_empty()), "{r:?}");
+                break;
+            }
+            assert!(start.elapsed() < Duration::from_secs(10), "no family name");
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        std::fs::remove_dir_all(fonts).unwrap();
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    /// True when `file` ends in `.ext` (letter case does not matter).
+    fn has_extension(file: &str, ext: &str) -> bool {
+        std::path::Path::new(file)
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case(ext))
+    }
+
+    /// True for a font file that the preview can read (`.ttf` or `.otf`).
+    fn has_font_extension(file: &str) -> bool {
+        has_extension(file, "ttf") || has_extension(file, "otf")
+    }
+}

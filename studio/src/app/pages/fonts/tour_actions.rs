@@ -323,3 +323,75 @@ impl App {
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::app_state::App;
+    use crate::app::startup::Start;
+    use crate::app::state::nav::{Overlay, Page};
+    use crate::app::test_support::*;
+
+    #[test]
+    fn a_tournament_of_installed_fonts_from_setup_to_results() {
+        use crate::fonts::pages::tournament::Stage;
+        let store = temp_store("tournament");
+        let dir = store.dir.clone();
+        let mut app = test_app(store, Start::Named("One".into()));
+        let _ = std::fs::remove_dir_all(crate::model::tournament::dir());
+        app.fonts.installed = (0..5)
+            .map(|i| crate::fonts::types::Installed {
+                family: format!("Test Mono {i}"),
+                mono: true,
+                nerd: false,
+                bitmap: false,
+                special: false,
+            })
+            .collect();
+        app.page = Page::Downloads;
+        app.dl.tab = crate::fonts::pages::download::DlTab::Tournament;
+        let screen = |app: &mut App| render(app, 160, 45);
+        assert!(screen(&mut app).contains("Installed monospaced"));
+        // the installed monospaced pool: what it takes, then it starts
+        app.tour().sel = 6;
+        press(&mut app, "\n");
+        let Overlay::Ask { question, .. } = &app.overlay else {
+            panic!("asks first")
+        };
+        assert!(
+            question.contains("5 fonts, 4 picks; nothing to fetch"),
+            "{question}"
+        );
+        press(&mut app, "y");
+        assert_eq!(app.tour().stage, Stage::Fetching);
+        app.poll_tournament();
+        assert_eq!(app.tour().stage, Stage::Playing);
+        let s = screen(&mut app);
+        assert!(s.contains("round 1 of 3") && s.contains("← A"), "{s}");
+        assert!(!s.contains("Test Mono"), "names hidden");
+        press(&mut app, "n");
+        assert!(screen(&mut app).contains("Test Mono"));
+        // picks: four in all; u takes one back
+        press(&mut app, "hl");
+        press(&mut app, "u");
+        assert_eq!(app.tour().t.as_ref().unwrap().picks.len(), 1);
+        press(&mut app, "lhh");
+        assert_eq!(app.tour().stage, Stage::Results);
+        let s = screen(&mut app);
+        assert!(
+            s.contains("the top 10") && s.contains("1st") && s.contains("2nd"),
+            "{s}"
+        );
+        // the bracket
+        press(&mut app, "b");
+        assert!(screen(&mut app).contains("Round 1 (5 fonts)"));
+        press(&mut app, "\x1b");
+        assert!(!app.tour().bracket);
+        // back to the setup: the result is listed
+        press(&mut app, "\x1b");
+        assert_eq!(app.tour().stage, Stage::Setup);
+        assert!(screen(&mut app).contains("won by Test Mono"));
+        assert_eq!(app.tour_past().len(), 1);
+        let _ = std::fs::remove_dir_all(crate::model::tournament::dir());
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
