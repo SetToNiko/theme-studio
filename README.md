@@ -27,6 +27,8 @@ New to the code? Read [ARCHITECTURE.md](ARCHITECTURE.md): how to read the
 code, the modules, and how to add a program that Theme Studio configures.
 Before you change the code, read [CONTRIBUTING.md](CONTRIBUTING.md): the checks
 that must pass, the rules, and a map of the modules for parallel work.
+To continue the open work on another machine, read
+[docs/refactor/HANDOFF.md](docs/refactor/HANDOFF.md): the state, the next steps, and the setup.
 
 ## Install
 
