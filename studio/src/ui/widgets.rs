@@ -1,11 +1,14 @@
 //! Small drawing pieces that several screens share.
 //!
-//! This is the bottom of the `ui` module tree and depends only on ratatui.
+//! This is the bottom of the `ui` module tree and depends only on ratatui and
+//! the colour type of `model`.
 //! Keep it that way: `desktop_preview.rs` uses it and `app` uses `ui`, so if
-//! this file named `app`, `ui/mod.rs`, or a page file, the modules would
+//! this file named `app` or a page file, the modules would
 //! depend on each other in a circle (scripts/dev/module-cycles.py).
 use ratatui::style::Style;
 use ratatui::text::Span;
+
+use crate::model::color::Rgb;
 
 /// Superscript panel number for a title, btop-style ("¹Palette"); the
 /// number key jumps to that panel.
@@ -44,6 +47,20 @@ pub fn f64_to_u16(x: f64) -> u16 {
     v
 }
 
+/// A swatch: `width` cells of background colour.
+pub fn swatch(c: Rgb, width: usize) -> Span<'static> {
+    Span::styled(" ".repeat(width), Style::new().bg(c.color()))
+}
+
+/// Cuts `s` to `n` characters, ending with `…` when it was longer.
+pub fn truncate(s: &str, n: usize) -> String {
+    if s.chars().count() <= n {
+        s.to_string()
+    } else {
+        s.chars().take(n.saturating_sub(1)).collect::<String>() + "…"
+    }
+}
+
 /// Key text for hints: `<CR>` → `Enter`, `<leader>sp` → `Space s p`,
 /// `<C-r>` → `C-r`; plain characters stay as they are.
 pub fn friendly(seq: &str) -> String {
@@ -79,7 +96,8 @@ pub fn friendly(seq: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{f64_to_u16, friendly, to_u8, to_u16};
+    use super::{f64_to_u16, friendly, swatch, to_u8, to_u16, truncate};
+    use crate::model::color::Rgb;
 
     #[test]
     fn to_u8_saturates() {
@@ -98,6 +116,22 @@ mod tests {
         assert_eq!(f64_to_u16(3.9), 3);
         assert_eq!(f64_to_u16(-2.0), 0);
         assert_eq!(f64_to_u16(1e9), u16::MAX);
+    }
+
+    #[test]
+    fn truncate_cuts_and_marks() {
+        assert_eq!(truncate("abc", 3), "abc");
+        assert_eq!(truncate("abcd", 3), "ab…");
+        assert_eq!(truncate("abcd", 1), "…");
+        assert_eq!(truncate("abcd", 0), "…");
+        assert_eq!(truncate("äöüx", 3), "äö…");
+    }
+
+    #[test]
+    fn swatch_fills_width_with_colour() {
+        let s = swatch(Rgb(1, 2, 3), 3);
+        assert_eq!(s.content, "   ");
+        assert_eq!(s.style.bg, Some(Rgb(1, 2, 3).color()));
     }
 
     #[test]

@@ -132,7 +132,8 @@ fn narrow_layout_drops_the_font_sample_and_preview_capture_is_magenta() {
     // while nvim has the keyboard, the preview frame is magenta
     press(&mut app, " 6");
     let mut t = Terminal::new(TestBackend::new(200, 50)).unwrap();
-    t.draw(|f| crate::ui::draw(f, &mut app)).unwrap();
+    t.draw(|f| crate::ui::screen::frame::draw(f, &mut app))
+        .unwrap();
     let buf = t.backend().buffer().clone();
     let magenta = (0..200)
         .flat_map(|x| (0..50).map(move |y| (x, y)))

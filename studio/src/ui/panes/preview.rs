@@ -16,8 +16,9 @@ use crate::keymap::action::Action;
 use crate::keymap::context::Context;
 use crate::model::palette::{self, GROUPS, Palette};
 use crate::preview_term::types::Mode as PreviewMode;
+use crate::ui::pane_chrome::focused_block;
 use crate::ui::widgets::friendly;
-use crate::ui::{focused_block, swatch};
+use crate::ui::widgets::swatch;
 
 /// A line of sample code: (text, palette key) tokens, and an optional line background key.
 type CodeLine<'a> = (Vec<(&'a str, &'a str)>, Option<&'a str>);

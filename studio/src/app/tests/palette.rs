@@ -112,7 +112,7 @@ fn selecting_a_colour_lights_up_its_derivation_relatives() {
     let mut app = test_app(temp_store("related"), Start::Named("One".into()));
     let lit = |app: &mut App, key: &str| -> bool {
         let mut t = Terminal::new(TestBackend::new(200, 60)).unwrap();
-        t.draw(|f| crate::ui::draw(f, app)).unwrap();
+        t.draw(|f| crate::ui::screen::frame::draw(f, app)).unwrap();
         let i = app.keys.iter().position(|k| *k == key).unwrap();
         let Some(row) = app
             .colour_rows()
@@ -127,7 +127,7 @@ fn selecting_a_colour_lights_up_its_derivation_relatives() {
     };
     let group_lit = |app: &mut App, name: &str| -> bool {
         let mut t = Terminal::new(TestBackend::new(200, 60)).unwrap();
-        t.draw(|f| crate::ui::draw(f, app)).unwrap();
+        t.draw(|f| crate::ui::screen::frame::draw(f, app)).unwrap();
         let g = GROUPS.iter().position(|(n, _)| *n == name).unwrap();
         let row = app
             .colour_rows()

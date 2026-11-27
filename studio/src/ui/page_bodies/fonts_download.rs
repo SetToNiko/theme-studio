@@ -17,7 +17,7 @@ use super::rows::{RowLook, draw_selectable_row, follow, row_rect};
 use crate::app::App;
 use crate::app::state::hit::{Target, hover, hover_line, hover_row};
 use crate::fonts::pages::download::{CATEGORIES, DL_TABS, DlRow, DlStatus, DlTab, mb};
-use crate::ui::truncate;
+use crate::ui::widgets::truncate;
 use crate::ui::widgets::{to_u8, to_u16};
 
 /// The status of a font as a short coloured text ("✓ installed", "↓ 40%").

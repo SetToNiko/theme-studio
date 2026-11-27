@@ -1,7 +1,7 @@
 //! Window layout: where each pane goes for a window size.
 //!
 //! `arrange` turns the window size, the page, and the saved pane sizes into
-//! an [`Arrangement`]. Like btop, the layout follows the window as it is
+//! an [`Arrangement`](crate::ui::layout::Arrangement). Like btop, the layout follows the window as it is
 //! resized, and below the minimum a message says what is needed. It also
 //! returns the borders that the mouse can drag.
 

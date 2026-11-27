@@ -8,7 +8,6 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Wrap};
 
 use super::super::rows::{RowLook, draw_selectable_row, follow, row_rect};
-use super::truncate;
 use crate::app::App;
 use crate::app::state::hit::Target;
 use crate::keymap::action::Action;
@@ -17,6 +16,7 @@ use crate::keymap::key::display_seq;
 use crate::keymap::map::Keymap;
 use crate::settings_page::state::KmRow;
 use crate::ui::widgets::to_u16;
+use crate::ui::widgets::truncate;
 /// Splits the tab area into the list and, when the width allows, the info column.
 fn split_keymaps_area(area: Rect) -> (Rect, Option<Rect>) {
     if area.width >= 100 {

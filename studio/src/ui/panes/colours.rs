@@ -14,9 +14,10 @@ use crate::app::state::hit::{Target, hover};
 use crate::app::state::nav::{ColourRow, Focus, Overlay, Side};
 use crate::model::color::{self, Rgb};
 use crate::model::palette::{self, GROUPS, TEXT_KEYS};
+use crate::ui::pane_chrome::focused_block;
 use crate::ui::pane_chrome::pane_title;
+use crate::ui::widgets::swatch;
 use crate::ui::widgets::{panel_number, to_u16};
-use crate::ui::{focused_block, swatch};
 
 /// Draws the Palette pane: frame, dropdown row, then the scrolled colour rows.
 pub fn draw_list(f: &mut Frame, app: &mut App, area: Rect) {

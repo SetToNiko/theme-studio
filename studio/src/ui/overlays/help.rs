@@ -1,6 +1,6 @@
 //! The key-list overlay (help): every key of the active keymap, in columns.
 //!
-//! [`draw_help`] is called by `dialogs::draw_overlay` while `Overlay::Help` is open.
+//! [`draw_help`](crate::ui::overlays::help::draw_help) is called by `dialogs::draw_overlay` while `Overlay::Help` is open.
 
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -8,7 +8,7 @@ use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
-use super::centered;
+use super::boxes::centered;
 use crate::app::App;
 use crate::keymap::action::Action;
 use crate::keymap::context::Context;

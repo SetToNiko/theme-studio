@@ -8,13 +8,14 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
 use super::super::rows::{RowLook, draw_selectable_row, follow, row_rect};
-use super::{colour_span, truncate, value_spans};
+use super::values::{colour_span, value_spans};
 use crate::app::App;
 use crate::app::state::hit::Target;
 use crate::model::color::Rgb;
 use crate::model::history::SnapshotInfo;
 use crate::settings_page::diff::{DiffLine, DiffView};
 use crate::settings_page::state::{FILES, HistFocus};
+use crate::ui::widgets::truncate;
 
 pub(super) fn draw_history(f: &mut Frame, app: &mut App, area: Rect) {
     let narrow = area.width < 110;

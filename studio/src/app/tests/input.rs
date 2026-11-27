@@ -55,7 +55,7 @@ fn hover_highlights_and_clicks_through_the_click_map() {
     let mut app = test_app(temp_store("mouse"), Start::Named("One".into()));
     let mut t = Terminal::new(TestBackend::new(200, 50)).unwrap();
     let mut draw = |app: &mut App| {
-        t.draw(|f| crate::ui::draw(f, app)).unwrap();
+        t.draw(|f| crate::ui::screen::frame::draw(f, app)).unwrap();
         t.backend().buffer().clone()
     };
     draw(&mut app);
@@ -159,10 +159,12 @@ fn hover_look_is_configurable_and_pane_borders_light_up() {
     // yellow) lights its border in the pane colour
     app.side = Side::Fonts;
     let mut t = Terminal::new(TestBackend::new(200, 50)).unwrap();
-    t.draw(|f| crate::ui::draw(f, &mut app)).unwrap();
+    t.draw(|f| crate::ui::screen::frame::draw(f, &mut app))
+        .unwrap();
     let row = app.hits.rect_of(T::ColourRow(1)).unwrap();
     mouse(&mut app, MouseEventKind::Moved, row.x + 2, row.y);
-    t.draw(|f| crate::ui::draw(f, &mut app)).unwrap();
+    t.draw(|f| crate::ui::screen::frame::draw(f, &mut app))
+        .unwrap();
     let buf = t.backend().buffer().clone();
     assert_eq!(
         buf[(row.x - 1, row.y)].fg,

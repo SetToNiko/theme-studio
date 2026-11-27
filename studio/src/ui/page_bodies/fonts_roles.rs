@@ -14,7 +14,7 @@ use crate::app::App;
 use crate::app::state::hit::Target;
 use crate::fonts::presets::ROLE_USE;
 use crate::fonts::types::{ROLE_NAMES, ROLE_NEEDS};
-use crate::ui::truncate;
+use crate::ui::widgets::truncate;
 use crate::ui::widgets::{friendly, to_u16};
 
 /// What `role_lines` needs to know about the box, so that it has few arguments.

@@ -446,14 +446,16 @@ fn settings_groups_fold_and_only_names_are_underlined() {
     assert!(visible_behaviour_rows(&app.settings_page.bh_closed).len() < rows.len());
     // hover: only the option's name is underlined, not the row
     let mut t = Terminal::new(TestBackend::new(160, 45)).unwrap();
-    t.draw(|f| crate::ui::draw(f, &mut app)).unwrap();
+    t.draw(|f| crate::ui::screen::frame::draw(f, &mut app))
+        .unwrap();
     let leader = visible_behaviour_rows(&app.settings_page.bh_closed)
         .iter()
         .position(|r| *r == BhRow::Leader)
         .unwrap();
     let r = app.hits.rect_of(T::SettingsRow(leader)).unwrap();
     mouse(&mut app, MouseEventKind::Moved, r.x + 5, r.y);
-    t.draw(|f| crate::ui::draw(f, &mut app)).unwrap();
+    t.draw(|f| crate::ui::screen::frame::draw(f, &mut app))
+        .unwrap();
     let buf = t.backend().buffer().clone();
     let under = |x: u16| {
         buf[(x, r.y)]
@@ -603,7 +605,8 @@ fn behaviour_cursor_keeps_the_swatch() {
         .position(|r| *r == row)
         .unwrap();
     let mut t = Terminal::new(TestBackend::new(160, 60)).unwrap();
-    t.draw(|f| crate::ui::draw(f, &mut app)).unwrap();
+    t.draw(|f| crate::ui::screen::frame::draw(f, &mut app))
+        .unwrap();
     let buf = t.backend().buffer().clone();
     let label = App::behaviour_label(row);
     let y = (0..60)

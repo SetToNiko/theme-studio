@@ -1,6 +1,6 @@
 //! Whole-page drawing: what fills the window for each page.
 //!
-//! `draw` in `ui/mod.rs` picks the arrangement for the window size; this
+//! `draw` in `frame.rs` picks the arrangement for the window size; this
 //! file draws the page inside it (Main, Download fonts, Settings) and the
 //! "window too small" screen. The panes of the Main page live in `ui/panes/`.
 
@@ -10,15 +10,15 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
-use super::layout::MainLayout;
-use super::panes::colours::draw_list;
-use super::panes::picker::draw_picker;
-use super::panes::preview::draw_preview;
-use super::widgets::to_u16;
 use crate::app::App;
 use crate::app::state::hit::{BorderId, Target};
 use crate::app::state::nav::Page;
 use crate::preview_term::types::Mode as PreviewMode;
+use crate::ui::layout::MainLayout;
+use crate::ui::panes::colours::draw_list;
+use crate::ui::panes::picker::draw_picker;
+use crate::ui::panes::preview::draw_preview;
+use crate::ui::widgets::to_u16;
 
 /// The Main page: fonts, colour list, picker and preview, then the
 /// draggable borders between them.
@@ -68,8 +68,8 @@ pub(super) fn draw_body_page(f: &mut Frame, app: &mut App, body: Rect) {
     } else if app.page == Page::Settings {
         // as edited; Save / Discard drawn with what's live
         let changes = app.draft_changes();
-        app.show_draft(|app| crate::ui::page_bodies::settings::draw_settings(f, app, body));
-        crate::ui::page_bodies::settings::draw_save_buttons(f, app, body, changes);
+        app.show_draft(|app| crate::ui::page_bodies::settings::page::draw_settings(f, app, body));
+        crate::ui::page_bodies::settings::buttons::draw_save_buttons(f, app, body, changes);
     } else {
         draw_page(f, app, body);
     }

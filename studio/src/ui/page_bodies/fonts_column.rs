@@ -18,7 +18,7 @@ use crate::app::state::nav::Side;
 use crate::fonts::tab::state::FontsTab;
 use crate::fonts::types::{CHIPS, FontFocus, ROLE_NAMES, ROLE_NEEDS, Row};
 use crate::ui::pane_chrome::pane_title;
-use crate::ui::truncate;
+use crate::ui::widgets::truncate;
 use crate::ui::widgets::{panel_number, to_u16};
 
 /// A bordered box with a title, in the pane border colour.
