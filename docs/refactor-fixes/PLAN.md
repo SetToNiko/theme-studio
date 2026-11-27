@@ -70,6 +70,8 @@ Advanced techniques that the refactor adds:
 | 10 | `model/history.rs:28-35`, `system/switch.rs:80` | test hooks and `cfg!(test)` in production code | T4 testability | L |
 | 11 | `ui/` (11 modules), `fonts/` (14 modules) after the moves | over the folder limit of 10 | limits | M |
 | 12 | about 30 parsers (section 3) | no fuzz target | criterion 10 | M |
+| 13 | `main.rs:64` | only the first argument is checked for `--help`, so `nosuch --help` gives the error for an unknown name. Test: `help_is_ignored_when_it_is_not_the_first_argument` | T3 (behavior, not fixed: pure refactor) | L |
+| 14 | `main.rs:121` | an unknown option such as `--bogus` is taken as a name: "no palette named '--bogus'". The error does not say that a theme name is also valid. Test: `unknown_option_is_taken_as_a_name` | T7 (behavior, not fixed: pure refactor) | L |
 
 Findings 6 to 10 are in scope only when a step already changes the file (GOAL.md, scope).
 
@@ -79,7 +81,7 @@ Findings 6 to 10 are in scope only when a step already changes the file (GOAL.md
 - `keymap/`, `config/`, `settings_page/`: good. No tests for `keymap/key.rs` (its tests are in `mod.rs`), `keymap/table.rs`, `config/settings.rs`, `settings_page/readme_layout.rs`.
 - `fonts/`, `preview_term/`: partial. No tests for `filters.rs`, `pick.rs`, `download_page.rs`, `preview_page.rs`, `tournament_page.rs`.
 - `model/`, `system/`: good. Each file has a test module.
-- `main.rs`: none.
+- `main.rs`: partial. `studio/tests/command_line.rs` (P0.5, 17 tests) runs the binary for `-h`, `--help`, `--init-config`, and the errors before the terminal starts. No tests for the paths after the terminal starts, the timing log, and the history folder.
 
 ## 6. Plan
 
@@ -169,7 +171,7 @@ Completes: criteria 10, 11 (the coordinator measures the coverage after P5.4).
 | Item | Status |
 |---|---|
 | Plan | done |
-| Phase 0 safety net | open |
+| Phase 0 safety net | done |
 | Phase 1 steps | open |
 | Phase 1 review | open |
 | Phase 2 steps | open |
