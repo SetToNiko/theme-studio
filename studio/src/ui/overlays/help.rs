@@ -10,8 +10,8 @@ use ratatui::widgets::{Block, Clear, Paragraph};
 
 use super::centered;
 use crate::app::App;
-use crate::keymap::Context;
 use crate::keymap::action::Action;
+use crate::keymap::context::Context;
 use crate::ui::widgets::to_u16;
 
 /// Width of one column of the key list: wide enough to read.

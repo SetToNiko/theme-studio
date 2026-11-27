@@ -4,8 +4,9 @@
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
 use super::action::Action;
+use super::context::Context;
 use super::key::Key;
-use super::{Binding, Context, Keymap};
+use super::map::{Binding, Keymap};
 
 /// The movement actions: the ones that `moves_without_letters` rebinds.
 const MOVES: [Action; 12] = [
@@ -402,5 +403,118 @@ impl Keymap {
             &rows,
         )
         .expect("the Vim preset parses")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::keymap::key::display_seq;
+    use crate::keymap::lookup::Lookup;
+    use ratatui::crossterm::event::KeyEvent;
+
+    #[test]
+    fn shipped_presets_are_clash_free_and_round_trip() {
+        let all = Keymap::builtin();
+        let names: Vec<&str> = all.iter().map(|k| k.name.as_str()).collect();
+        assert_eq!(names, ["Vim", "Helix", "Emacs", "VS Code", "JetBrains"]);
+        for km in &all {
+            for b in &km.bindings {
+                assert!(
+                    km.conflicts(b.context, b.action, &b.keys).is_empty(),
+                    "{}: {} {:?}: {:?}",
+                    km.name,
+                    display_seq(&b.keys, km.leader),
+                    b.action,
+                    km.conflicts(b.context, b.action, &b.keys)
+                );
+                // no Alt (i3), no keys Ghostty keeps for itself
+                assert!(
+                    !b.keys.iter().any(|k| k.mods.contains(KeyModifiers::ALT)),
+                    "{}",
+                    km.name
+                );
+            }
+            assert!(km.warnings().is_empty(), "{}: {:?}", km.name, km.warnings());
+            // every action the Vim preset has keys for has keys here too
+            for b in &Keymap::vim().bindings {
+                assert!(
+                    !km.keys_of(b.context, b.action).is_empty(),
+                    "{}: {:?} in {:?} has no keys",
+                    km.name,
+                    b.action,
+                    b.context
+                );
+            }
+            let (back, w) = Keymap::from_json(&km.name, &km.to_json(), Some(km));
+            assert!(w.is_empty(), "{w:?}");
+            assert_eq!(back.to_json(), km.to_json());
+        }
+        let key = |km: &Keymap, s: &str| Key::parse_seq(s, km.leader).unwrap();
+        let emacs = Keymap::emacs();
+        assert_eq!(
+            emacs.leader,
+            Key::new(KeyCode::Char('c'), KeyModifiers::CONTROL)
+        );
+        assert_eq!(
+            emacs.lookup(
+                &[Context::ColourList, Context::Colours, Context::Global],
+                &key(&emacs, "<C-n>")
+            ),
+            Lookup::Run(Action::Down)
+        );
+        assert!(
+            emacs
+                .keys_of(Context::ColourList, Action::Down)
+                .iter()
+                .all(|k| k[0].code != KeyCode::Char('j'))
+        );
+        assert_eq!(
+            emacs.lookup(&[Context::Global], &key(&emacs, "<C-c>sp")),
+            Lookup::Run(Action::SavePalette),
+            "leader sequences follow the leader"
+        );
+        let vs = Keymap::vscode();
+        assert_eq!(
+            vs.lookup(&[Context::Global], &key(&vs, "<C-S-s>")),
+            Lookup::Run(Action::SaveAs)
+        );
+        assert_eq!(
+            vs.lookup(&[Context::Global], &key(&vs, "<C-3>")),
+            Lookup::Run(Action::Panel(3))
+        );
+        let hx = Keymap::helix();
+        assert_eq!(
+            hx.lookup(&[Context::Colours], &key(&hx, "U")),
+            Lookup::Run(Action::Redo)
+        );
+        assert_eq!(
+            hx.lookup(&[Context::FontList], &key(&hx, "ge")),
+            Lookup::Run(Action::Bottom)
+        );
+    }
+
+    #[test]
+    fn kitty_protocol_keys_match_their_notation() {
+        let l = Key::new(KeyCode::Char(' '), KeyModifiers::NONE);
+        let ev = |c, m| Key::from_event(KeyEvent::new(c, m));
+        let cs = KeyModifiers::CONTROL | KeyModifiers::SHIFT;
+        // kitty: s + Ctrl + Shift; legacy-style: S + Ctrl + Shift
+        assert_eq!(
+            vec![ev(KeyCode::Char('s'), cs)],
+            Key::parse_seq("<C-S-s>", l).unwrap()
+        );
+        assert_eq!(
+            vec![ev(KeyCode::Char('S'), cs)],
+            Key::parse_seq("<C-S-s>", l).unwrap()
+        );
+        assert_eq!(
+            vec![ev(KeyCode::Char('1'), KeyModifiers::CONTROL)],
+            Key::parse_seq("<C-1>", l).unwrap()
+        );
+        assert_eq!(
+            vec![ev(KeyCode::Char('A'), KeyModifiers::SHIFT)],
+            Key::parse_seq("A", l).unwrap()
+        );
     }
 }

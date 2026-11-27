@@ -16,9 +16,9 @@ use super::{draw_tabs, truncate};
 use crate::app::App;
 use crate::app::state::nav::{Focus, Page, Side};
 use crate::fonts::types::FontFocus;
-use crate::keymap::Context;
 use crate::keymap::action::Action;
 use crate::keymap::action::Action as A;
+use crate::keymap::context::Context;
 
 mod rows;
 use rows::{colours_hints, downloads_hints, fonts_hints, settings_hints};

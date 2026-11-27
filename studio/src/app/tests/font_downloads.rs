@@ -1,7 +1,7 @@
 //! Tests of font downloads and previews: the download page, installed fonts, prefetching, and the tournament.
 
 use super::*;
-use crate::keymap::Context;
+use crate::keymap::context::Context;
 use std::time::Duration;
 
 #[test]

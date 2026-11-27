@@ -496,7 +496,7 @@ mod tests {
     /// Vim keymap's action for the font list or roles.
     fn press(t: &mut FontsTab, k: KeyEvent) {
         use crate::keymap::key::Key;
-        use crate::keymap::{Context, Keymap, Lookup};
+        use crate::keymap::{context::Context, lookup::Lookup, map::Keymap};
         if t.focus == FontFocus::Search {
             return t.on_search_key(k);
         }

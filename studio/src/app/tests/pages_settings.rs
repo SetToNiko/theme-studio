@@ -2,8 +2,8 @@
 
 use super::state::nav::Pending;
 use super::*;
-use crate::keymap::Context;
 use crate::keymap::action::Action;
+use crate::keymap::context::Context;
 use std::fmt::Write as _;
 
 #[test]
@@ -622,8 +622,8 @@ fn a_failed_settings_save_keeps_the_draft_and_the_old_live_values() {
     let config_dir = store.dir.join("config-is-a-file");
     std::fs::write(&config_dir, "not a folder").unwrap();
     let config = crate::config::Loaded {
-        keymap: crate::keymap::Keymap::vim(),
-        presets: crate::keymap::Keymap::builtin(),
+        keymap: crate::keymap::map::Keymap::vim(),
+        presets: crate::keymap::map::Keymap::builtin(),
         settings: crate::config::settings::Settings::default(),
         warnings: Vec::new(),
         dir: config_dir,

@@ -23,8 +23,8 @@ use ratatui::widgets::{Block, Paragraph};
 
 use crate::app::App;
 use crate::app::state::hit::{Target, hover, hover_line, hover_row};
-use crate::keymap::Context;
 use crate::keymap::action::Action;
+use crate::keymap::context::Context;
 use crate::model::color::Rgb;
 use crate::settings_page::{TABS, Tab};
 use crate::ui::widgets::{to_u8, to_u16};
