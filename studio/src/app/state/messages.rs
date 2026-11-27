@@ -63,3 +63,58 @@ impl Messages {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::startup::Start;
+    use crate::app::test_support::*;
+    use ratatui::crossterm::event::{MouseButton, MouseEventKind};
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn messages_time_out_and_saves_can_pop_up() {
+        let store = temp_store("messages");
+        let dir = store.dir.clone();
+        crate::model::history::init_for_test(dir.join("history"));
+        let mut app = test_app(store, Start::Named("One".into()));
+        let ago = |s: u64| Instant::now().checked_sub(Duration::from_secs(s));
+        // info messages go after settings.messages.seconds (3 by default)
+        app.messages.info("hello");
+        assert!(!app.messages.expire(app.settings.messages.seconds));
+        app.messages.message_at = ago(3);
+        assert!(app.messages.expire(app.settings.messages.seconds));
+        assert_eq!(app.messages.message, None);
+        // errors stay until a key
+        app.messages.error("bad");
+        assert!(!app.messages.expire(app.settings.messages.seconds));
+        assert!(app.messages.message.is_some());
+        // 0: until a key
+        app.settings.messages.seconds = 0;
+        app.messages.info("stays");
+        app.messages.message_at = ago(100);
+        assert!(!app.messages.expire(app.settings.messages.seconds));
+        app.settings.messages.seconds = 3;
+        // saving the settings says "Saved"; switched to popup, that save
+        // already shows in a box
+        app.with_draft(|a| a.settings.messages.saved = "popup".into());
+        app.settings_save();
+        assert_eq!(app.messages.notice.as_deref(), Some("Saved"));
+        assert_eq!(app.messages.message, None);
+        assert!(render(&mut app, 160, 45).contains("press any key to dismiss"));
+        // a key closes it and does nothing else
+        let sel = app.sel;
+        press(&mut app, "j");
+        assert_eq!(app.messages.notice, None);
+        assert_eq!(app.sel, sel);
+        // so does a click
+        app.notify_saved("Saved \"One\"");
+        mouse(&mut app, MouseEventKind::Down(MouseButton::Left), 1, 1);
+        assert_eq!(app.messages.notice, None);
+        // bar: the status line, like any message
+        app.settings.messages.saved = "bar".into();
+        app.notify_saved("Saved");
+        assert_eq!(app.messages.message, Some(("Saved".into(), false)));
+        assert_eq!(app.messages.notice, None);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}

@@ -1,19 +1,15 @@
-//! Tests of layout and messages: window sizes, panes, borders, number keys, status line, and toggles.
+//! Tests that stay until their target files are free: the drawing, the status line, the number keys, and the layout arrangement.
 
 use crate::app::app_state::App;
 use crate::app::startup::Start;
 use crate::app::state::nav::{Focus, Page, Side};
 use crate::app::test_support::*;
-use crate::keymap::map::Keymap;
 use crate::model::color::Rgb;
-use crate::model::store::Store;
 use crate::preview_term::types::PaneId;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEventKind};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::layout::Rect;
-use std::time::Duration;
-use std::time::Instant;
 
 #[test]
 fn renders_at_full_size_and_warns_when_small() {
@@ -158,89 +154,6 @@ fn narrow_layout_drops_the_font_sample_and_preview_capture_is_magenta() {
 }
 
 #[test]
-fn borders_drag_and_resize_mode_moves_edges() {
-    use crate::app::state::hit::{BorderId as B, Target as T};
-    let mut app = test_app(temp_store("resize"), Start::Named("One".into()));
-    render(&mut app, 200, 50);
-    // drag the border between fonts and colours 10 columns right
-    let b = app.hits.rect_of(T::Border(B::FontsColours)).unwrap();
-    mouse(
-        &mut app,
-        MouseEventKind::Down(MouseButton::Left),
-        b.x,
-        b.y + 5,
-    );
-    assert_eq!(app.layout.dragging, Some(B::FontsColours));
-    mouse(
-        &mut app,
-        MouseEventKind::Drag(MouseButton::Left),
-        b.x + 10,
-        b.y + 5,
-    );
-    mouse(
-        &mut app,
-        MouseEventKind::Up(MouseButton::Left),
-        b.x + 10,
-        b.y + 5,
-    );
-    assert_eq!(app.layout.dragging, None);
-    render(&mut app, 200, 50);
-    assert_eq!(
-        app.hits.rect_of(T::Border(B::FontsColours)).unwrap().x,
-        b.x + 10
-    );
-    // resize mode on the colour list: l moves its right edge, = resets, Esc leaves
-    press(&mut app, " 4 r");
-    assert!(app.layout.resize_mode);
-    let before = app.hits.rect_of(T::Border(B::ColoursPreview)).unwrap().x;
-    press(&mut app, "lll");
-    render(&mut app, 200, 50);
-    assert_eq!(
-        app.hits.rect_of(T::Border(B::ColoursPreview)).unwrap().x,
-        before + 3
-    );
-    press(&mut app, "H");
-    render(&mut app, 200, 50);
-    assert_eq!(
-        app.hits.rect_of(T::Border(B::ColoursPreview)).unwrap().x,
-        before - 2
-    );
-    // nvim / shell split from the preview panes isn't reachable from the list; j
-    // here moves the list/picker border, which only exists with the picker shown
-    press(&mut app, "j");
-    press(&mut app, "=");
-    render(&mut app, 200, 50);
-    assert_eq!(app.layout.sizes, crate::config::settings::Sizes::default());
-    press(&mut app, "\x1b");
-    assert!(!app.layout.resize_mode);
-    // keys work normally again
-    press(&mut app, "j");
-    assert_eq!(app.row_sel, 2);
-}
-
-#[test]
-fn extreme_sizes_render_at_every_window_size() {
-    let mut app = test_app(temp_store("extreme"), Start::Named("One".into()));
-    app.layout.picker_visible = true;
-    for share in [0.0, 0.02, 0.5, 0.98, 1.0] {
-        app.layout.sizes = crate::config::settings::Sizes {
-            fonts_width: share,
-            colours_width: share,
-            sample_height: share,
-            picker_height: share,
-            preview_split: share,
-            narrow_preview_height: share,
-            narrow_fonts_width: share,
-        };
-        for w in (90..=260).step_by(17) {
-            for h in (20..=70).step_by(9) {
-                render(&mut app, w, h);
-            }
-        }
-    }
-}
-
-#[test]
 #[expect(
     clippy::too_many_lines,
     reason = "one resize walk: each terminal size is checked against the layout the previous size left"
@@ -378,53 +291,6 @@ fn every_window_size_renders() {
 }
 
 #[test]
-fn messages_time_out_and_saves_can_pop_up() {
-    let store = temp_store("messages");
-    let dir = store.dir.clone();
-    crate::model::history::init_for_test(dir.join("history"));
-    let mut app = test_app(store, Start::Named("One".into()));
-    let ago = |s: u64| Instant::now().checked_sub(Duration::from_secs(s));
-    // info messages go after settings.messages.seconds (3 by default)
-    app.messages.info("hello");
-    assert!(!app.messages.expire(app.settings.messages.seconds));
-    app.messages.message_at = ago(3);
-    assert!(app.messages.expire(app.settings.messages.seconds));
-    assert_eq!(app.messages.message, None);
-    // errors stay until a key
-    app.messages.error("bad");
-    assert!(!app.messages.expire(app.settings.messages.seconds));
-    assert!(app.messages.message.is_some());
-    // 0: until a key
-    app.settings.messages.seconds = 0;
-    app.messages.info("stays");
-    app.messages.message_at = ago(100);
-    assert!(!app.messages.expire(app.settings.messages.seconds));
-    app.settings.messages.seconds = 3;
-    // saving the settings says "Saved"; switched to popup, that save
-    // already shows in a box
-    app.with_draft(|a| a.settings.messages.saved = "popup".into());
-    app.settings_save();
-    assert_eq!(app.messages.notice.as_deref(), Some("Saved"));
-    assert_eq!(app.messages.message, None);
-    assert!(render(&mut app, 160, 45).contains("press any key to dismiss"));
-    // a key closes it and does nothing else
-    let sel = app.sel;
-    press(&mut app, "j");
-    assert_eq!(app.messages.notice, None);
-    assert_eq!(app.sel, sel);
-    // so does a click
-    app.notify_saved("Saved \"One\"");
-    mouse(&mut app, MouseEventKind::Down(MouseButton::Left), 1, 1);
-    assert_eq!(app.messages.notice, None);
-    // bar: the status line, like any message
-    app.settings.messages.saved = "bar".into();
-    app.notify_saved("Saved");
-    assert_eq!(app.messages.message, Some(("Saved".into(), false)));
-    assert_eq!(app.messages.notice, None);
-    std::fs::remove_dir_all(dir).unwrap();
-}
-
-#[test]
 fn status_line_hints_sit_at_the_right() {
     let store = temp_store("hints");
     let dir = store.dir.clone();
@@ -453,59 +319,5 @@ fn status_line_hints_sit_at_the_right() {
     assert!(top.contains("F1") && !top.contains("? keys"), "{top}");
     assert!(bottom.starts_with(" Nothing to undo"), "{bottom}");
     assert!(bottom.trim_end().ends_with("? keys"), "{bottom}");
-    std::fs::remove_dir_all(dir).unwrap();
-}
-
-#[test]
-fn hints_and_previews_toggle_per_page() {
-    let store = temp_store("toggles");
-    let dir = store.dir.clone();
-    let mut app = test_app(store, Start::Named("One".into()));
-    let screen = |app: &mut App| render(app, 160, 45);
-    // Main: <leader>tp hides the preview; the columns take its room
-    assert!(screen(&mut app).contains("Preview"));
-    press(&mut app, " tp");
-    assert!(!app.layout.main_preview_visible);
-    let s = screen(&mut app);
-    assert!(!s.contains("Space 6 / Space 7"), "{s}");
-    let pane = app.layout.palette_pane.unwrap();
-    assert_eq!(pane.x + pane.width, 160, "colours reach the right edge");
-    // jumping to nvim shows it again
-    press(&mut app, " 6");
-    assert!(app.layout.main_preview_visible);
-    // (nvim has the keyboard now: take it back)
-    app.preview.focus = None;
-    press(&mut app, " tp");
-    // the Fonts page's preview is its own
-    app.on_key(KeyEvent::new(KeyCode::F(2), KeyModifiers::NONE));
-    assert!(app.layout.fonts_preview_visible && !app.layout.main_preview_visible);
-    press(&mut app, " tp");
-    assert!(!app.layout.fonts_preview_visible && !app.layout.main_preview_visible);
-    // <leader>th hides the key hints anywhere; messages still show
-    assert!(screen(&mut app).contains("? keys"));
-    press(&mut app, " th");
-    let s = screen(&mut app);
-    assert!(!s.contains("? keys"), "{s}");
-    app.messages.info("Hello");
-    assert!(screen(&mut app).contains("Hello"));
-    // the settings say how a run starts
-    let mut config = crate::config::settings::Settings::default();
-    config.layout.key_hints = "hidden".into();
-    config.layout.main_preview = "hidden".into();
-    let loaded = crate::config::load::Loaded {
-        keymap: Keymap::vim(),
-        presets: Keymap::builtin(),
-        settings: config,
-        warnings: Vec::new(),
-        dir: dir.join("studio-config"),
-    };
-    let mut app2 =
-        App::with_config(Store::at(dir.clone()), Start::Named("One".into()), loaded).unwrap();
-    app2.preview.set_headless();
-    assert!(
-        !app2.layout.hints_visible
-            && !app2.layout.main_preview_visible
-            && app2.layout.fonts_preview_visible
-    );
     std::fs::remove_dir_all(dir).unwrap();
 }
