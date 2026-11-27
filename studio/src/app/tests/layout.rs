@@ -480,7 +480,7 @@ fn hints_and_previews_toggle_per_page() {
     let mut config = crate::config::settings::Settings::default();
     config.layout.key_hints = "hidden".into();
     config.layout.main_preview = "hidden".into();
-    let loaded = crate::config::Loaded {
+    let loaded = crate::config::load::Loaded {
         keymap: Keymap::vim(),
         presets: Keymap::builtin(),
         settings: config,

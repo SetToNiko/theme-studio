@@ -246,7 +246,7 @@ fn hover_look_is_configurable_and_pane_borders_light_up() {
         "{screen}"
     );
     // saved
-    let saved = crate::config::load(&dir.join("studio-config"), false);
+    let saved = crate::config::load::load(&dir.join("studio-config"), false);
     assert_eq!(saved.settings.hover.look.underline, "double");
     assert_eq!(saved.settings.colours.derived_highlight.underline, "single");
     crate::app::state::hit::set_looks(crate::app::state::hit::Looks::default());

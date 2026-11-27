@@ -166,7 +166,7 @@ mod tests {
         let store = temp_store(tag);
         // settings_save (draft tests) writes history; keep it in the temp folder
         crate::model::history::init_for_test(store.dir.join("history"));
-        let config = crate::config::Loaded {
+        let config = crate::config::load::Loaded {
             keymap: Keymap::vim(),
             presets: Keymap::builtin(),
             settings: Settings::default(),

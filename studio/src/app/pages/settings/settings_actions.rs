@@ -74,7 +74,7 @@ impl App {
                 let _ = self.fonts.open(&name);
             }
             "keymaps.json" | "settings.json" => {
-                let l = crate::config::load(&self.config_dir, false);
+                let l = crate::config::load::load(&self.config_dir, false);
                 self.keymap = l.keymap;
                 self.presets = l.presets;
                 self.settings = l.settings;

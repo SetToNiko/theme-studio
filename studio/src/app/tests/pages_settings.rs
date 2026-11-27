@@ -21,7 +21,8 @@ fn settings_changes_wait_for_save() {
     };
     let draft_keys =
         |app: &mut App, c: Context, a: Action| app.show_draft(|x| x.keymap.keys_of(c, a));
-    let on_disk = |dir: &std::path::Path| crate::config::load(&dir.join("studio-config"), false);
+    let on_disk =
+        |dir: &std::path::Path| crate::config::load::load(&dir.join("studio-config"), false);
     let q = Key::parse_seq("Q", app.keymap.leader).unwrap();
     // Enter on "quit" records new keys: Q, then Enter keeps them, unsaved
     app.settings_page.km_sel = row_of(&mut app, KmRow::Binding(Context::Global, Action::Quit));
@@ -132,7 +133,8 @@ fn settings_behaviour_tab_edits_then_saves() {
         "{screen}"
     );
     let rows = behaviour_rows();
-    let on_disk = |dir: &std::path::Path| crate::config::load(&dir.join("studio-config"), false);
+    let on_disk =
+        |dir: &std::path::Path| crate::config::load::load(&dir.join("studio-config"), false);
     app.settings_page.bh_sel = rows.iter().position(|r| *r == BhRow::Tabs).unwrap();
     press(&mut app, "l");
     assert_eq!(app.show_draft(|a| a.settings.layout.tabs.clone()), "top");
@@ -342,7 +344,7 @@ fn preset_browser_previews_loads_creates_and_deletes() {
     assert_eq!(app.keymap.name, "Vim", "not live yet");
     press(&mut app, "s");
     assert_eq!(app.keymap.name, "My Helix");
-    let saved = crate::config::load(&dir.join("studio-config"), false);
+    let saved = crate::config::load::load(&dir.join("studio-config"), false);
     assert_eq!(saved.keymap.name, "My Helix");
     // shipped presets can't be deleted; yours can (asks first)
     app.settings_page.km_sel = 0;
@@ -370,7 +372,7 @@ fn preset_browser_previews_loads_creates_and_deletes() {
     );
     press(&mut app, "s");
     assert!(
-        !crate::config::load(&dir.join("studio-config"), false)
+        !crate::config::load::load(&dir.join("studio-config"), false)
             .presets
             .iter()
             .any(|p| p.name == "My Helix")
@@ -621,7 +623,7 @@ fn a_failed_settings_save_keeps_the_draft_and_the_old_live_values() {
     // a file where the config folder should be: every write fails
     let config_dir = store.dir.join("config-is-a-file");
     std::fs::write(&config_dir, "not a folder").unwrap();
-    let config = crate::config::Loaded {
+    let config = crate::config::load::Loaded {
         keymap: crate::keymap::map::Keymap::vim(),
         presets: crate::keymap::map::Keymap::builtin(),
         settings: crate::config::settings::Settings::default(),
